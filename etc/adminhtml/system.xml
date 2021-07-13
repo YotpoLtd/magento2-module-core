@@ -1,0 +1,168 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Config:etc/system_file.xsd">
+    <system>
+        <tab id="yotpo" translate="label" sortOrder="400">
+            <label>Yotpo</label>
+        </tab>
+        <section id="yotpo_core" translate="label" sortOrder="10" showInDefault="1" showInWebsite="1" showInStore="1">
+            <class>separator-top</class>
+            <label>Yotpo configuration</label>
+            <tab>yotpo</tab>
+            <resource>Yotpo_Core::config_sync_reviews</resource>
+            <group id="settings" translate="label" type="text" sortOrder="20" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Setup</label>
+                <field id="active" translate="label comment" type="select" sortOrder="30" showInDefault="0" showInWebsite="0" showInStore="1">
+                    <label>Enable Yotpo</label>
+                    <config_path>yotpo/settings/active</config_path>
+                    <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\NoScopes</frontend_model>
+                    <comment><![CDATA[To connect Yotpo to your store, enter your <a href="https://docs.magento.com/m2/ee/user_guide/marketing/yotpo-connect.html#enable-yotpo-and-connect-your-magento-store" title="App Key and API Secret" target="_blank" style="color:#2b7dbd">App Key and API Secret</a> in the fields below and save your configuration.]]></comment>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
+                <field id="app_key" translate="label comment" type="text" sortOrder="40" showInDefault="0" showInWebsite="0" showInStore="1">
+                    <label>App Key</label>
+                    <config_path>yotpo/settings/app_key</config_path>
+                    <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\NoScopes</frontend_model>
+                    <comment>Note: Additional stores must be connected to their own App Key via Store View settings.</comment>
+                </field>
+                <field id="secret" translate="label comment" type="obscure" sortOrder="50" showInDefault="0" showInWebsite="0" showInStore="1">
+                    <label>API Secret</label>
+                    <config_path>yotpo/settings/secret</config_path>
+                    <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
+                    <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\NoScopes</frontend_model>
+                    <comment><![CDATA[<a href="https://docs.magento.com/m2/ee/user_guide/marketing/yotpo-connect.html#enable-yotpo-and-connect-your-magento-store" target="_blank" title="I can't find my API Secret" style="color:#2b7dbd">I can't find my API Secret</a>]]></comment>
+                </field>
+                <field id="debug_mode_active" translate="label comment" type="select" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Enable Debug Mode</label>
+                    <config_path>yotpo_core/settings/debug_mode_active</config_path>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    <comment><![CDATA[Need Help? <a href="https://docs.magento.com/user-guide/marketing/yotpo-connect.html" target="_blank" title="Setup Guide" style="color:#2b7dbd">Setup Guide</a>]]></comment>
+                </field>
+                <field id="module_version" translate="label" type="text" sortOrder="70" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Module Version</label>
+                    <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\ModuleVersion</frontend_model>
+                    <comment><![CDATA[<input name="disable_autofill_appkey" type="text" style="display:none!important;"><input name="disable_autofill_secret" type="password" style="display:none!important;">]]></comment>
+                </field>
+            </group>
+            <group id="settings_order" translate="label" type="text" sortOrder="80" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Orders Settings</label>
+                <attribute type="expanded">1</attribute>
+                <field id="order_status_heading" translate="label" sortOrder="90" showInStore="1" showInWebsite="1" showInDefault="1">
+                    <label>Map the order statuses on your store with the corresponding Yotpo statuses</label>
+                    <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Heading</frontend_model>
+                </field>
+                <field id="map_order_status" translate="label comment" sortOrder="100"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\MapOrderStatus</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+                <field id="shipment_status_heading" translate="label" sortOrder="110" showInStore="1" showInWebsite="1" showInDefault="1">
+                    <label>Map the shipment statuses on your store with the corresponding Yotpo statuses. If you want to add multiple
+                        statuses, use comma to separate the values</label>
+                    <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Heading</frontend_model>
+                </field>
+                <field id="map_shipment_status" translate="label comment" sortOrder="120"
+                       showInDefault="1" showInWebsite="1" showInStore="1">
+                    <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\MapShipmentStatus</frontend_model>
+                    <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                </field>
+            </group>
+            <group id="settings_catalog" translate="label" type="text" sortOrder="130" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Catalog Settings</label>
+                <field id="catalog_heading" translate="label" sortOrder="140" showInStore="1" showInWebsite="1" showInDefault="1">
+                    <label>
+                        <![CDATA[Enrich your product catalog with additional information.<br/><br/>
+                        To avoid overriding any existing configurations in Yotpo, we recommend you<br/>
+                        update your Magento product catalog before configuring attributes.]]>
+                    </label>
+                    <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Heading</frontend_model>
+                </field>
+                <field id="attr_mpn" translate="label comment" type="select" sortOrder="150" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>MPN</label>
+                    <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                </field>
+                <field id="attr_brand" translate="label comment" type="select" sortOrder="160" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Brand</label>
+                    <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                </field>
+                <group id="gtins" translate="label" type="text" sortOrder="170" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>GTINs</label>
+                    <attribute type="expanded">1</attribute>
+                    <field id="attr_ean" translate="label comment" type="select" sortOrder="180" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>EAN</label>
+                        <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                    </field>
+                    <field id="attr_upc" translate="label comment" type="select" sortOrder="190" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>UPC</label>
+                        <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                    </field>
+                    <field id="attr_isbm" translate="label comment" type="select" sortOrder="200" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>ISBM</label>
+                        <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                    </field>
+                </group>
+                <field id="attr_blocklist" translate="label comment" type="select" sortOrder="210" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Add product to blocklist</label>
+                    <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                </field>
+                <field id="attr_crf" translate="label comment" type="select" sortOrder="220" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Review from CRF Tag</label>
+                    <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                </field>
+                <field id="attr_product_group" translate="label comment" type="select" sortOrder="230" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Product Group</label>
+                    <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                </field>
+            </group>
+            <group id="sync_settings" translate="label" type="text" sortOrder="490" showInDefault="1" showInWebsite="1" showInStore="1">
+                <label>Sync Settings</label>
+                <group id="orders_sync" translate="label" type="text" sortOrder="500" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Orders</label>
+                    <attribute type="expanded">1</attribute>
+                    <field id="last_sync_time" translate="label comment" sortOrder="510" type="label" showInDefault="0" showInWebsite="1" showInStore="1">
+                        <label>Last sync:</label>
+                        <backend_model>Yotpo\Core\Model\Config\Backend\FormatDate</backend_model>
+                    </field>
+                    <field id="total_orders_synced" translate="label comment" sortOrder="520" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
+                        <label>Total orders synced:</label>
+                    </field>
+                    <field id="sync_orders_since" translate="label comment" sortOrder="530" type="date" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Sync orders since:</label>
+                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Date</frontend_model>
+                    </field>
+                    <field id="frequency" translate="label comment" sortOrder="540" type="text" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Frequency:</label>
+                        <comment><![CDATA[e.g, */5 * * * *]]></comment>
+                        <backend_model>Yotpo\Core\Model\Config\Backend\Sync\Scheduler</backend_model>
+                    </field>
+                    <field id="enable" translate="label comment" type="select" sortOrder="550" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable sync:</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    </field>
+                    <field id="download_logs" translate="label" type="label" sortOrder="560" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Link\DownloadOrdersLogs</frontend_model>
+                    </field>
+                </group>
+                <group id="catalog_sync" translate="label" type="text" sortOrder="570" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <label>Catalog</label>
+                    <attribute type="expanded">1</attribute>
+                    <field id="last_sync_time" translate="label comment" sortOrder="580" type="label" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Last Sync:</label>
+                        <backend_model>Yotpo\Core\Model\Config\Backend\FormatDate</backend_model>
+                    </field>
+                    <field id="frequency" translate="label comment" sortOrder="590" type="text" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Frequency:</label>
+                        <comment><![CDATA[e.g, 0 1 * * * - Daily at 1 AM]]></comment>
+                        <backend_model>Yotpo\Core\Model\CronConfig</backend_model>
+                    </field>
+                    <field id="enable" translate="label comment" type="select" sortOrder="600" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable sync:</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    </field>
+                    <field id="download_logs" translate="label" type="label" sortOrder="610" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Link\DownloadCatalogLogs</frontend_model>
+                    </field>
+                </group>
+            </group>
+        </section>
+    </system>
+</config>

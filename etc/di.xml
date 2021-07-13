@@ -1,0 +1,87 @@
+<?xml version="1.0"?>
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <type name="Yotpo\Core\Model\Logger\Main">
+        <arguments>
+            <argument name="name" xsi:type="string">YotpoCoreMainLogger</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="system" xsi:type="object">Yotpo\Core\Model\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\Core\Model\Api\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">YotpoCoreApiLogger</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="system" xsi:type="object">Yotpo\Core\Model\Api\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\Core\Model\Api\Logger\Handler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\Core\Model\Api\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">YotpoCoreCatalogLogger</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="catalog" xsi:type="object">Yotpo\Core\Model\Sync\Catalog\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\Core\Model\Sync\Catalog\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">YotpoCoreCatalogLogger</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="system" xsi:type="object">Yotpo\Core\Model\Sync\Catalog\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\Core\Model\Sync\Catalog\Logger\Handler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\Core\Model\Api\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">YotpoCoreOrdersLogger</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="orders" xsi:type="object">Yotpo\Core\Model\Sync\Orders\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\Core\Model\Sync\Orders\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">YotpoCoreOrdersLogger</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="system" xsi:type="object">Yotpo\Core\Model\Sync\Orders\Logger\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\SmsBump\Model\Sync\Orders\Logger\Handler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\Core\Model\Logger\General">
+        <arguments>
+            <argument name="name" xsi:type="string">YotpoCoreGeneralLogger</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="system" xsi:type="object">Yotpo\Core\Model\Logger\General\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\Core\Model\Logger\General\Handler">
+        <arguments>
+            <argument name="filesystem" xsi:type="object">Magento\Framework\Filesystem\Driver\File</argument>
+        </arguments>
+    </type>
+    <type name="Yotpo\Core\Model\Api\Logger">
+        <arguments>
+            <argument name="name" xsi:type="string">YotpoCoreGeneralLogger</argument>
+            <argument name="handlers"  xsi:type="array">
+                <item name="general" xsi:type="object">Yotpo\Core\Model\Logger\General\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+</config>
