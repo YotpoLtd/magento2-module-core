@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ /**
+  * Copyright © Magento, Inc. All rights reserved.
+  * See COPYING.txt for license details.
+  */
+-->
+
+<tests xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xsi:noNamespaceSchemaLocation="urn:magento:mftf:Test/etc/testSchema.xsd">
+  <test name="NavigateToUrlRewriteFromMarketingPageTest">
+    <annotations>
+      <features value="Yotpo"/>
+      <stories value="Navigation To Url Rewrite Page From Magento Marketing Page" />
+      <title value="Navigation To Url Rewrite Page From Magento Marketing Page"/>
+      <description value="Test navigation To Url Rewrite Page From Magento Marketing Page"/>
+      <severity value="AVERAGE"/>
+      <testCaseId value="MC-448"/>
+      <group value="YotpoCustom"/>
+    </annotations>
+
+    <before>
+      <actionGroup ref="AdminLoginActionGroup" stepKey="LoginAsAdmin"/>
+    </before>
+
+    <after>
+      <amOnPage url="{{AdminLogoutPage.url}}" stepKey="amOnLogoutPage"/>
+    </after>
+
+    <actionGroup ref="AdminNavigateMenuActionGroup" stepKey="navigateToUrlRewritesFromMarketingMenu">
+      <argument name="menuUiId" value="{{AdminMenuMarketing.dataUiId}}"/>
+      <argument name="submenuUiId" value="{{AdminMenuMarketingUrlRewrite.dataUiId}}"/>
+    </actionGroup>
+
+    <!-- Verify that the url of the current active tab contains the string "/users/". -->
+    <seeInCurrentUrl url="/url_rewrite/index/" stepKey="seeInCurrentUrlUrlRewriteSuccess"/>
+  </test>
+</tests>

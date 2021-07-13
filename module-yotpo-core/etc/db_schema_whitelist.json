@@ -1,0 +1,67 @@
+{
+    "yotpo_product_sync": {
+        "column": {
+            "entity_id": true,
+            "product_id": true,
+            "store_id": true,
+            "yotpo_id": true,
+            "yotpo_id_unassign": true,
+            "yotpo_id_parent": true,
+            "is_deleted": true,
+            "is_deleted_at_yotpo": true,
+            "synced_to_yotpo": true,
+            "response_code": true,
+            "sync_status": true
+        },
+        "index": {
+            "YOTPO_PRODUCT_SYNC_ENTITY_ID": true,
+            "YOTPO_PRODUCT_SYNC_YOTPO_ID": true,
+            "YOTPO_PRODUCT_SYNC_SYNC_STATUS": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "YOTPO_PRODUCT_SYNC_PRODUCT_ID_STORE_ID": true
+        }
+    },
+    "yotpo_orders_sync": {
+        "column": {
+            "entity_id": true,
+            "order_id": true,
+            "yotpo_id": true,
+            "synced_to_yotpo": true,
+            "response_code": true
+        },
+        "index": {
+            "YOTPO_ORDERS_SYNC_ENTITY_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "YOTPO_ORDERS_SYNC_ORDER_ID_SALES_ORDER_ENTITY_ID": true,
+            "YOTPO_ORDERS_SYNC_ORDER_ID": true
+        }
+    },
+    "sales_order": {
+        "column": {
+            "synced_to_yotpo_order": true
+        }
+    },
+    "yotpo_category_sync": {
+        "column": {
+            "entity_id": true,
+            "category_id": true,
+            "synced_to_yotpo": true,
+            "is_deleted": true,
+            "is_deleted_at_yotpo": true,
+            "response_code": true,
+            "yotpo_id": true,
+            "store_id": true
+        },
+        "index": {
+            "YOTPO_CATEGORY_SYNC_ENTITY_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "YOTPO_CATEGORY_SYNC_CATEGORY_ID_STORE_ID": true
+        }
+    }
+}
