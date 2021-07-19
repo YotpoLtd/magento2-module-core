@@ -145,7 +145,7 @@
                 <group id="catalog_sync" translate="label" type="text" sortOrder="570" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Catalog</label>
                     <attribute type="expanded">1</attribute>
-                    <field id="last_sync_time" translate="label comment" sortOrder="580" type="label" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <field id="last_sync_time" translate="label comment" sortOrder="580" type="label" showInDefault="0" showInWebsite="1" showInStore="1">
                         <label>Last Sync:</label>
                         <backend_model>Yotpo\Core\Model\Config\Backend\FormatDate</backend_model>
                     </field>

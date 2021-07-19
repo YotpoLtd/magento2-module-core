@@ -173,16 +173,14 @@ class Processor extends Main
             foreach ($magentoOrders as $magentoOrder) {
                 $magentoOrderId = $magentoOrder->getEntityId();
                 $isYotpoSyncedOrder = false;
-                if ($yotpoSyncedOrders) {
-                    if (array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
-                        $responseCode = $yotpoSyncedOrders[$magentoOrderId]['response_code'];
-                        if (!$this->config->canResync($responseCode)) {
-                            $this->yotpoOrdersLogger->info('Order sync cannot be done for orderId: '
-                                . $magentoOrderId . ', due to response code: ' . $responseCode, []);
-                            continue;
-                        } else {
-                            $isYotpoSyncedOrder = true;
-                        }
+                if ($yotpoSyncedOrders && array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
+                    $responseCode = $yotpoSyncedOrders[$magentoOrderId]['response_code'];
+                    if (!$this->config->canResync($responseCode)) {
+                        $this->yotpoOrdersLogger->info('Order sync cannot be done for orderId: '
+                            . $magentoOrderId . ', due to response code: ' . $responseCode, []);
+                        continue;
+                    } else {
+                        $isYotpoSyncedOrder = true;
                     }
                 }
                 /** @var Order $magentoOrder */

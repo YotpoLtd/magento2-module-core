@@ -10,11 +10,6 @@
                 <yotpo_api_url_access_tokens>access_tokens</yotpo_api_url_access_tokens>
             </env>
             <settings>
-                <widget_enabled>1</widget_enabled>
-                <category_bottomline_enabled>1</category_bottomline_enabled>
-                <bottomline_enabled>1</bottomline_enabled>
-                <qna_enabled>1</qna_enabled>
-                <mdr_enabled>1</mdr_enabled>
                 <custom_order_status>complete</custom_order_status>
             </settings>
             <settings_order>
@@ -45,17 +40,17 @@
                 </map_shipment_status>
             </settings_order>
             <sync_settings>
-                <orders_sync_limit>50</orders_sync_limit>
+                <orders_sync>
+                    <enable>1</enable>
+                    <orders_sync_limit>100</orders_sync_limit>
+                </orders_sync>
                 <catalog_sync>
                     <frequency>0 1 * * *</frequency>
                     <sync_limit_collections>10</sync_limit_collections>
                 </catalog_sync>
-                <orders_sync>
-                    <orders_sync_limit>50</orders_sync_limit>
-                </orders_sync>
             </sync_settings>
             <settings_catalog>
-                <product_sync_limit>2</product_sync_limit>
+                <product_sync_limit>100</product_sync_limit>
             </settings_catalog>
         </yotpo_core>
         <csp>

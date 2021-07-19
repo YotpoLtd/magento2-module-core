@@ -1,7 +1,7 @@
 {
     "name": "yotpo/module-yotpo-core",
     "description": "Yotpo Reviews core extension for Magento2",
-    "version": "4.0.0",
+    "version": "4.0.1",
     "license": [
         "OSL-3.0",
         "AFL-3.0"
@@ -28,7 +28,7 @@
     "type": "magento2-module",
     "autoload": {
         "files": [
-          "registration.php"
+            "registration.php"
         ],
         "psr-4": {
             "Yotpo\\Core\\": ""

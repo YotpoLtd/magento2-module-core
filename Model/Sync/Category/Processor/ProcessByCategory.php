@@ -138,9 +138,8 @@ class ProcessByCategory extends Main
         }
         $this->yotpoCoreCatalogLogger->info(
             __(
-                'Category Sync - There are %1 items left to sync - %2',
-                count($magentoCategories),
-                $collection->getSelect()
+                'Category Sync - There are %1 items left to sync',
+                count($magentoCategories)
             )
         );
         foreach ($magentoCategories as $magentoCategory) {
