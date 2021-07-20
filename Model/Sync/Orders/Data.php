@@ -395,25 +395,29 @@ class Data extends Main
     public function prepareFulfillments($order)
     {
         try {
-            $items = [];
             $fulfillments = [];
             if ($this->shipmentsCollection) {
-                $orderShipment = $this->shipmentsCollection[$order->getEntityId()];
-                $shipmentItems = $orderShipment->getItems();
-                foreach ($shipmentItems as $shipmentItem) {
-                    $items[] = [
-                        'external_product_id' => $shipmentItem->getProductId(),
-                        'quantity' => $shipmentItem->getQty() * 1
-                    ];
+                if (isset($this->shipmentsCollection[$order->getEntityId()])) {
+                    $shipments = $this->shipmentsCollection[$order->getEntityId()];
+                    foreach ($shipments as $orderShipment) {
+                        $shipmentItems = $orderShipment->getItems();
+                        $items = [];
+                        foreach ($shipmentItems as $shipmentItem) {
+                            $items[] = [
+                                'external_product_id' => $shipmentItem->getProductId(),
+                                'quantity' => $shipmentItem->getQty() * 1
+                            ];
+                        }
+                        $fulfillment = [
+                            'fulfillment_date' => $this->coreHelper->formatDate($orderShipment->getCreatedAt()),
+                            'status' => $this->getYotpoOrderStatus($order->getStatus()),
+                            'shipment_info' => $this->getShipment($orderShipment),
+                            'fulfilled_items' => $items
+                        ];
+                        $fulfillment['external_id'] = $orderShipment->getEntityId();
+                        $fulfillments[] = $fulfillment;
+                    }
                 }
-                $fulfillment = [
-                    'fulfillment_date' => $this->coreHelper->formatDate($orderShipment->getCreatedAt()),
-                    'status' => $this->getYotpoOrderStatus($order->getStatus()),
-                    'shipment_info' => $this->getShipment($orderShipment),
-                    'fulfilled_items' => $items
-                ];
-                $fulfillment['external_id'] = $orderShipment->getEntityId();
-                $fulfillments[] = $fulfillment;
             }
         } catch (NoSuchEntityException $e) {
             $this->yotpoOrdersLogger->info('Orders sync::prepareFulfillments() - NoSuchEntityException: ' .
@@ -556,7 +560,7 @@ class Data extends Main
             $collection->addFieldToFilter('order_id', ['in' => $orderIds]);
             $shipmentRecords = $collection->getItems();
             foreach ($shipmentRecords as $shipment) {
-                $this->shipmentsCollection[$shipment->getOrderId()] = $shipment;
+                $this->shipmentsCollection[$shipment->getOrderId()][] = $shipment;
             }
         }
     }
@@ -682,11 +686,13 @@ class Data extends Main
         $magentoOrderStatus = $order->getStatus();
         $orderPayment = $order->getPayment();
         $authorizedAmount = $orderPayment !== null ? $orderPayment->getAmountAuthorized() : null;
-        if ($order->getGrandTotal() == 0 || ($order->getTotalPaid() == $order->getTotalInvoiced())) {
+        if (($order->getGrandTotal() == 0 || ($order->getTotalPaid() == $order->getTotalInvoiced()))
+            && $order->getTotalDue() == 0) {
             $yotpoOrderStatus = self::YOTPO_STATUS_PAID;
         } elseif ($order->getTotalDue() > 0 && $order->getTotalPaid() > 0) {
             $yotpoOrderStatus = self::YOTPO_STATUS_PARTIALLY_PAID;
-        } elseif ($magentoOrderStatus && stripos($magentoOrderStatus, self::YOTPO_STATUS_PENDING) !== false) {
+        } elseif (($magentoOrderStatus && stripos($magentoOrderStatus, self::YOTPO_STATUS_PENDING) !== false)
+            || ($order->getGrandTotal() == $order->getTotalDue())) {
             $yotpoOrderStatus = self::YOTPO_STATUS_PENDING;
         } elseif ($authorizedAmount > 0) {
             $yotpoOrderStatus = self::YOTPO_STATUS_AUTHORIZED;

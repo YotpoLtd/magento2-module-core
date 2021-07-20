@@ -337,8 +337,7 @@ class Data extends Main
                     $data = $item->getData($attr['attr_code']);
 
                     if (isset($attr['type']) && $attr['type'] === 'url') {
-                        $baseUrl = $this->yotpoCoreConfig->getBaseUrl();
-                        $data = $data ? $baseUrl.$data : "";
+                        $data = $item->getProductUrl();
                     }
 
                     if (isset($attr['type']) && $attr['type'] === 'image') {
