@@ -1,6 +1,7 @@
 <?php
 namespace Yotpo\Core\Model;
 
+use Magento\Framework\App\ProductMetadataInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\ScopeInterface;
@@ -143,6 +144,11 @@ class Config
     protected $configResource;
 
     /**
+     * @var ProductMetadataInterface
+     */
+    protected $productMetadata;
+
+    /**
      * Config constructor.
      * @param StoreManagerInterface $storeManager
      * @param ScopeConfigInterface $scopeConfig
@@ -157,7 +163,8 @@ class Config
         ModuleListInterface $moduleList,
         EncryptorInterface $encryptor,
         WriterInterface $configWriter,
-        ConfigResource $configResource
+        ConfigResource $configResource,
+        ProductMetadataInterface $productMetadata
     ) {
         $this->storeManager = $storeManager;
         $this->scopeConfig = $scopeConfig;
@@ -165,6 +172,7 @@ class Config
         $this->encryptor = $encryptor;
         $this->configWriter = $configWriter;
         $this->configResource = $configResource;
+        $this->productMetadata = $productMetadata;
     }
 
     /**
@@ -461,5 +469,14 @@ class Config
     public function isSingleStoreMode()
     {
         return $this->storeManager->isSingleStoreMode();
+    }
+
+    /**
+     * get Magento version
+     * @return string
+     */
+    public function getMagentoVersion(): string
+    {
+        return $this->productMetadata->getVersion();
     }
 }

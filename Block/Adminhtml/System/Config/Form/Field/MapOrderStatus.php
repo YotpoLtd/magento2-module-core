@@ -8,6 +8,7 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\View\Element\BlockInterface;
 use Magento\Sales\Model\ResourceModel\Order\Status\CollectionFactory as StatusCollectionFactory;
 use Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\FieldArray\CustomAbstractFieldArrayOrderStatus;
+use Yotpo\Core\Model\Config;
 
 /**
  * Maps Store order status to Yotpo order status
@@ -37,9 +38,10 @@ class MapOrderStatus extends CustomAbstractFieldArrayOrderStatus
      */
     public function __construct(
         Context $context,
-        StatusCollectionFactory $statusCollectionFactory
+        StatusCollectionFactory $statusCollectionFactory,
+        Config $yotpoConfig
     ) {
-        parent::__construct($context);
+        parent::__construct($yotpoConfig, $context);
         $this->statusCollectionFactory = $statusCollectionFactory;
     }
 
