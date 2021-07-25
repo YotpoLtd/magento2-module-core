@@ -110,7 +110,7 @@ class Request
             $token = $this->yotpoToken->createAuthToken();
             $this->config->saveConfig('auth_token', $token);
         }
-        return $token;
+        return $token ?: '';
     }
 
     /**
