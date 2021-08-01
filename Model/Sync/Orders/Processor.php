@@ -16,6 +16,7 @@ use Yotpo\Core\Model\Sync\Orders\Logger as YotpoOrdersLogger;
 use function Safe\date;
 use Yotpo\Core\Model\Api\Sync as YotpoCoreSync;
 use Yotpo\Core\Helper\Data as CoreHelperData;
+use Yotpo\Core\Model\Sync\Catalog\Processor as CatalogProcessor;
 
 /**
  * Class Processor - Process orders sync
@@ -48,6 +49,11 @@ class Processor extends Main
     protected $helperData;
 
     /**
+     * @var CatalogProcessor
+     */
+    protected $catalogProcessor;
+
+    /**
      * Processor constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -57,6 +63,7 @@ class Processor extends Main
      * @param Data $data
      * @param Logger $yotpoOrdersLogger
      * @param CoreHelperData $helperData
+     * @param CatalogProcessor $catalogProcessor
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -66,12 +73,14 @@ class Processor extends Main
         OrderFactory $orderFactory,
         OrdersData $data,
         YotpoOrdersLogger $yotpoOrdersLogger,
-        CoreHelperData $helperData
+        CoreHelperData $helperData,
+        CatalogProcessor $catalogProcessor
     ) {
         $this->yotpoCoreSync = $yotpoCoreSync;
         $this->orderFactory = $orderFactory;
         $this->yotpoOrdersLogger = $yotpoOrdersLogger;
         $this->helperData = $helperData;
+        $this->catalogProcessor = $catalogProcessor;
         parent::__construct($appEmulation, $resourceConnection, $yotpoCoreConfig, $data);
     }
 
@@ -229,7 +238,9 @@ class Processor extends Main
         try {
             $this->updateOrderAttribute($ordersToUpdate, self::SYNCED_TO_YOTPO_ORDER, 0);
             $this->yotpoOrdersLogger->info('Order attribute updated to 0 for order : ' . $magentoOrderId, []);
-
+            if (!$this->config->isRealTimeOrdersSyncActive()) {
+                return;
+            }
             $magentoOrders[$magentoOrderId] = $magentoOrder;
             $yotpoSyncedOrders = $this->getYotpoSyncedOrders($magentoOrders);
 
@@ -307,7 +318,10 @@ class Processor extends Main
             return [];
         }
         $this->yotpoOrdersLogger->info('Orders sync - data prepared', []);
-
+        $productIds = $this->data->getLineItemsIds();
+        if ($productIds) {
+            $this->checkAndSyncProducts($productIds);
+        }
         if ($isYotpoSyncedOrder) {
             $yotpoOrderId = $yotpoSyncedOrders[$orderId]['yotpo_id'];
             $url = $this->config->getEndpoint('orders_update', ['{yotpo_order_id}'], [$yotpoOrderId]);
@@ -336,6 +350,20 @@ class Processor extends Main
     }
 
     /**
+     * Check and sync the products if not already synced
+     *
+     * @param array <mixed> $productIds
+     * @return void
+     */
+    public function checkAndSyncProducts($productIds)
+    {
+        $unSyncedProductIds = $this->data->getUnSyncedProductIds($productIds);
+        if ($unSyncedProductIds) {
+            $this->catalogProcessor->process($unSyncedProductIds);
+        }
+    }
+
+    /**
      * Update custom attribute - synced_to_yotpo_order
      *
      * @param array<int> $orderIds
@@ -357,8 +385,7 @@ class Processor extends Main
      *
      * @param string $currentTime
      * @return void
-     * @throws DatetimeException
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @throws NoSuchEntityException
      */
     public function updateLastSyncDate($currentTime)
     {

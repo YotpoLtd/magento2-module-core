@@ -2,13 +2,14 @@
 
 namespace Yotpo\Core\Model\Sync\Orders;
 
+use Magento\Catalog\Api\Data\ProductInterface;
+use Magento\Catalog\Model\Product;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\GroupedProduct\Model\Product\Type\Grouped as ProductTypeGrouped;
 use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ProductTypeConfigurable;
 use Magento\Bundle\Model\Product\Type as ProductTypeBundle;
-use Magento\GiftCard\Model\Catalog\Product\Type\Giftcard as ProductTypeGiftCard;
 use Magento\Sales\Api\Data\OrderAddressInterface;
 use Magento\Sales\Api\Data\ShipmentInterface;
 use Yotpo\Core\Helper\Data as CoreHelper;
@@ -115,6 +116,11 @@ class Data extends Main
     protected $guestUsersAttributeCollection = [];
 
     /**
+     * @var array<mixed>
+     */
+    protected $lineItemsProductIds = [];
+
+    /**
      * @var ShipmentCollectionFactory
      */
     protected $shipmentCollectionFactory;
@@ -156,6 +162,21 @@ class Data extends Main
      * @var OrderRepository
      */
     protected $orderRepository;
+
+    /**
+     * @var array <mixed>
+     */
+    protected $groupProductsParents = [];
+
+    /**
+     * @var array <mixed>
+     */
+    protected $productOptions = [];
+
+    /**
+     * @var array <mixed>
+     */
+    protected $shipOrderItems = [];
 
     /**
      * Data constructor.
@@ -313,36 +334,21 @@ class Data extends Main
     public function prepareLineItems($order)
     {
         $lineItems = [];
-        $groupProductsParents = [];
-        $ruleId = null;
         try {
             foreach ($order->getAllVisibleItems() as $orderItem) {
                 try {
                     $couponCode = null;
                     $itemRuleIds = explode(',', (string)$orderItem->getAppliedRuleIds());
                     foreach ($itemRuleIds as $itemRuleId) {
-                        $couponCode = isset($this->couponsCollection[$itemRuleId]) ?
-                            $this->couponsCollection[$itemRuleId] : null;
+                        $couponCode = $this->couponsCollection[$itemRuleId] ?? null;
                         if ($couponCode) {
                             break;
                         }
                     }
 
-                    $product = null;
-                    if ($orderItem->getProductType() === ProductTypeGrouped::TYPE_CODE) {
-                        $productOptions = $orderItem->getProductOptions();
-                        $productId = (isset($productOptions['super_product_config']) &&
-                            isset($productOptions['super_product_config']['product_id'])) ?
-                            $productOptions['super_product_config']['product_id'] : null;
-                        if ($productId && isset($groupProductsParents[$productId])) {
-                            $product = $groupProductsParents[$productId];
-                        } elseif ($productId && !isset($groupProductsParents[$productId])) {
-                            $product = $groupProductsParents[$productId] =
-                                $this->productRepository->getById($productId);
-                        }
-                    } else {
-                        $product = $orderItem->getProduct();
-                    }
+                    $product = $this->prepareProductObject($orderItem);
+                    $this->shipOrderItems[$orderItem->getId()] = $orderItem;
+
                     if (!($product && $product->getId())) {
                         $this->yotpoOrdersLogger->info('Orders sync::prepareLineItems()
                         - Product not found for order: ' . $order->getEntityId(), []);
@@ -358,13 +364,14 @@ class Data extends Main
                     if (($orderItem->getProductType() === ProductTypeGrouped::TYPE_CODE
                         || $orderItem->getProductType() === ProductTypeConfigurable::TYPE_CODE
                         || $orderItem->getProductType() === ProductTypeBundle::TYPE_CODE
-                        || $orderItem->getProductType() === ProductTypeGiftCard::TYPE_GIFTCARD)
+                        || $orderItem->getProductType() === 'giftcard')
                         && (isset($lineItems[$product->getId()]))) {
                         $lineItems[$product->getId()]['total_price'] +=
                             $orderItem->getData('row_total_incl_tax') - $orderItem->getData('amount_refunded');
                         $lineItems[$product->getId()]['subtotal_price'] += $orderItem->getRowTotal();
                         $lineItems[$product->getId()]['quantity'] += $orderItem->getQtyOrdered() * 1;
                     } else {
+                        $this->lineItemsProductIds[] = $product->getId();
                         $lineItems[$product->getId()] = [
                             'external_product_id' => $product->getId(),
                             'quantity' => $orderItem->getQtyOrdered() * 1,
@@ -387,6 +394,16 @@ class Data extends Main
     }
 
     /**
+     * Get the product ids
+     *
+     * @return array<mixed>
+     */
+    public function getLineItemsIds()
+    {
+        return $this->lineItemsProductIds;
+    }
+
+    /**
      * Prepare fulfillment data
      *
      * @param Order $order
@@ -401,18 +418,12 @@ class Data extends Main
                     $shipments = $this->shipmentsCollection[$order->getEntityId()];
                     foreach ($shipments as $orderShipment) {
                         $shipmentItems = $orderShipment->getItems();
-                        $items = [];
-                        foreach ($shipmentItems as $shipmentItem) {
-                            $items[] = [
-                                'external_product_id' => $shipmentItem->getProductId(),
-                                'quantity' => $shipmentItem->getQty() * 1
-                            ];
-                        }
+                        $items = $this->prepareFulFillmentItemsArray($shipmentItems);
                         $fulfillment = [
                             'fulfillment_date' => $this->coreHelper->formatDate($orderShipment->getCreatedAt()),
                             'status' => $this->getYotpoOrderStatus($order->getStatus()),
                             'shipment_info' => $this->getShipment($orderShipment),
-                            'fulfilled_items' => $items
+                            'fulfilled_items' => array_values($items)
                         ];
                         $fulfillment['external_id'] = $orderShipment->getEntityId();
                         $fulfillments[] = $fulfillment;
@@ -712,5 +723,57 @@ class Data extends Main
                 self::YOTPO_STATUS_REFUNDED : ($isPartiallyRefunded ? self::YOTPO_STATUS_PARTIALLY_REFUNDED : null);
         }
         return $yotpoOrderStatus;
+    }
+
+    /**
+     * @param OrderItem $orderItem
+     * @return ProductInterface|Product|mixed|null
+     * @throws NoSuchEntityException
+     */
+    public function prepareProductObject(OrderItem $orderItem)
+    {
+        $product = null;
+        if ($orderItem->getProductType() === ProductTypeGrouped::TYPE_CODE) {
+            $this->productOptions = $orderItem->getProductOptions();
+            $productId = (isset($this->productOptions['super_product_config']) &&
+                isset($this->productOptions['super_product_config']['product_id'])) ?
+                $this->productOptions['super_product_config']['product_id'] : null;
+            if ($productId && isset($this->groupProductsParents[$productId])) {
+                $product = $this->groupProductsParents[$productId];
+            } elseif ($productId && !isset($this->groupProductsParents[$productId])) {
+                $product = $this->groupProductsParents[$productId] =
+                    $this->productRepository->getById($productId);
+            }
+        } else {
+            $product = $orderItem->getProduct();
+        }
+        return $product;
+    }
+
+    /**
+     * @param array <mixed> $shipmentItems
+     * @return array <mixed>
+     * @throws NoSuchEntityException
+     */
+    public function prepareFulFillmentItemsArray($shipmentItems = []): array
+    {
+        $items = [];
+        foreach ($shipmentItems as $shipmentItem) {
+            $orderItem = $this->shipOrderItems[$shipmentItem->getOrderItemId()];
+            $product = $this->prepareProductObject($orderItem);
+            if (($orderItem->getProductType() === ProductTypeGrouped::TYPE_CODE
+                    || $orderItem->getProductType() === ProductTypeConfigurable::TYPE_CODE
+                    || $orderItem->getProductType() === ProductTypeBundle::TYPE_CODE
+                    || $orderItem->getProductType() === 'giftcard')
+                && (isset($items[$product->getId()]))) {
+                $items[$product->getId()]['quantity'] += $shipmentItem->getQty() * 1;
+            } else {
+                $items[$product->getId()] = [
+                    'external_product_id' => $product->getId(),
+                    'quantity' => $shipmentItem->getQty() * 1
+                ];
+            }
+        }
+        return $items;
     }
 }

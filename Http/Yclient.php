@@ -126,7 +126,7 @@ class Yclient
         $responseBody = $response->getBody();
         $responseReason = $response->getReasonPhrase();
         $responseContent = $responseBody->getContents();
-        $this->yotpoApiLogger->info($responseContent, ['test']);
+        $this->yotpoApiLogger->info($responseContent, []);
         $responseBody->rewind();
         $responseObject = new \Magento\Framework\DataObject();
         $responseObject->setData('status', $status);

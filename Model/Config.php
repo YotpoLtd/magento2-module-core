@@ -1,6 +1,7 @@
 <?php
 namespace Yotpo\Core\Model;
 
+use Magento\Eav\Model\Entity;
 use Magento\Framework\App\ProductMetadataInterface;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -24,7 +25,6 @@ class Config
     const CATEGORY_SYNC_ATTR_CODE = 'synced_to_yotpo_collection';
 
     const MODULE_NAME = 'Yotpo_Core';
-    const PRODUCT_SYNC_LIMIT = 10;
 
     /**
      * API method types
@@ -76,29 +76,36 @@ class Config
         'secret' => ['path' => 'yotpo/settings/secret','encrypted' => true],
         'auth_token' => ['path' => 'yotpo_core/settings/auth_token','encrypted' => true, 'read_from_db' => true],
         'debug_mode_active' => ['path' => 'yotpo_core/settings/debug_mode_active'],
-        'product_api_start' => ['path' => 'yotpo_core/settings_catalog/product_api_start'],
-        'product_api_end' => ['path' => 'yotpo_core/settings_catalog/product_api_end'],
-        'product_sync_limit' => ['path' => 'yotpo_core/settings_catalog/product_sync_limit'],
+        'product_api_start' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/product_api_start'],
+        'product_api_end' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/product_api_end'],
+        'product_sync_limit' => ['path' => 'yotpo_core/sync_settings/catalog_sync/product_sync_limit'],
         'yotpo_active' => ['path' => 'yotpo/settings/active'],
-        'attr_mpn' => ['path' => 'yotpo_core/settings_catalog/attr_mpn'],
-        'attr_brand' => ['path' => 'yotpo_core/settings_catalog/attr_brand'],
-        'attr_blocklist' => ['path' => 'yotpo_core/settings_catalog/attr_blocklist'],
-        'attr_crf' => ['path' => 'yotpo_core/settings_catalog/attr_crf'],
-        'attr_product_group' => ['path' => 'yotpo_core/settings_catalog/attr_product_group'],
-        'attr_ean' => ['path' => 'yotpo_core/settings_catalog/gtins/attr_ean'],
-        'attr_upc' => ['path' => 'yotpo_core/settings_catalog/gtins/attr_upc'],
-        'attr_isbm' => ['path' => 'yotpo_core/settings_catalog/gtins/attr_isbm'],
+        'attr_mpn' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/attr_mpn'],
+        'attr_brand' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/attr_brand'],
+        'attr_blocklist' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/attr_blocklist'],
+        'attr_crf' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/attr_crf'],
+        'attr_product_group' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/attr_product_group'],
+        'attr_ean' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/attr_ean'],
+        'attr_upc' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/attr_upc'],
+        'attr_isbn' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/attr_isbn'],
         'catalog_last_sync_time' => ['path' => 'yotpo_core/sync_settings/catalog_sync/last_sync_time'],
         'catalog_sync_frequency' => ['path' => 'yotpo_core/sync_settings/catalog_sync/frequency'],
         'catalog_sync_enable' => ['path' => 'yotpo_core/sync_settings/catalog_sync/enable'],
         'sync_limit_collections' => ['path' => 'yotpo_core/sync_settings/catalog_sync/sync_limit_collections'],
         'orders_sync_active' => ['path' => 'yotpo_core/sync_settings/orders_sync/enable'],
+        'orders_realtime_sync_active' => ['path' => 'yotpo_core/sync_settings/orders_sync/enable_real_time_sync'],
         'orders_sync_limit' => ['path' => 'yotpo_core/sync_settings/orders_sync/orders_sync_limit'],
         'orders_last_sync_time' => ['path' => 'yotpo_core/sync_settings/orders_sync/last_sync_time'],
         'orders_sync_time_limit' => ['path' => 'yotpo_core/sync_settings/orders_sync/sync_orders_since'],
         'orders_total_synced' => ['path' => 'yotpo_core/sync_settings/orders_sync/total_orders_synced'],
-        'orders_mapped_status' => ['path' => 'yotpo_core/settings_order/map_order_status'],
-        'orders_shipment_status' => ['path' => 'yotpo_core/settings_order/map_shipment_status'],
+        'orders_mapped_status' =>
+            [
+                'path' => 'yotpo_core/sync_settings/orders_sync/order_status/map_order_status'
+            ],
+        'orders_shipment_status' =>
+            ['path' =>
+                'yotpo_core/sync_settings/orders_sync/shipment_status/map_shipment_status'
+            ],
     ];
 
     /**
@@ -149,6 +156,11 @@ class Config
     protected $productMetadata;
 
     /**
+     * @var Entity
+     */
+    protected $entity;
+
+    /**
      * Config constructor.
      * @param StoreManagerInterface $storeManager
      * @param ScopeConfigInterface $scopeConfig
@@ -164,7 +176,8 @@ class Config
         EncryptorInterface $encryptor,
         WriterInterface $configWriter,
         ConfigResource $configResource,
-        ProductMetadataInterface $productMetadata
+        ProductMetadataInterface $productMetadata,
+        Entity $entity
     ) {
         $this->storeManager = $storeManager;
         $this->scopeConfig = $scopeConfig;
@@ -173,6 +186,7 @@ class Config
         $this->configWriter = $configWriter;
         $this->configResource = $configResource;
         $this->productMetadata = $productMetadata;
+        $this->entity = $entity;
     }
 
     /**
@@ -462,6 +476,19 @@ class Config
     }
 
     /**
+     * Check if Yotpo is enabled and if realtime order sync is active.
+     *
+     * @param int|null $storeId
+     * @return bool
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function isRealTimeOrdersSyncActive($storeId = null)
+    {
+        return $this->isEnabled($storeId) && $this->getConfig('orders_realtime_sync_active', $storeId);
+    }
+
+    /**
      * Check if system is run in the single store mode
      *
      * @return bool
@@ -478,5 +505,13 @@ class Config
     public function getMagentoVersion(): string
     {
         return $this->productMetadata->getVersion();
+    }
+
+    /**
+     * @return string|null
+     */
+    public function getEavRowIdFieldName(): ?string
+    {
+        return $this->entity->setType('catalog_product')->getLinkField();
     }
 }

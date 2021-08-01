@@ -60,16 +60,16 @@ class SaveAfter implements ObserverInterface
         $category = $observer->getEvent()->getData('category');
 
         if (!($storeId = $this->config->getStoreId())) {
-            $websiteId = $this->config->getDefaultWebsiteId();
-            $storeId = $this->config->getDefaultStoreId($websiteId);
+            $storeIds = $this->config->getAllStoreIds();
+        } else {
+            $storeIds = [$storeId];
         }
 
         $cond = [
-            'row_id = ?' => $category->getData('row_id'),
-            'store_id = ? ' => $storeId,
+            $this->config->getEavRowIdFieldName() . ' = ?' => $category->getData('row_id') ?: $category->getId(),
+            'store_id IN (?)' => $storeIds,
             'attribute_id = ? ' => $this->main->getAttributeId(Config::CATEGORY_SYNC_ATTR_CODE)
         ];
-
         $connection->update(
             $connection->getTableName('catalog_category_entity_int'),
             ['value' => 0],

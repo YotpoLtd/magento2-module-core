@@ -135,9 +135,9 @@ class Data extends Main
                 'attr_code' => 'attr_upc',
                 'method' => 'getDataFromConfig'
             ]/*,
-            'ISBM' => [
+            'ISBN' => [
                 'default' => 0,
-                'attr_code' => 'attr_isbm',
+                'attr_code' => 'attr_isbn',
                 'method' => 'getDataFromConfig'
             ]*/
         ],
@@ -180,6 +180,7 @@ class Data extends Main
         $this->resourceConfigurable = $resourceConfigurable;
         $this->productRepository = $productRepository;
         $this->collectionFactory = $collectionFactory;
+        $this->mappingAttributes['row_id']['attr_code'] = $this->yotpoCoreConfig->getEavRowIdFieldName();
         parent::__construct($resourceConnection);
     }
 

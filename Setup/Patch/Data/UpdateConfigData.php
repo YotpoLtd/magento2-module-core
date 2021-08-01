@@ -14,7 +14,7 @@ use Magento\Framework\App\ResourceConnection;
 class UpdateConfigData implements DataPatchInterface
 {
     const XML_PATH_CUSTOM_ORDER_STATUS  = 'yotpo/settings/custom_order_status';
-    const XML_PATH_MAP_ORDER_STATUS     = 'yotpo_core/settings_order/map_order_status';
+    const XML_PATH_MAP_ORDER_STATUS     = 'yotpo_core/sync_settings/orders_sync/order_status/map_order_status';
     const ORDER_STATUS_SUCCESS          = 'success';
 
     /**
