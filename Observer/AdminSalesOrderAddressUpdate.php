@@ -4,6 +4,11 @@ namespace Yotpo\Core\Observer;
 
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;
+use Magento\Framework\Exception\InputException;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Sales\Model\Order;
+use Safe\Exceptions\DatetimeException;
 use Yotpo\Core\Model\Sync\Orders\Processor as OrdersProcessor;
 use Yotpo\Core\Model\Config;
 use Magento\Sales\Model\OrderRepository;
@@ -44,12 +49,17 @@ class AdminSalesOrderAddressUpdate implements ObserverInterface
         $this->ordersProcessor = $ordersProcessor;
         $this->yotpoConfig = $yotpoConfig;
     }
+
     /**
      * @param Observer $observer
+     * @throws InputException
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     * @throws DatetimeException
      */
     public function execute(Observer $observer)
     {
-        /** @var  \Magento\Sales\Model\Order $order */
+        /** @var  Order $order */
         $order = $this->orderRepository->get($observer->getOrderId());
         if ($this->yotpoConfig->isOrdersSyncActive($order->getStoreId())) {
             $this->ordersProcessor->processOrder($order);

@@ -43,25 +43,33 @@ class SaveAfter implements ObserverInterface
     protected $storeRepository;
 
     /**
+     * @var Config
+     */
+    protected $config;
+
+    /**
      * SaveAfter constructor.
      * @param StoreManagerInterface $storeManager
      * @param ResourceConnection $resourceConnection
      * @param Main $main
      * @param CatalogSession $catalogSession
      * @param StoreRepositoryInterface $storeRepository
+     * @param Config $config
      */
     public function __construct(
         StoreManagerInterface $storeManager,
         ResourceConnection $resourceConnection,
         Main $main,
         CatalogSession $catalogSession,
-        StoreRepositoryInterface $storeRepository
+        StoreRepositoryInterface $storeRepository,
+        Config $config
     ) {
         $this->storeManager = $storeManager;
         $this->resourceConnection = $resourceConnection;
         $this->main = $main;
         $this->catalogSession = $catalogSession;
         $this->storeRepository = $storeRepository;
+        $this->config = $config;
     }
 
     /**
@@ -84,7 +92,7 @@ class SaveAfter implements ObserverInterface
         }
         $storeIdsToUpdate  = $currentStoreId == 0 ? $storeIds : [$product->getStoreId()];
         if ($product->hasDataChanges()) {
-            $this->updateProductAttribute([$product->getRowId()], $storeIdsToUpdate);
+            $this->updateProductAttribute([$product->getRowId() ?: $product->getId()], $storeIdsToUpdate);
             $this->updateIsDeleted($product);
         }
 
@@ -104,7 +112,7 @@ class SaveAfter implements ObserverInterface
     {
         $connection = $this->resourceConnection->getConnection();
         $cond   =   [
-            'row_id IN (?) ' => $productIds,
+            $this->config->getEavRowIdFieldName() . ' IN (?) ' => $productIds,
             'attribute_id = ?' => $this->main->getAttributeId(Config::CATALOG_SYNC_ATTR_CODE)
         ];
         $storeIds = array_filter($storeIds);
@@ -136,7 +144,7 @@ class SaveAfter implements ObserverInterface
                 'is_deleted' => 1,
                 'is_deleted_at_yotpo' => 0
             ];
-            $this->updateYotpoSyncTable($tableData, $storeIds, $product->getEntityId());
+            $this->updateYotpoSyncTable($tableData, $storeIds, $product->getId());
         }
 
         $newWebsite = $this->findDifferentArray($newIds, $existingIds);
@@ -146,10 +154,10 @@ class SaveAfter implements ObserverInterface
             $tableData = [
                 'is_deleted' => 0
             ];
-            $this->updateYotpoSyncTable($tableData, $storeIds, $product->getEntityId());
+            $this->updateYotpoSyncTable($tableData, $storeIds, $product->getId());
 
             //If it is already deleted, should re-sync this product
-            $this->updateProductAttribute([$product->getRowId()], $storeIds);
+            $this->updateProductAttribute([$product->getRowId() ?: $product->getId()], $storeIds);
         }
     }
 

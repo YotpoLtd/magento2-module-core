@@ -49,18 +49,11 @@ class DeleteAfter implements ObserverInterface
 
         /** @var Category $category */
         $category = $observer->getEvent()->getData('category');
-
-        if (!($storeId = $category->getData('store_id'))) {
-            $websiteId = $this->config->getDefaultWebsiteId();
-            $storeId = $this->config->getDefaultStoreId($websiteId);
-        }
-
         $connection->update(
             $connection->getTableName('yotpo_category_sync'),
             ['is_deleted' => 1, 'is_deleted_at_yotpo' => 0],
             [
-                'category_id = ?' => $category->getData('entity_id'),
-                'store_id = ? ' => $storeId
+                'category_id = ?' => $category->getData('entity_id')
             ]
         );
     }

@@ -29,6 +29,16 @@ class SaveImportAfter implements ObserverInterface
     protected $main;
 
     /**
+     * @var string|null
+     */
+    protected $entityIdFieldValue;
+
+    /**
+     * @var YotpoCoreConfig
+     */
+    protected $config;
+
+    /**
      * SaveImportAfter constructor.
      * @param ResourceConnection $resourceConnection
      * @param ProductCollectionFactory $productCollectionFactory
@@ -37,11 +47,14 @@ class SaveImportAfter implements ObserverInterface
     public function __construct(
         ResourceConnection $resourceConnection,
         ProductCollectionFactory $productCollectionFactory,
-        Main $main
+        Main $main,
+        YotpoCoreConfig $config
     ) {
         $this->resourceConnection = $resourceConnection;
         $this->productCollectionFactory = $productCollectionFactory;
         $this->main = $main;
+        $this->config = $config;
+        $this->entityIdFieldValue = $this->config->getEavRowIdFieldName();
     }
 
     /**
@@ -61,9 +74,12 @@ class SaveImportAfter implements ObserverInterface
         $sku = array_unique(array_filter($sku));
         if ($sku) {
             $collection = $this->productCollectionFactory->create();
-            $collection->addFieldToSelect('row_id');
             $collection->addFieldToFilter('sku', ['in' => $sku]);
-            $productIds = $collection->getColumnValues('row_id');
+            $productIds = [];
+            if ($this->entityIdFieldValue) {
+                $collection->addFieldToSelect($this->entityIdFieldValue);
+                $productIds = $collection->getColumnValues($this->entityIdFieldValue);
+            }
         }
         if ($productIds) {
             $this->updateProductAttribute($productIds);
@@ -79,7 +95,7 @@ class SaveImportAfter implements ObserverInterface
     {
         $connection = $this->resourceConnection->getConnection();
         $condition   =   [
-            'row_id IN (?) ' => $productIds,
+            $this->entityIdFieldValue . ' IN (?) ' => $productIds,
             'attribute_id = ?' => $this->main->getAttributeId(YotpoCoreConfig::CATALOG_SYNC_ATTR_CODE)
         ];
         $connection->update(

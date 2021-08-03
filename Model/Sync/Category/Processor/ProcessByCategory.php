@@ -27,6 +27,11 @@ class ProcessByCategory extends Main
     protected $categoryHelper;
 
     /**
+     * @var string|null
+     */
+    protected $entityIdFieldValue;
+
+    /**
      * ProcessByCategory constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -57,6 +62,7 @@ class ProcessByCategory extends Main
             $categoryCollectionFactory,
             $yotpoCoreCatalogLogger
         );
+        $this->entityIdFieldValue = $this->config->getEavRowIdFieldName();
     }
 
     /**
@@ -66,13 +72,13 @@ class ProcessByCategory extends Main
      */
     public function process()
     {
+
         try {
             foreach ((array)$this->config->getAllStoreIds(false) as $storeId) {
                 $this->emulateFrontendArea($storeId);
                 if (!$this->config->isCatalogSyncActive()) {
                     continue;
                 }
-
                 $this->yotpoCoreCatalogLogger->info(
                     sprintf('Category Sync - Start - Store ID: %s', $storeId)
                 );
@@ -112,7 +118,8 @@ class ProcessByCategory extends Main
         $collection->addNameToResult();
         $collection->getSelect()->joinLeft(
             ['at' => $this->resourceConnection->getTableName('catalog_category_entity_int')],
-            'e.row_id = at.row_id AND at.attribute_id = ' . $attributeId .
+            'e.' . $this->entityIdFieldValue. ' = at.' . $this->entityIdFieldValue .
+            ' AND at.attribute_id = ' . $attributeId .
             ' AND at.store_id=\''.$this->config->getStoreId().'\'',
             null
         );
@@ -183,7 +190,7 @@ class ProcessByCategory extends Main
                 $yotpoTableData['category_id']      =   $magentoCategory->getId();
                 $yotpoTableData['synced_to_yotpo']  =   $currentTime;
                 $yotpoTableFinalData[]              =   $yotpoTableData;
-                $categoriesToUpdate[]               =   $magentoCategory->getRowId();
+                $categoriesToUpdate[]               =   $magentoCategory->getRowId() ?: $magentoCategory->getId();
                 $this->yotpoCoreCatalogLogger->info(
                     sprintf('Category Sync - sync success - Category ID: %s', $magentoCategory->getId())
                 );
@@ -199,7 +206,8 @@ class ProcessByCategory extends Main
                 'synced_to_yotpo'   =>  $currentTime
             ];
             $yotpoTableFinalData[]  =   $data;
-            $categoriesToUpdate[]   =   $magentoCategories[$mageCatId]->getRowId();
+            $categoriesToUpdate[]   =   $magentoCategories[$mageCatId]->getRowId()
+                ?: $magentoCategories[$mageCatId]->getId();
         }
         $this->deleteCollections();
         if ($yotpoTableFinalData) {
@@ -337,7 +345,7 @@ class ProcessByCategory extends Main
             $data   =   [
                 'attribute_id'  =>  $this->data->getAttributeId('synced_to_yotpo_collection'),
                 'store_id'      =>  $this->config->getStoreid(),
-                'row_id'        => $categoryRowId,
+                $this->entityIdFieldValue => $categoryRowId,
                 'value'         =>  1
             ];
             $dataToInsertOrUpdate[] =   $data;

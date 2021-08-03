@@ -71,6 +71,11 @@ class Processor extends AbstractJobs
     protected $catgorySyncProcessor;
 
     /**
+     * @var string|null
+     */
+    protected $entityIdFieldValue;
+
+    /**
      * Processor constructor.
      * @param AppEmulation $appEmulation
      * @param CoreConfig $coreConfig
@@ -104,18 +109,19 @@ class Processor extends AbstractJobs
         $this->yotpoResource = $yotpoResource;
         $this->yotpoCatalogLogger = $yotpoCatalogLogger;
         $this->catgorySyncProcessor = $catgorySyncProcessor;
+        $this->entityIdFieldValue = $this->coreConfig->getEavRowIdFieldName();
     }
 
     /**
      * Logic part to process the Catalog Api
+     * @param array<mixed> $unSyncedProductIds
      * @return void
      */
-    public function process()
+    public function process($unSyncedProductIds = null)
     {
         try {
             $attributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
-            $this->productSyncLimit = $this->coreConfig->getConfig('product_sync_limit')
-                ?: CoreConfig::PRODUCT_SYNC_LIMIT;
+            $this->productSyncLimit = $this->coreConfig->getConfig('product_sync_limit');
 
             $allStores = (array)$this->coreConfig->getAllStoreIds(false);
             foreach ($allStores as $storeId) {
@@ -138,7 +144,7 @@ class Processor extends AbstractJobs
                     );
                     $this->processDeleteData();
                     $this->processUnAssignData();
-                    $collection = $this->getCollectionForSync();
+                    $collection = $this->getCollectionForSync($unSyncedProductIds);
                     if ($collection->getSize()) {
                         $items = $this->manageSyncItems($collection);
                         $parentIds = $items['parent_ids'];
@@ -148,8 +154,7 @@ class Processor extends AbstractJobs
                         $sqlData = $sqlDataIntTable = [];
                         $externalIds = [];
                         foreach ($items['sync_data'] as $itemId => $itemData) {
-                            //Took row_id for update catalog_product_entity_int table
-                            $row_id = $itemData['row_id'];
+                            $rowId = $itemData['row_id'];
                             unset($itemData['row_id']);
 
                             $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData);
@@ -172,7 +177,7 @@ class Processor extends AbstractJobs
                                 'attribute_id' => $attributeId,
                                 'store_id' => $storeId,
                                 'value' => 1,
-                                'row_id' => $row_id
+                                $this->entityIdFieldValue => $rowId
                             ];
 
                             $returnResponse = $this->processResponse(
@@ -477,9 +482,10 @@ class Processor extends AbstractJobs
 
     /**
      * Prepare collection query to fetch data
+     * @param array<mixed> $unSyncedProductIds
      * @return Collection<mixed>
      */
-    protected function getCollectionForSync(): Collection
+    protected function getCollectionForSync($unSyncedProductIds = null): Collection
     {
         $collection = $this->collectionFactory->create();
         $collection->addAttributeToSelect('*');
@@ -489,6 +495,9 @@ class Processor extends AbstractJobs
                 ['attribute' => CoreConfig::CATALOG_SYNC_ATTR_CODE, 'eq' => '0'],
             ]
         );
+        if ($unSyncedProductIds) {
+            $collection->addFieldToFilter('entity_id', ['in' => $unSyncedProductIds]);
+        }
         $collection->addUrlRewrite();
         $collection->addStoreFilter();
         $collection->getSelect()->order('type_id');

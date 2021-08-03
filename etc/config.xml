@@ -1,5 +1,6 @@
 <?xml version="1.0"?>
-<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
     <default>
         <yotpo_core>
             <env>
@@ -10,48 +11,45 @@
                 <yotpo_api_url_access_tokens>access_tokens</yotpo_api_url_access_tokens>
             </env>
             <settings>
-                <custom_order_status>complete</custom_order_status>
+                <debug_mode_active>1</debug_mode_active>
             </settings>
-            <settings_order>
-                <map_order_status>
-                    {"_1_1":{"store_order_status":"canceled","yotpo_order_status":"cancelled"},
-                    "_1_2":{"store_order_status":"closed","yotpo_order_status":"success"},
-                    "_1_3":{"store_order_status":"complete","yotpo_order_status":"success"},
-                    "_1_4":{"store_order_status":"fraud","yotpo_order_status":"failure"},
-                    "_1_5":{"store_order_status":"holded","yotpo_order_status":"pending"},
-                    "_1_6":{"store_order_status":"payment_review","yotpo_order_status":"pending"},
-                    "_1_7":{"store_order_status":"paypal_canceled_reversal","yotpo_order_status":"cancelled"},
-                    "_1_8":{"store_order_status":"paypal_reversed","yotpo_order_status":"cancelled"},
-                    "_1_9":{"store_order_status":"pending","yotpo_order_status":"pending"},
-                    "_1_10":{"store_order_status":"pending_payment","yotpo_order_status":"pending"},
-                    "_1_11":{"store_order_status":"pending_paypal","yotpo_order_status":"pending"},
-                    "_1_12":{"store_order_status":"processing","yotpo_order_status":"pending"}}
-                </map_order_status>
-                <map_shipment_status>
-                    {"_1_1":{"yotpo_shipment_status":"label_printed","store_shipment_status":""},
-                    "_1_2":{"yotpo_shipment_status":"label_purchased","store_shipment_status":""},
-                    "_1_3":{"yotpo_shipment_status":"attempted_delivery","store_shipment_status":""},
-                    "_1_4":{"yotpo_shipment_status":"delivered","store_shipment_status":""},
-                    "_1_5":{"yotpo_shipment_status":"out_for_delivery","store_shipment_status":""},
-                    "_1_6":{"yotpo_shipment_status":"in_transit","store_shipment_status":""},
-                    "_1_7":{"yotpo_shipment_status":"failure","store_shipment_status":""},
-                    "_1_8":{"yotpo_shipment_status":"ready_for_pickup","store_shipment_status":""},
-                    "_1_9":{"yotpo_shipment_status":"confirmed","store_shipment_status":""}}
-                </map_shipment_status>
-            </settings_order>
             <sync_settings>
                 <orders_sync>
                     <enable>1</enable>
+                    <enable_real_time_sync>0</enable_real_time_sync>
                     <orders_sync_limit>100</orders_sync_limit>
+                    <frequency>*/2 * * * *</frequency>
+                    <order_status>
+                        <map_order_status>
+                            {"_1_1":{"store_order_status":"canceled","yotpo_order_status":"cancelled"},
+                            "_1_2":{"store_order_status":"closed","yotpo_order_status":"success"},
+                            "_1_3":{"store_order_status":"complete","yotpo_order_status":"success"},
+                            "_1_4":{"store_order_status":"fraud","yotpo_order_status":"failure"},
+                            "_1_5":{"store_order_status":"holded","yotpo_order_status":"pending"},
+                            "_1_6":{"store_order_status":"payment_review","yotpo_order_status":"pending"},
+                            "_1_7":{"store_order_status":"paypal_canceled_reversal","yotpo_order_status":"cancelled"},
+                            "_1_8":{"store_order_status":"paypal_reversed","yotpo_order_status":"cancelled"},
+                            "_1_9":{"store_order_status":"pending","yotpo_order_status":"pending"},
+                            "_1_10":{"store_order_status":"pending_payment","yotpo_order_status":"pending"},
+                            "_1_11":{"store_order_status":"pending_paypal","yotpo_order_status":"pending"},
+                            "_1_12":{"store_order_status":"processing","yotpo_order_status":"pending"}}
+                        </map_order_status>
+                    </order_status>
+                    <shipment_status>
+                        <map_shipment_status>
+                            <item1>
+                                <yotpo_shipment_status>out_for_delivery</yotpo_shipment_status>
+                                <store_shipment_status></store_shipment_status>
+                            </item1>
+                        </map_shipment_status>
+                    </shipment_status>
                 </orders_sync>
                 <catalog_sync>
-                    <frequency>0 1 * * *</frequency>
+                    <frequency>*/2 * * * *</frequency>
                     <sync_limit_collections>10</sync_limit_collections>
+                    <product_sync_limit>100</product_sync_limit>
                 </catalog_sync>
             </sync_settings>
-            <settings_catalog>
-                <product_sync_limit>100</product_sync_limit>
-            </settings_catalog>
         </yotpo_core>
         <csp>
             <mode>

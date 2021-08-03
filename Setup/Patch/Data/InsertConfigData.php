@@ -32,12 +32,11 @@ class InsertConfigData implements DataPatchInterface
     public function apply()
     {
         $this->moduleDataSetup->startSetup();
-        $setup = $this->moduleDataSetup;
 
         $data[] = [
             'scope' => 'default',
             'scope_id' => 0,
-            'path' => 'yotpo_core/settings_order/map_shipment_status',
+            'path' => 'yotpo_core/sync_settings/orders_sync/shipment_status/map_shipment_status',
             'value' => '{
             "_1_1":{"yotpo_shipment_status":"label_printed","store_shipment_status":""},
             "_1_2":{"yotpo_shipment_status":"label_purchased","store_shipment_status":""},

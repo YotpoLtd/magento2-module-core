@@ -5,15 +5,31 @@ namespace Yotpo\Core\Block\Adminhtml\System\Config\Form\Field;
 use Magento\Framework\View\Element\Html\Select;
 
 /**
- * Class for the column 'Yotpo Order Status'
+ * Class YotpoShipmentStatus
+ * Prepare the Yotpo Shipment Status and display in column
  */
-class YotpoOrderStatusColumn extends Select
+class YotpoShipmentStatus extends Select
 {
+    /**
+     * @var array<int, string>
+     */
+    protected $status = [
+        'out_for_delivery',
+        'label_printed',
+        'label_purchased',
+        'attempted_delivery',
+        'delivered',
+        'in_transit',
+        'failure',
+        'ready_for_pickup',
+        'confirmed'
+    ];
+
     /**
      * Set "name" for <select> element
      *
-     * @param string    $value
-     * @return mixed
+     * @param string $value
+     * @return YotpoShipmentStatus $this
      */
     public function setInputName($value)
     {
@@ -49,19 +65,19 @@ class YotpoOrderStatusColumn extends Select
     }
 
     /**
-     * Gets the options
-     *
-     * @return array<mixed>
+     * @return array<int, array<string, string>>
      */
     private function getSourceOptions(): array
     {
-        return [
-            ['label' => 'Pending', 'value' => 'pending'],
-            ['label' => 'Open', 'value' => 'open'],
-            ['label' => 'Success', 'value' => 'success'],
-            ['label' => 'Canceled', 'value' => 'cancelled'],
-            ['label' => 'Error', 'value' => 'error'],
-            ['label' => 'Failure', 'value' => 'failure']
-        ];
+        $status_data = [];
+
+        foreach ($this->status as $item) {
+            $status_data[] = [
+                'label' => $item,
+                'value' => $item
+            ];
+        }
+
+        return $status_data;
     }
 }

@@ -2,70 +2,75 @@
 
 namespace Yotpo\Core\Block\Adminhtml\System\Config\Form\Field;
 
-use Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\FieldArray\CustomAbstractFieldArray;
+use Magento\Config\Block\System\Config\Form\Field\FieldArray\AbstractFieldArray;
+use Magento\Framework\DataObject;
+use Magento\Framework\Exception\LocalizedException;
 
 /**
+ * Class MapShipmentStatus
  * Maps Yotpo shipment status to Store shipment status
  */
-class MapShipmentStatus extends CustomAbstractFieldArray
+class MapShipmentStatus extends AbstractFieldArray
 {
     /**
-     * Prepare rendering the new field by adding all the needed columns
+     * @var YotpoShipmentStatus
+     */
+    protected $shipmentStatus;
+
+    /**
+     * Prepare the dynamic columns
+     *
+     * @throws LocalizedException
      */
     protected function _prepareToRender()
     {
         $this->addColumn('yotpo_shipment_status', [
             'label' => __('Yotpo Shipment Status'),
             'class' => 'required-entry',
-            'style' => 'background:transparent;border:none;opacity:1'
+            'renderer' => $this->getShipmentStatus()
         ]);
         $this->addColumn('store_shipment_status', [
             'label' => __('Store Shipment Status')
         ]);
 
         $this->_addAfter = false;
+        $this->_addButtonLabel = __('Add');
     }
 
     /**
-     * Render array cell for prototypeJS template
+     * Prepare existing row data object
      *
-     * @param string $columnName
-     * @return string
-     * @throws \Exception
+     * @param DataObject $row
+     * @throws LocalizedException
      */
-    public function renderCellTemplate($columnName)
+    protected function _prepareArrayRow(DataObject $row): void
     {
-        if (empty($this->_columns[$columnName])) {
-            // phpcs:ignore
-            throw new \Exception('Wrong column name specified.');
+        $yotpoStatus = $row->getData('yotpo_shipment_status');
+        $options = [];
+        if ($yotpoStatus) {
+            $name = 'option_'.$this->getShipmentStatus()->calcOptionHash($yotpoStatus);
+            $options[$name] = 'selected="selected"';
         }
-        $column = $this->_columns[$columnName];
-        $inputName = $this->_getCellInputElementName($columnName);
+        $row->setData('option_extra_attrs', $options);
+    }
 
-        if ($column['renderer']) {
-            return parent::renderCellTemplate($columnName);
+    /**
+     * Prepare the column with dynamic data
+     *
+     * @return YotpoShipmentStatus
+     * @throws LocalizedException
+     */
+    protected function getShipmentStatus()
+    {
+        if (!$this->shipmentStatus instanceof YotpoShipmentStatus) {
+            /** @phpstan-ignore-next-line */
+            $this->shipmentStatus = $this->getLayout()->createBlock(
+                YotpoShipmentStatus::class,
+                '',
+                ['data' => ['is_render_to_js_template' => true]]
+            );
         }
 
-        $readonly = '';
-        if ('yotpo_shipment_status' == $columnName) {
-            $readonly = 'readonly';
-        }
-        return '<input ' . $readonly .' type="text" id="' . $this->_getCellInputElementId(
-            '<%- _id %>',
-            $columnName
-        ) .
-            '"' .
-            ' name="' .
-            $inputName .
-            '" value="<%- ' .
-            $columnName .
-            ' %>" ' .
-            ($column['size'] ? 'size="' .
-                $column['size'] .
-                '"' : '') .
-            ' class="' .
-            (isset($column['class'])
-                ? $column['class']
-                : 'input-text') . '"' . (isset($column['style']) ? ' style="' . $column['style'] . '"' : '') . '/>';
+        return $this->shipmentStatus;
     }
 }

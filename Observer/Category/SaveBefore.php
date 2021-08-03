@@ -29,6 +29,11 @@ class SaveBefore implements ObserverInterface
     protected $request;
 
     /**
+     * @var Config
+     */
+    protected $config;
+
+    /**
      * SaveBefore constructor.
      * @param ResourceConnection $resourceConnection
      * @param Main $main
@@ -37,11 +42,13 @@ class SaveBefore implements ObserverInterface
     public function __construct(
         ResourceConnection $resourceConnection,
         Main $main,
-        RequestInterface $request
+        RequestInterface $request,
+        Config $config
     ) {
         $this->resourceConnection = $resourceConnection;
         $this->main = $main;
         $this->request = $request;
+        $this->config = $config;
     }
 
     /**
@@ -82,7 +89,7 @@ class SaveBefore implements ObserverInterface
 
         if ($diffProducts) {
             $cond = [
-                'row_id IN (?)' => $diffProducts,
+                $this->config->getEavRowIdFieldName() . ' IN (?)' => $diffProducts,
                 'attribute_id = ? ' => $this->main->getAttributeId(Config::CATALOG_SYNC_ATTR_CODE)
             ];
 
