@@ -3,7 +3,6 @@ namespace Yotpo\Core\Setup\Patch\Data;
 
 use Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface;
 use Magento\Eav\Setup\EavSetupFactory;
-use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
 use Magento\Framework\Setup\Patch\PatchVersionInterface;
@@ -41,8 +40,6 @@ class CreateProductAttribute implements DataPatchInterface, PatchVersionInterfac
      * Create product attribute to manage sync status
      *
      * @return void|CreateProductAttribute
-     * @throws LocalizedException
-     * @throws \Zend_Validate_Exception
      * @SuppressWarnings(PHPMD.ExcessiveMethodLength)
      */
     public function apply()

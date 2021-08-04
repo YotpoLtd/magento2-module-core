@@ -110,13 +110,12 @@ class UpdateConfigData implements DataPatchInterface
     public function prepareNewData($scope, $scopeId, $existingData)
     {
         $serializedData = $this->prepareSerializedData($existingData);
-        $data = [
+        return [
             'scope' => $scope,
             'scope_id' => $scopeId,
             'path' => self::XML_PATH_MAP_ORDER_STATUS,
             'value' => $serializedData
         ];
-        return $data;
     }
 
     /**

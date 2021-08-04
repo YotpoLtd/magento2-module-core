@@ -1,4 +1,9 @@
 <?php
+/**
+ * Copyright © Magento, Inc. All rights reserved.
+ * See COPYING.txt for license details.
+ */
+
 /** @var \Magento\Framework\View\Helper\SecureHtmlRenderer $secureRenderer */
 ?>
 
@@ -6,7 +11,7 @@
 $_htmlId = $block->getHtmlId() ? $block->getHtmlId() : '_' . uniqid();
 $_colspan = $block->isAddAfter() ? 2 : 1;
 ?>
-
+<p>If you want to add multiple statuses to a Yotpo status, use a comma to separate the values</p>
 <div class="design_theme_ua_regexp" id="grid<?= $block->escapeHtmlAttr($_htmlId) ?>">
     <div class="admin__control-table-wrapper">
         <table class="admin__control-table" id="<?= $block->escapeHtmlAttr($block->getElement()->getId()) ?>">
@@ -15,8 +20,7 @@ $_colspan = $block->isAddAfter() ? 2 : 1;
                 <?php foreach ($block->getColumns() as $columnName => $column): ?>
                     <th><?= $block->escapeHtml($column['label']) ?></th>
                 <?php endforeach; ?>
-                <th class="col-actions" style="display: none"
-                    colspan="<?= (int)$_colspan ?>"><?= $block->escapeHtml(__('Action')) ?></th>
+                <th class="col-actions" colspan="<?= (int)$_colspan ?>"><?= $block->escapeHtml(__('Action')) ?></th>
             </tr>
             </thead>
             <tfoot>
@@ -24,7 +28,6 @@ $_colspan = $block->isAddAfter() ? 2 : 1;
                 <td colspan="<?= count($block->getColumns())+$_colspan ?>" class="col-actions-add">
                     <button id="addToEndBtn<?= $block->escapeHtmlAttr($_htmlId) ?>"
                             class="action-add"
-                            style="display: none"
                             title="<?= $block->escapeHtmlAttr(__('Add')) ?>"
                             type="button">
                         <span><?= $block->escapeHtml($block->getAddButtonLabel()) ?></span>
@@ -68,7 +71,7 @@ script;
     endif;
     $scriptString .= <<<script
 
-                    + '<td class="col-actions" style="display: none"><button '
+                    + '<td class="col-actions"><button '
                     + 'class="action-delete" type="button">'
                     + '<span>{$block->escapeJs(__('Delete'))}<\/span><\/button><\/td>'
                     + '<\/tr>'
