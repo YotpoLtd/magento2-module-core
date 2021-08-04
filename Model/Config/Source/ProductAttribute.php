@@ -29,19 +29,19 @@ class ProductAttribute implements OptionSourceInterface
      */
     public function toOptionArray(): array
     {
-        $attribute_data = [];
+        $attributeData = [];
         $attributeInfo = $this->collectionFactory->create();
-        $attribute_data[] = [
+        $attributeData[] = [
             'label' => __('Select from product attributes'),
             'value' => ''
         ];
         foreach ($attributeInfo as $item) {
-            $attribute_data[] = [
+            $attributeData[] = [
                 'label' => $item->getData('frontend_label'),
                 'value' => $item->getData('attribute_code')
             ];
         }
 
-        return $attribute_data;
+        return $attributeData;
     }
 }

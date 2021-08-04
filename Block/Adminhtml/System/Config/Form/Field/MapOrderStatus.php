@@ -35,6 +35,7 @@ class MapOrderStatus extends CustomAbstractFieldArrayOrderStatus
      * MapOrderStatus constructor.
      * @param Context $context
      * @param StatusCollectionFactory $statusCollectionFactory
+     * @param Config $yotpoConfig
      */
     public function __construct(
         Context $context,

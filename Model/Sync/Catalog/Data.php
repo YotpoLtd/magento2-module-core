@@ -134,12 +134,12 @@ class Data extends Main
                 'default' => 0,
                 'attr_code' => 'attr_upc',
                 'method' => 'getDataFromConfig'
-            ]/*,
+            ],
             'ISBN' => [
                 'default' => 0,
                 'attr_code' => 'attr_isbn',
                 'method' => 'getDataFromConfig'
-            ]*/
+            ]
         ],
         'custom_properties' => [
             'is_blocklisted' => [
@@ -325,8 +325,8 @@ class Data extends Main
     {
         $itemArray = [];
         $mapAttributes = $this->mappingAttributes;
-        foreach ($mapAttributes as $key => $attr) {
 
+        foreach ($mapAttributes as $key => $attr) {
             if ($key === 'gtins') {
                 $value = $this->prepareGtinsData($attr, $item);
             } elseif ($key === 'custom_properties') {
@@ -353,7 +353,7 @@ class Data extends Main
 
                     $method = $attr['method'];
                     $itemValue = $this->$method($item, $configKey);
-                    $value = $itemValue ?: ($method == 'getProductPrice' ? 0.00 : null);
+                    $value = $itemValue ?: ($method == 'getProductPrice' ? 0.00 : '');
                 } else {
                     $value = '';
                 }
@@ -365,7 +365,6 @@ class Data extends Main
 
             $itemArray[$key] = $value;
         }
-
         return $itemArray;
     }
 
@@ -429,8 +428,7 @@ class Data extends Main
                 $value = $item->getData($configValue) ?: '';
             }
         }
-
-        return $value ?: null;
+        return $value ?: '';
     }
 
     /**
@@ -479,14 +477,11 @@ class Data extends Main
             $itemValue = $this->$method($item, $configKey);
 
             if ($key === 'is_blocklisted') {
-                if ($itemValue === 1) {
-                    $resultArray[$key] = $itemValue;
-                }
+                $resultArray[$key] = $itemValue === 1 || $itemValue == 'Yes' || $itemValue === true;
             } else {
                 $resultArray[$key] = $itemValue;
             }
         }
-
         return $resultArray;
     }
 
