@@ -34,6 +34,11 @@ class Config
     const METHOD_PATCH = 'PATCH';
 
     /**
+     * @var int[]
+     */
+    protected $successfulResponseCodes = [200,201,204];
+
+    /**
      * @var string[]
      */
     protected $productSyncMethods = [
@@ -404,6 +409,17 @@ class Config
     public function canResync($responseCode = ''): bool
     {
         return (!$responseCode || $responseCode == '409' || $responseCode <=400 || $responseCode >= 500);
+    }
+
+    /**
+     * @param string $responseCode
+     * @return bool
+     */
+    public function canUpdateCustomAttribute($responseCode = ''): bool
+    {
+        return ($responseCode
+                && in_array($responseCode, $this->successfulResponseCodes))
+            || !$this->canResync($responseCode);
     }
 
     /**

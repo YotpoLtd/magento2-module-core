@@ -478,6 +478,8 @@ class Data extends Main
 
             if ($key === 'is_blocklisted') {
                 $resultArray[$key] = $itemValue === 1 || $itemValue == 'Yes' || $itemValue === true;
+            } elseif ($key === 'review_form_tag') {
+                $resultArray[$key] = $itemValue ?: null;
             } else {
                 $resultArray[$key] = $itemValue;
             }

@@ -50,6 +50,7 @@ class Yclient
     /**
      * Do API request with provided params
      *
+     * @param string $baseUrl
      * @param string $uriEndpoint
      * @param array<mixed> $options
      * @param string $requestMethod

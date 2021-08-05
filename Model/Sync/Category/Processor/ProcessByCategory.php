@@ -173,6 +173,8 @@ class ProcessByCategory extends Main
                         )
                     );
                 }
+            } else {
+                $categoriesToUpdate[] = $magentoCategory->getRowId() ?: $magentoCategory->getId();
             }
             if ($this->checkForCollectionExistsError($response)) {
                 $response       =   false;
@@ -190,7 +192,9 @@ class ProcessByCategory extends Main
                 $yotpoTableData['category_id']      =   $magentoCategory->getId();
                 $yotpoTableData['synced_to_yotpo']  =   $currentTime;
                 $yotpoTableFinalData[]              =   $yotpoTableData;
-                $categoriesToUpdate[]               =   $magentoCategory->getRowId() ?: $magentoCategory->getId();
+                if ($this->config->canUpdateCustomAttribute($yotpoTableData['response_code'])) {
+                    $categoriesToUpdate[] = $magentoCategory->getRowId() ?: $magentoCategory->getId();
+                }
                 $this->yotpoCoreCatalogLogger->info(
                     sprintf('Category Sync - sync success - Category ID: %s', $magentoCategory->getId())
                 );
@@ -206,12 +210,16 @@ class ProcessByCategory extends Main
                 'synced_to_yotpo'   =>  $currentTime
             ];
             $yotpoTableFinalData[]  =   $data;
-            $categoriesToUpdate[]   =   $magentoCategories[$mageCatId]->getRowId()
-                ?: $magentoCategories[$mageCatId]->getId();
+            if ($this->config->canUpdateCustomAttribute($data['response_code'])) {
+                $categoriesToUpdate[]   =   $magentoCategories[$mageCatId]->getRowId()
+                    ?: $magentoCategories[$mageCatId]->getId();
+            }
         }
         $this->deleteCollections();
         if ($yotpoTableFinalData) {
             $this->insertOrUpdateYotpoTableData($yotpoTableFinalData);
+        }
+        if ($categoriesToUpdate) {
             $this->updateCategoryAttribute($categoriesToUpdate);
         }
         $this->yotpoCoreCatalogLogger->info(
