@@ -120,7 +120,6 @@ class Processor extends AbstractJobs
     public function process($unSyncedProductIds = null)
     {
         try {
-            $attributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
             $this->productSyncLimit = $this->coreConfig->getConfig('product_sync_limit');
 
             $allStores = (array)$this->coreConfig->getAllStoreIds(false);
@@ -129,7 +128,6 @@ class Processor extends AbstractJobs
                     continue;
                 }
                 $this->runStoreIds[] = $storeId;
-                $dataForCategorySync = [];
                 $this->emulateFrontendArea($storeId);
                 try {
                     if (!$this->coreConfig->isCatalogSyncActive()) {
@@ -145,104 +143,10 @@ class Processor extends AbstractJobs
                     $this->processDeleteData();
                     $this->processUnAssignData();
                     $collection = $this->getCollectionForSync($unSyncedProductIds);
-                    if ($collection->getSize()) {
-                        $items = $this->manageSyncItems($collection);
-                        $parentIds = $items['parent_ids'];
-                        $yotpoData = $items['yotpo_data'];
-                        $parentData = $items['parent_data'];
-                        $lastSyncTime = '';
-                        $sqlData = $sqlDataIntTable = [];
-                        $externalIds = [];
-                        foreach ($items['sync_data'] as $itemId => $itemData) {
-                            $rowId = $itemData['row_id'];
-                            unset($itemData['row_id']);
-
-                            $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData);
-                            $this->yotpoCatalogLogger->info(
-                                __('Data ready to sync - Method: %1 - Store ID: %2', $apiParam['method'], $storeId)
-                            );
-
-                            $response = $this->processRequest($apiParam, $itemData);
-                            $lastSyncTime = $this->getCurrentTime();
-                            $tempSqlArray = [
-                                'product_id' => $itemId,
-                                'yotpo_id' => $apiParam['yotpo_id'] ?: 0,
-                                'store_id' => $storeId,
-                                'synced_to_yotpo' => $lastSyncTime,
-                                'response_code' => $response->getData('status'),
-                                'sync_status' => 1,
-                                'yotpo_id_parent' => $apiParam['yotpo_id_parent'] ?: 0,
-                            ];
-                            $tempSqlDataIntTable = [
-                                'attribute_id' => $attributeId,
-                                'store_id' => $storeId,
-                                'value' => 1,
-                                $this->entityIdFieldValue => $rowId
-                            ];
-
-                            $returnResponse = $this->processResponse(
-                                $apiParam,
-                                $response,
-                                $tempSqlArray,
-                                $itemData,
-                                $externalIds
-                            );
-
-                            $tempSqlArray = $returnResponse['temp_sql'];
-                            $externalIds = $returnResponse['external_id'];
-
-                            //push to parentData array if parent product is
-                            // being the part of current collection
-                            $parentData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentData, $parentIds);
-
-                            $sqlData[] = $tempSqlArray;
-                            $sqlDataIntTable[] = $tempSqlDataIntTable;
-                        }
-                        if (count($sqlData)) {
-                            $this->insertOnDuplicate(
-                                'yotpo_product_sync',
-                                $sqlData
-                            );
-                            $dataToSent = $this->catalogData->filterDataForCatSync($sqlData);
-                            $dataForCategorySync = $this->getProductsForCategorySync(
-                                $dataToSent,
-                                $collection->getItems(),
-                                $dataForCategorySync
-                            );
-                        }
-                        if (count($sqlDataIntTable)) {
-                            $this->insertOnDuplicate(
-                                'catalog_product_entity_int',
-                                $sqlDataIntTable
-                            );
-                        }
-
-                        $yotpoExistingProducts = $this->processExistData($externalIds, $parentData, $parentIds);
-                        $dataToSent = $this->catalogData->filterDataForCatSync($yotpoExistingProducts);
-                        $dataForCategorySync   = $this->getProductsForCategorySync(
-                            $dataToSent,
-                            $collection->getItems(),
-                            $dataForCategorySync
-                        );
-
-                        $this->coreConfig->saveConfig('catalog_last_sync_time', $lastSyncTime);
-                        if (count($dataForCategorySync) > 0) {
-                            $this->catgorySyncProcessor->process($dataForCategorySync);
-                        }
-
-                    } else {
-                        $this->yotpoCatalogLogger->info(
-                            __('Product Sync complete : No Data, Store ID: %1', $storeId)
-                        );
-                    }
-
-                } catch (NoSuchEntityException $e) {
+                    $this->syncItems($collection, $storeId);
+                } catch (\Exception $e) {
                     $this->yotpoCatalogLogger->info(
                         __('Product Sync has stopped with exception :  %1, Store ID: %2', $e->getMessage(), $storeId)
-                    );
-                } catch (LocalizedException $e) {
-                    $this->yotpoCatalogLogger->info(
-                        __('Product Sync has stopped with exception : %1, Store ID: %2', $e->getMessage(), $storeId)
                     );
                 }
                 $this->stopEnvironmentEmulation();
@@ -250,6 +154,120 @@ class Processor extends AbstractJobs
         } catch (\Exception $e) {
             $this->yotpoCatalogLogger->info(
                 __('Catalog sync::process() - Exception: ', [$e->getTraceAsString()])
+            );
+        }
+    }
+
+    /**
+     * @param Collection<mixed> $collection
+     * @param int $storeId
+     * @throws NoSuchEntityException
+     * @return void
+     */
+    public function syncItems($collection, $storeId)
+    {
+        if ($collection->getSize()) {
+            $attributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
+            $items = $this->manageSyncItems($collection);
+            $parentIds = $items['parent_ids'];
+            $yotpoData = $items['yotpo_data'];
+            $parentData = $items['parent_data'];
+            $lastSyncTime = '';
+            $sqlData = $sqlDataIntTable = [];
+            $externalIds = [];
+            $dataForCategorySync = [];
+            foreach ($items['sync_data'] as $itemId => $itemData) {
+                $rowId = $itemData['row_id'];
+                unset($itemData['row_id']);
+                if ($yotpoData
+                    && array_key_exists($itemId, $yotpoData)
+                    && !$this->coreConfig->canResync($yotpoData[$itemId]['response_code'])
+                ) {
+                    $tempSqlDataIntTable = [
+                        'attribute_id' => $attributeId,
+                        'store_id' => $storeId,
+                        'value' => 1,
+                        $this->entityIdFieldValue => $rowId
+                    ];
+                    $sqlDataIntTable[] = $tempSqlDataIntTable;
+                    continue;
+                }
+                $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData);
+                $this->yotpoCatalogLogger->info(
+                    __('Data ready to sync - Method: %1 - Store ID: %2', $apiParam['method'], $storeId)
+                );
+                $response = $this->processRequest($apiParam, $itemData);
+                $lastSyncTime = $this->getCurrentTime();
+                $tempSqlArray = [
+                    'product_id' => $itemId,
+                    'yotpo_id' => $apiParam['yotpo_id'] ?: 0,
+                    'store_id' => $storeId,
+                    'synced_to_yotpo' => $lastSyncTime,
+                    'response_code' => $response->getData('status'),
+                    'sync_status' => 1,
+                    'yotpo_id_parent' => $apiParam['yotpo_id_parent'] ?: 0,
+                ];
+                if ($this->coreConfig->canUpdateCustomAttribute($tempSqlArray['response_code'])) {
+                    $tempSqlDataIntTable = [
+                        'attribute_id' => $attributeId,
+                        'store_id' => $storeId,
+                        'value' => 1,
+                        $this->entityIdFieldValue => $rowId
+                    ];
+                    $sqlDataIntTable[] = $tempSqlDataIntTable;
+                }
+                $returnResponse = $this->processResponse(
+                    $apiParam,
+                    $response,
+                    $tempSqlArray,
+                    $itemData,
+                    $externalIds
+                );
+
+                $tempSqlArray = $returnResponse['temp_sql'];
+                $externalIds = $returnResponse['external_id'];
+
+                //push to parentData array if parent product is
+                // being the part of current collection
+                $parentData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentData, $parentIds);
+
+                $sqlData[] = $tempSqlArray;
+            }
+            if (count($sqlData)) {
+                $this->insertOnDuplicate(
+                    'yotpo_product_sync',
+                    $sqlData
+                );
+                $dataToSent = $this->catalogData->filterDataForCatSync($sqlData);
+                $dataForCategorySync = $this->getProductsForCategorySync(
+                    $dataToSent,
+                    $collection->getItems(),
+                    $dataForCategorySync
+                );
+            }
+            if (count($sqlDataIntTable)) {
+                $this->insertOnDuplicate(
+                    'catalog_product_entity_int',
+                    $sqlDataIntTable
+                );
+            }
+
+            $yotpoExistingProducts = $this->processExistData($externalIds, $parentData, $parentIds);
+            $dataToSent = $this->catalogData->filterDataForCatSync($yotpoExistingProducts);
+            $dataForCategorySync   = $this->getProductsForCategorySync(
+                $dataToSent,
+                $collection->getItems(),
+                $dataForCategorySync
+            );
+
+            $this->coreConfig->saveConfig('catalog_last_sync_time', $lastSyncTime);
+            if (count($dataForCategorySync) > 0) {
+                $this->catgorySyncProcessor->process($dataForCategorySync);
+            }
+
+        } else {
+            $this->yotpoCatalogLogger->info(
+                __('Product Sync complete : No Data, Store ID: %1', $storeId)
             );
         }
     }

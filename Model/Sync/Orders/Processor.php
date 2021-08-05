@@ -185,6 +185,7 @@ class Processor extends Main
                 if ($yotpoSyncedOrders && array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
                     $responseCode = $yotpoSyncedOrders[$magentoOrderId]['response_code'];
                     if (!$this->config->canResync($responseCode)) {
+                        $ordersToUpdate[] = $magentoOrderId;
                         $this->yotpoOrdersLogger->info('Order sync cannot be done for orderId: '
                             . $magentoOrderId . ', due to response code: ' . $responseCode, []);
                         continue;
@@ -202,7 +203,9 @@ class Processor extends Main
                     $yotpoTableData['order_id'] = $magentoOrderId;
                     $yotpoTableData['synced_to_yotpo'] = $currentTime;
                     $yotpoTableFinalData[] = $yotpoTableData;
-                    $ordersToUpdate[] = $magentoOrderId;
+                    if ($this->config->canUpdateCustomAttribute($yotpoTableData['response_code'])) {
+                        $ordersToUpdate[] = $magentoOrderId;
+                    }
                 }
             }
         }
@@ -249,6 +252,8 @@ class Processor extends Main
                 if (array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
                     $responseCode = $yotpoSyncedOrders[$magentoOrderId]['response_code'];
                     if (!$this->config->canResync($responseCode)) {
+                        $ordersToUpdate[] = $magentoOrderId;
+                        $this->updateOrderAttribute($ordersToUpdate, self::SYNCED_TO_YOTPO_ORDER, 1);
                         $this->yotpoOrdersLogger->info('Order sync cannot be done for orderId: '
                             . $magentoOrderId . ', due to response code: ' . $responseCode, []);
                         return;
@@ -283,7 +288,9 @@ class Processor extends Main
 
             if ($yotpoTableFinalData) {
                 $this->insertOrUpdateYotpoTableData($yotpoTableFinalData);
-                $this->updateOrderAttribute($ordersToUpdate, self::SYNCED_TO_YOTPO_ORDER, 1);
+                if ($this->config->canUpdateCustomAttribute($yotpoTableData['response_code'])) {
+                    $this->updateOrderAttribute($ordersToUpdate, self::SYNCED_TO_YOTPO_ORDER, 1);
+                }
                 $this->yotpoOrdersLogger->info('Order attribute updated to 1 for order : '
                     . $magentoOrderId, []);
             }
