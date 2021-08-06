@@ -21,18 +21,11 @@
                     <frequency>*/2 * * * *</frequency>
                     <order_status>
                         <map_order_status>
-                            {"_1_1":{"store_order_status":"canceled","yotpo_order_status":"cancelled"},
-                            "_1_2":{"store_order_status":"closed","yotpo_order_status":"success"},
+                            {"_1_1":{"store_order_status":"pending","yotpo_order_status":"pending"},
+                            "_1_2":{"store_order_status":"processing","yotpo_order_status":"open"},
                             "_1_3":{"store_order_status":"complete","yotpo_order_status":"success"},
-                            "_1_4":{"store_order_status":"fraud","yotpo_order_status":"failure"},
-                            "_1_5":{"store_order_status":"holded","yotpo_order_status":"pending"},
-                            "_1_6":{"store_order_status":"payment_review","yotpo_order_status":"pending"},
-                            "_1_7":{"store_order_status":"paypal_canceled_reversal","yotpo_order_status":"cancelled"},
-                            "_1_8":{"store_order_status":"paypal_reversed","yotpo_order_status":"cancelled"},
-                            "_1_9":{"store_order_status":"pending","yotpo_order_status":"pending"},
-                            "_1_10":{"store_order_status":"pending_payment","yotpo_order_status":"pending"},
-                            "_1_11":{"store_order_status":"pending_paypal","yotpo_order_status":"pending"},
-                            "_1_12":{"store_order_status":"processing","yotpo_order_status":"pending"}}
+                            "_1_4":{"store_order_status":"closed","yotpo_order_status":"cancelled"},
+                            "_1_5":{"store_order_status":"canceled","yotpo_order_status":"cancelled"}}
                         </map_order_status>
                     </order_status>
                     <shipment_status>

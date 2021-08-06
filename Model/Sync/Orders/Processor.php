@@ -150,11 +150,16 @@ class Processor extends Main
         $timeLimit = $this->config->getConfig('orders_sync_time_limit');
         $formattedDate = $this->helperData->formatOrderItemDate($timeLimit);
 
+        $mappedOrderStatuses = $this->data->getMappedOrderStatuses();
+
         $orderCollection = $this->orderFactory->create();
         $orderCollection
             ->addFieldToFilter('store_id', ['eq' => $storeId])
             ->addFieldToFilter(self::SYNCED_TO_YOTPO_ORDER, ['eq' => 0])
             ->addFieldToFilter('created_at', ['from' => $formattedDate]);
+        if ($mappedOrderStatuses) {
+            $orderCollection->addFieldToFilter('status', ['in' => array_keys($mappedOrderStatuses)]);
+        }
         $orderCollection->getSelect()->limit($batchSize);
         foreach ($orderCollection->getItems() as $order) {
             $orderId = $order->getEntityId();
@@ -223,10 +228,17 @@ class Processor extends Main
      * @param Order $magentoOrder
      * @return void
      * @throws DatetimeException
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
      */
     public function processSingleEntity($magentoOrder)
     {
         $magentoOrderId = $magentoOrder->getEntityId();
+        $mappedOrderStatuses = $this->data->getMappedOrderStatuses();
+        if (!isset($mappedOrderStatuses[$magentoOrder->getStatus()])) {
+            $this->yotpoOrdersLogger->info('Missing order status mapping for Order# ' . $magentoOrderId, []);
+            return;
+        }
         $customerId = $magentoOrder->getCustomerId();
         $currentTime = date('Y-m-d H:i:s');
         $yotpoTableFinalData = [];
