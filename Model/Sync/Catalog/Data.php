@@ -124,6 +124,10 @@ class Data extends Main
             'attr_code' => 'attr_mpn',
             'method' => 'getDataFromConfig'
         ],
+        'handle' => [
+            'default' => 1,
+            'attr_code' => 'sku'
+        ],
         'gtins' => [
             'EAN' => [
                 'default' => 0,

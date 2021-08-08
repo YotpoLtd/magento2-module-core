@@ -234,6 +234,7 @@ class Data extends Main
     {
         $billingAddress = $order->getBillingAddress();
         $shippingAddress = $order->getShippingAddress();
+        $orderStatus = $order->getStatus();
         $data = [
             'order' => [
                 'order_date' => $this->coreHelper->formatDate($order->getCreatedAt()),
@@ -253,13 +254,16 @@ class Data extends Main
                     $this->prepareAddress($shippingAddress) :
                     null,
                 'line_items' => array_values($this->prepareLineItems($order)),
-                'fulfillments' => $this->prepareFulfillments($order)
+                'fulfillments' =>
+                    $orderStatus === self::ORDER_STATUS_CLOSED || $orderStatus === self::ORDER_STATUS_CANCELED
+                    ? null
+                    : $this->prepareFulfillments($order)
             ]
         ];
         if ($syncType === 'create') {
             $data['order']['external_id'] = $order->getIncrementId();
         }
-        if ($order->getStatus() === self::ORDER_STATUS_CANCELED) {
+        if ($orderStatus === self::ORDER_STATUS_CANCELED || $orderStatus === self::ORDER_STATUS_CLOSED) {
             $data['order']['cancellation'] =
                 [
                     'cancellation_date' => $this->coreHelper->formatDate($order->getUpdatedAt())
