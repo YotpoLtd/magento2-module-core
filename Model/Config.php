@@ -102,7 +102,8 @@ class Config
         'orders_sync_limit' => ['path' => 'yotpo_core/sync_settings/orders_sync/orders_sync_limit'],
         'orders_last_sync_time' => ['path' => 'yotpo_core/sync_settings/orders_sync/last_sync_time'],
         'orders_sync_time_limit' => ['path' => 'yotpo_core/sync_settings/orders_sync/sync_orders_since'],
-        'orders_total_synced' => ['path' => 'yotpo_core/sync_settings/orders_sync/total_orders_synced'],
+        'orders_total_synced' => ['path' => 'yotpo_core/sync_settings/orders_sync/total_orders_synced',
+            'read_from_db' => true],
         'orders_mapped_status' =>
             [
                 'path' => 'yotpo_core/sync_settings/orders_sync/order_status/map_order_status'

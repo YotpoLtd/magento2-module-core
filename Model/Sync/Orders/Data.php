@@ -235,6 +235,7 @@ class Data extends Main
         $billingAddress = $order->getBillingAddress();
         $shippingAddress = $order->getShippingAddress();
         $orderStatus = $order->getStatus();
+        $lineItems = array_values($this->prepareLineItems($order));
         $data = [
             'order' => [
                 'order_date' => $this->coreHelper->formatDate($order->getCreatedAt()),
@@ -253,11 +254,11 @@ class Data extends Main
                 'shipping_address' => $shippingAddress ?
                     $this->prepareAddress($shippingAddress) :
                     null,
-                'line_items' => array_values($this->prepareLineItems($order)),
+                'line_items' => $lineItems,
                 'fulfillments' =>
                     $orderStatus === self::ORDER_STATUS_CLOSED || $orderStatus === self::ORDER_STATUS_CANCELED
                     ? null
-                    : $this->prepareFulfillments($order)
+                    : $this->prepareFulfillments($order, $lineItems)
             ]
         ];
         if ($syncType === 'create') {
@@ -411,9 +412,10 @@ class Data extends Main
      * Prepare fulfillment data
      *
      * @param Order $order
-     * @return array<mixed>
+     * @param array <mixed> $lineItems
+     * @return array <mixed>
      */
-    public function prepareFulfillments($order)
+    public function prepareFulfillments($order, $lineItems)
     {
         try {
             $fulfillments = [];
@@ -427,12 +429,28 @@ class Data extends Main
                             'fulfillment_date' => $this->coreHelper->formatDate($orderShipment->getCreatedAt()),
                             'status' => $this->getYotpoOrderStatus($order->getStatus()),
                             'shipment_info' => $this->getShipment($orderShipment),
-                            'fulfilled_items' => array_values($items)
+                            'fulfilled_items' => array_values($items),
+                            'external_id' => $orderShipment->getEntityId()
                         ];
-                        $fulfillment['external_id'] = $orderShipment->getEntityId();
                         $fulfillments[] = $fulfillment;
                     }
                 }
+            } else {
+                $fulfillmentItems = [];
+                foreach ($lineItems as $lineItem) {
+                    $fulfillmentItem = [
+                        'external_product_id' => $lineItem['external_product_id'],
+                        'quantity' => $lineItem['quantity']
+                    ];
+                    $fulfillmentItems[] = $fulfillmentItem;
+                }
+                $fulfillments[] = [
+                    'external_id' => "",
+                    'fulfillment_date' => $this->coreHelper->formatDate($order->getCreatedAt()),
+                    'status' => $this->getYotpoOrderStatus($order->getStatus()),
+                    'shipment_info' => null,
+                    'fulfilled_items' => $fulfillmentItems,
+                    ];
             }
         } catch (NoSuchEntityException $e) {
             $this->yotpoOrdersLogger->info('Orders sync::prepareFulfillments() - NoSuchEntityException: ' .
@@ -452,13 +470,12 @@ class Data extends Main
      */
     public function getShipment($shipment)
     {
-        $shipments = null;
+        $shipments = [
+            'shipment_status' => $this->getYotpoShipmentStatus($shipment->getShipmentStatus())
+        ];
         foreach ($shipment->getTracks() as $track) {
-            $shipments = [
-                'shipment_status' => $this->getYotpoShipmentStatus($shipment->getShipmentStatus()),
-                'tracking_company' => $track->getCarrierCode(),
-                'tracking_number' => $track->getTrackNumber()
-            ];
+            $shipments['tracking_company'] = $track->getCarrierCode();
+            $shipments['tracking_number'] =  $track->getTrackNumber();
         }
         return $shipments;
     }

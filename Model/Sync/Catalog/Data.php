@@ -1,7 +1,6 @@
 <?php
 namespace Yotpo\Core\Model\Sync\Catalog;
 
-use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Yotpo\Core\Model\Config as YotpoCoreConfig;
@@ -71,8 +70,9 @@ class Data extends Main
             'attr_code' => 'name'
         ],
         'description' => [
-            'default' => 1,
-            'attr_code' => 'description'
+            'default' => 0,
+            'attr_code' => '',
+            'method' => 'getProductDescription'
         ],
         'url' => [
             'default' => 1,
@@ -189,13 +189,12 @@ class Data extends Main
     }
 
     /**
-     * Prepare syncItems, Config Items, Variant Options, existing yotpo data
-     *
-     * @param Collection<mixed> $items
-     * @return array<int|string, mixed>
+     * @param array <mixed> $items
+     * @param boolean $visibleVariants
+     * @return array <mixed>
      * @throws NoSuchEntityException
      */
-    public function manageSyncItems(Collection $items)
+    public function manageSyncItems($items, $visibleVariants = false)
     {
         $return = [
           'sync_data' => [],
@@ -204,23 +203,32 @@ class Data extends Main
         ];
 
         $syncItems = $productsId = $productsObject = [];
-
         foreach ($items as $item) {
             $productsId[] = $item->getData('entity_id');
             $productsObject[$item->getData('entity_id')] = $item;
             $syncItems[$item->getData('entity_id')] = $this->attributeMapping($item);
         }
-
-        $configIds = $this->yotpoResource->getConfigProductIds($productsId);
-        $syncItems = $this->mergeProductOptions($syncItems, $configIds, $productsObject);
-        $groupIds = $this->yotpoResource->getGroupProductIds($productsId);
-        $parentIds = $configIds + $groupIds;
+        $visibleVariantsData = [];
+        $parentIds = [];
+        if (!$visibleVariants) {
+            $configIds = $this->yotpoResource->getConfigProductIds($productsId);
+            $syncItems = $this->mergeProductOptions($syncItems, $configIds, $productsObject);
+            $groupIds = $this->yotpoResource->getGroupProductIds($productsId);
+            $parentIds = $configIds + $groupIds;
+            foreach ($parentIds as $simpleId => $parentId) {
+                $simpleProductObj = $productsObject[$simpleId];
+                if ($simpleProductObj->isVisibleInSiteVisibility()) {
+                    $visibleVariantsData[$simpleProductObj->getId()] = $simpleProductObj;
+                }
+            }
+        }
 
         $return['sync_data'] = $syncItems;
         $return['parent_ids'] = $parentIds;
         $yotpoData = $this->fetchYotpoData($productsId, $parentIds);
         $return['yotpo_data'] = $yotpoData['yotpo_data'];
         $return['parent_data'] = $yotpoData['parent_data'];
+        $return['visible_variants'] = $visibleVariantsData;
 
         return $return;
     }
@@ -516,5 +524,15 @@ class Data extends Main
         }
 
         return $result;
+    }
+
+    /**
+     * Get product description
+     * @param Product $item
+     * @return string
+     */
+    public function getProductDescription(Product $item)
+    {
+        return trim($item->getData('description')) ?:  trim($item->getData('short_description'));
     }
 }

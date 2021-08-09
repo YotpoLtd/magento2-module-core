@@ -53,6 +53,7 @@
                     </field>
                     <field id="total_orders_synced" translate="label comment" sortOrder="370" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
                         <label>Total orders synced:</label>
+                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\SyncStatus</frontend_model>
                     </field>
                     <field id="sync_orders_since" translate="label comment" sortOrder="380" type="date" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Sync orders since:</label>

@@ -83,11 +83,16 @@ class AbstractJobs
      */
     public function insertOnDuplicate($table, array $insertData = [])
     {
+        if (!$insertData) {
+            return;
+        }
         $connection = $this->resourceConnection->getConnection();
-        $connection->insertOnDuplicate(
-            $connection->getTableName($table),
-            $insertData
-        );
+        foreach ($insertData as $data) {
+            $connection->insertOnDuplicate(
+                $connection->getTableName($table),
+                $data
+            );
+        }
     }
 
     /**
