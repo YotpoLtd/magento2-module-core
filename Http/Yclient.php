@@ -104,7 +104,7 @@ class Yclient
             $exceptionData[] = $options;
             $exceptionData[] = 'response code = ' . $exception->getCode();
             $exceptionData[] = 'response = ' . $exception->getMessage();
-            $this->yotpoApiLogger->error($exceptionMessage, $exceptionData);
+            $this->yotpoApiLogger->info($exceptionMessage, $exceptionData);
         }
         return $response;
     }

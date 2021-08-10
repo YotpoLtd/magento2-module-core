@@ -3,6 +3,7 @@
 namespace Yotpo\Core\Model\Sync\Data;
 
 use Magento\Framework\App\ResourceConnection;
+use Magento\Sales\Model\Order;
 
 /**
  * Class Main - Base class to retrieve attribute data
@@ -66,20 +67,35 @@ class Main
      * Get the productIds od the products that are not synced
      *
      * @param array <mixed> $productIds
+     * @param Order $order
      * @return mixed
      */
-    public function getUnSyncedProductIds($productIds)
+    public function getUnSyncedProductIds($productIds, $order)
     {
-        $connection =   $this->resourceConnection->getConnection();
-        $table      =   $connection->getTableName('yotpo_product_sync');
-        $products   =   $connection->select()
-            ->from($table, 'product_id')
+        $orderItems = [];
+        foreach ($order->getAllVisibleItems() as $orderItem) {
+            $orderItems[$orderItem->getProduct()->getId()] = $orderItem->getProduct();
+        }
+        $productIds = array_unique($productIds);
+        $connection = $this->resourceConnection->getConnection();
+        $table = $connection->getTableName('yotpo_product_sync');
+        $products = $connection->select()
+            ->from($table, ['product_id', 'yotpo_id', 'yotpo_id_parent', 'visible_variant_yotpo_id'])
             ->where('product_id IN(?) ', $productIds)
-            ->where('yotpo_id > ?', 0)
-            ->where('yotpo_id_parent = ?', 0);
-        $products =   $connection->fetchAssoc($products, []);
+            ->where('store_id=(?)', $order->getStoreId());
+        $products = $connection->fetchAssoc($products, []);
         foreach ($products as $product) {
-            if (isset($product['product_id'])) {
+            $orderItemProduct = $orderItems[$product['product_id']] ?? null;
+            $yotpoIdKey = 'yotpo_id';
+            if ($orderItemProduct
+                && $orderItemProduct->isVisibleInSiteVisibility()
+                && $orderItemProduct->getTypeId() == 'simple'
+                && $product['yotpo_id_parent']
+            ) {
+                $yotpoIdKey = 'visible_variant_yotpo_id';
+            }
+
+            if ($product[$yotpoIdKey]) {
                 $position = array_search($product['product_id'], $productIds);
                 array_splice($productIds, (int)$position, 1);
             }

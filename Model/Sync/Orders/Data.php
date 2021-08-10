@@ -411,7 +411,7 @@ class Data extends Main
      * Prepare fulfillment data
      *
      * @param Order $order
-     * @return array<mixed>
+     * @return array <mixed>
      */
     public function prepareFulfillments($order)
     {
@@ -427,9 +427,9 @@ class Data extends Main
                             'fulfillment_date' => $this->coreHelper->formatDate($orderShipment->getCreatedAt()),
                             'status' => $this->getYotpoOrderStatus($order->getStatus()),
                             'shipment_info' => $this->getShipment($orderShipment),
-                            'fulfilled_items' => array_values($items)
+                            'fulfilled_items' => array_values($items),
+                            'external_id' => $orderShipment->getEntityId()
                         ];
-                        $fulfillment['external_id'] = $orderShipment->getEntityId();
                         $fulfillments[] = $fulfillment;
                     }
                 }
@@ -452,13 +452,12 @@ class Data extends Main
      */
     public function getShipment($shipment)
     {
-        $shipments = null;
+        $shipments = [
+            'shipment_status' => $this->getYotpoShipmentStatus($shipment->getShipmentStatus())
+        ];
         foreach ($shipment->getTracks() as $track) {
-            $shipments = [
-                'shipment_status' => $this->getYotpoShipmentStatus($shipment->getShipmentStatus()),
-                'tracking_company' => $track->getCarrierCode(),
-                'tracking_number' => $track->getTrackNumber()
-            ];
+            $shipments['tracking_company'] = $track->getCarrierCode();
+            $shipments['tracking_number'] =  $track->getTrackNumber();
         }
         return $shipments;
     }

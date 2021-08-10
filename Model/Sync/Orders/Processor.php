@@ -258,7 +258,6 @@ class Processor extends Main
             }
             $magentoOrders[$magentoOrderId] = $magentoOrder;
             $yotpoSyncedOrders = $this->getYotpoSyncedOrders($magentoOrders);
-
             $isYotpoSyncedOrder = false;
             if ($yotpoSyncedOrders) {
                 if (array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
@@ -274,18 +273,12 @@ class Processor extends Main
                     }
                 }
             }
-
             $this->data->prepareShipmentStatuses($ordersToUpdate);
-
             $customerIds ? $this->data->prepareCustomAttributes($customerIds) :
                 $this->data->prepareGuestUsersCustomAttributes($ordersToUpdate);
-
             $this->data->prepareCouponCodes($couponCodes);
-
             $response = $this->syncOrder($magentoOrder, $isYotpoSyncedOrder, $yotpoSyncedOrders);
-
             $yotpoTableData = $response ? $this->prepareYotpoTableData($response) : false;
-
             $this->yotpoOrdersLogger->info('Last sync date updated for order : '
                 . $magentoOrderId, []);
 
@@ -339,7 +332,7 @@ class Processor extends Main
         $this->yotpoOrdersLogger->info('Orders sync - data prepared', []);
         $productIds = $this->data->getLineItemsIds();
         if ($productIds) {
-            $this->checkAndSyncProducts($productIds);
+            $this->checkAndSyncProducts($productIds, $order);
         }
         if ($isYotpoSyncedOrder) {
             $yotpoOrderId = $yotpoSyncedOrders[$orderId]['yotpo_id'];
@@ -372,11 +365,12 @@ class Processor extends Main
      * Check and sync the products if not already synced
      *
      * @param array <mixed> $productIds
+     * @param Order $order
      * @return void
      */
-    public function checkAndSyncProducts($productIds)
+    public function checkAndSyncProducts($productIds, $order)
     {
-        $unSyncedProductIds = $this->data->getUnSyncedProductIds($productIds);
+        $unSyncedProductIds = $this->data->getUnSyncedProductIds($productIds, $order);
         if ($unSyncedProductIds) {
             $this->catalogProcessor->process($unSyncedProductIds);
         }

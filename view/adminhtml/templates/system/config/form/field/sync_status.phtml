@@ -1,0 +1,12 @@
+<?php
+use Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\SyncStatus;
+
+/**
+ * @var $block SyncStatus
+ * @var Magento\Framework\Escaper $escaper
+ */
+$escaper = $escaper ?? $block;
+?>
+<!-- Yotpo Total Synced Orders -->
+<div><?= $escaper->escapeHtml(__($block->getTotalSyncedOrders())) ?></div>
+<!--/ Yotpo Total Synced Orders -->

@@ -10,9 +10,11 @@
                 comment="Store ID"/>
         <column xsi:type="double" name="yotpo_id" unsigned="true" nullable="false" default="0"
                 comment="Api Response Data - Yotpo ID"/>
+        <column xsi:type="double" name="visible_variant_yotpo_id" unsigned="true" nullable="false" default="0"
+                comment="Api Response Data - Yotpo ID of visible child products"/>
         <column xsi:type="int" name="yotpo_id_unassign" unsigned="true" nullable="false" identity="false" default="0"
                 comment="Api Response Data - Yotpo ID - Duplicate"/>
-        <column xsi:type="int" name="yotpo_id_parent" unsigned="true" nullable="false" identity="false" default="0"
+        <column xsi:type="double" name="yotpo_id_parent" unsigned="true" nullable="false" identity="false" default="0"
                 comment="Api Response Data - Parent Yotpo ID"/>
         <column xsi:type="smallint" name="is_deleted" unsigned="true" nullable="false" identity="false" default="0"
                 comment="Is Deleted"/>
@@ -34,6 +36,9 @@
         </index>
         <index referenceId="YOTPO_PRODUCT_SYNC_YOTPO_ID" indexType="btree">
             <column name="yotpo_id"/>
+        </index>
+        <index referenceId="YOTPO_PRODUCT_SYNC_VISIBLE_VARIANT_YOTPO_ID" indexType="btree">
+            <column name="visible_variant_yotpo_id"/>
         </index>
         <index referenceId="YOTPO_PRODUCT_SYNC_SYNC_STATUS" indexType="btree">
             <column name="sync_status"/>
