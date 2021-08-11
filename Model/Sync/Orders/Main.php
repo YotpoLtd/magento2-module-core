@@ -61,7 +61,8 @@ class Main extends AbstractJobs
         $table      =   $connection->getTableName('yotpo_orders_sync');
         $orders     =   $connection->select()
                             ->from($table)
-                            ->where('order_id IN(?) ', array_keys($magentoOrders));
+                            ->where('order_id IN (?) ', array_keys($magentoOrders))
+                            ->where('yotpo_id > (?) ', 0);
         $orders =   $connection->fetchAssoc($orders, []);
         foreach ($orders as $order) {
             $return[$order['order_id']]  =   $order;

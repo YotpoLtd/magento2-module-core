@@ -4,7 +4,6 @@ namespace Yotpo\Core\Model\Sync\Orders\Cron;
 
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Safe\Exceptions\DatetimeException;
 use Yotpo\Core\Model\Sync\Orders\Processor as OrdersProcessor;
 
 /**
@@ -31,7 +30,7 @@ class OrdersSync
      * Process orders sync
      *
      * @return void
-     * @throws NoSuchEntityException|DatetimeException
+     * @throws NoSuchEntityException
      * @throws LocalizedException
      */
     public function processOrders()

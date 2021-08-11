@@ -8,7 +8,6 @@ use Magento\Framework\Exception\InputException;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Model\Order;
-use Safe\Exceptions\DatetimeException;
 use Yotpo\Core\Model\Sync\Orders\Processor as OrdersProcessor;
 use Yotpo\Core\Model\Config;
 use Magento\Sales\Model\OrderRepository;
@@ -19,6 +18,11 @@ use Magento\Sales\Model\OrderRepository;
  */
 class AdminSalesOrderAddressUpdate implements ObserverInterface
 {
+    /**
+     * Custom attribute name
+     */
+    const SYNCED_TO_YOTPO_ORDER = 'synced_to_yotpo_order';
+
     /**
      * @var OrderRepository
      */
@@ -55,12 +59,16 @@ class AdminSalesOrderAddressUpdate implements ObserverInterface
      * @throws InputException
      * @throws LocalizedException
      * @throws NoSuchEntityException
-     * @throws DatetimeException
      */
     public function execute(Observer $observer)
     {
         /** @var  Order $order */
         $order = $this->orderRepository->get($observer->getOrderId());
+        $this->ordersProcessor->updateOrderAttribute(
+            [$order->getEntityId()],
+            self::SYNCED_TO_YOTPO_ORDER,
+            0
+        );
         if ($this->yotpoConfig->isOrdersSyncActive($order->getStoreId())) {
             $this->ordersProcessor->processOrder($order);
         }
