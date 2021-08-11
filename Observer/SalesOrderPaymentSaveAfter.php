@@ -6,7 +6,6 @@ use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
-use Safe\Exceptions\DatetimeException;
 use Yotpo\Core\Model\Sync\Orders\Processor as OrdersProcessor;
 use Yotpo\Core\Model\Config;
 use Magento\Checkout\Model\Session as CheckoutSession;
@@ -17,6 +16,11 @@ use Magento\Checkout\Model\Session as CheckoutSession;
  */
 class SalesOrderPaymentSaveAfter implements ObserverInterface
 {
+    /**
+     * Custom attribute name
+     */
+    const SYNCED_TO_YOTPO_ORDER = 'synced_to_yotpo_order';
+
     /**
      * @var OrdersProcessor
      */
@@ -52,7 +56,6 @@ class SalesOrderPaymentSaveAfter implements ObserverInterface
      * @param Observer $observer
      * @throws LocalizedException
      * @throws NoSuchEntityException
-     * @throws DatetimeException
      */
     public function execute(Observer $observer)
     {
@@ -66,8 +69,15 @@ class SalesOrderPaymentSaveAfter implements ObserverInterface
             );
             $this->checkoutSession->setYotpoSmsMarketing(0);
         }
-        if ($order && $this->yotpoConfig->isOrdersSyncActive($order->getStoreId())) {
-            $this->ordersProcessor->processOrder($order);
+        if ($order) {
+            $this->ordersProcessor->updateOrderAttribute(
+                [$order->getEntityId()],
+                self::SYNCED_TO_YOTPO_ORDER,
+                0
+            );
+            if ($this->yotpoConfig->isOrdersSyncActive($order->getStoreId())) {
+                $this->ordersProcessor->processOrder($order);
+            }
         }
     }
 }

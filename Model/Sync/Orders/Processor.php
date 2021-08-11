@@ -9,11 +9,9 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\App\Emulation as AppEmulation;
-use Safe\Exceptions\DatetimeException;
 use Yotpo\Core\Model\Config;
 use Yotpo\Core\Model\Sync\Orders\Data as OrdersData;
 use Yotpo\Core\Model\Sync\Orders\Logger as YotpoOrdersLogger;
-use function Safe\date;
 use Yotpo\Core\Model\Api\Sync as YotpoCoreSync;
 use Yotpo\Core\Helper\Data as CoreHelperData;
 use Yotpo\Core\Model\Sync\Catalog\Processor as CatalogProcessor;
@@ -90,7 +88,6 @@ class Processor extends Main
      * @return void
      * @throws LocalizedException
      * @throws NoSuchEntityException
-     * @throws DatetimeException
      */
     public function process()
     {
@@ -113,7 +110,6 @@ class Processor extends Main
      * @return void
      * @throws LocalizedException
      * @throws NoSuchEntityException
-     * @throws DatetimeException
      */
     public function processOrder($order)
     {
@@ -133,7 +129,6 @@ class Processor extends Main
      * @return void
      * @throws LocalizedException
      * @throws NoSuchEntityException
-     * @throws DatetimeException
      */
     public function processOrders()
     {
@@ -227,7 +222,6 @@ class Processor extends Main
      *
      * @param Order $magentoOrder
      * @return void
-     * @throws DatetimeException
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
@@ -251,7 +245,6 @@ class Processor extends Main
         }
 
         try {
-            $this->updateOrderAttribute($ordersToUpdate, self::SYNCED_TO_YOTPO_ORDER, 0);
             $this->yotpoOrdersLogger->info('Order attribute updated to 0 for order : ' . $magentoOrderId, []);
             if (!$this->config->isRealTimeOrdersSyncActive()) {
                 return;
