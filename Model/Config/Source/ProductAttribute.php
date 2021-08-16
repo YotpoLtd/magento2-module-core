@@ -33,7 +33,7 @@ class ProductAttribute implements OptionSourceInterface
         $attributeInfo = $this->collectionFactory->create();
         $attributeData[] = [
             'label' => __('Select from product attributes'),
-            'value' => ''
+            'value' => '0'
         ];
         foreach ($attributeInfo as $item) {
             $attributeData[] = [

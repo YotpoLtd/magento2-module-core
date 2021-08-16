@@ -531,4 +531,13 @@ class Config
     {
         return $this->entity->setType('catalog_product')->getLinkField();
     }
+
+    /**
+     * @param string $key
+     * @return mixed
+     */
+    public function getConfigPath(string $key)
+    {
+        return $this->config[$key]['path'];
+    }
 }

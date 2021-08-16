@@ -95,6 +95,7 @@ class Processor extends Main
         foreach ($this->config->getAllStoreIds(false) as $storeId) {
             $this->emulateFrontendArea((int)$storeId);
             if (!$this->config->isOrdersSyncActive()) {
+                $this->stopEnvironmentEmulation();
                 continue;
             }
             $this->yotpoOrdersLogger->info('Process orders for store : ' . $storeId, []);
@@ -116,6 +117,7 @@ class Processor extends Main
         $storeId = $order->getStoreId();
         $this->emulateFrontendArea((int)$storeId);
         if (!$this->config->isOrdersSyncActive()) {
+            $this->stopEnvironmentEmulation();
             return;
         }
         $this->yotpoOrdersLogger->info('Process order for the store : ' . $storeId, []);
@@ -318,6 +320,7 @@ class Processor extends Main
         $orderId = $order->getEntityId();
         $dataType = $isYotpoSyncedOrder ? 'update' : 'create';
         $orderData = $this->data->prepareData($order, $dataType);
+        $isProductSyncSuccess = false;
         if (!$orderData) {
             $this->yotpoOrdersLogger->info('Orders sync - no new data to sync', []);
             return [];
@@ -325,7 +328,11 @@ class Processor extends Main
         $this->yotpoOrdersLogger->info('Orders sync - data prepared', []);
         $productIds = $this->data->getLineItemsIds();
         if ($productIds) {
-            $this->checkAndSyncProducts($productIds, $order);
+            $isProductSyncSuccess = $this->checkAndSyncProducts($productIds, $order);
+        }
+        if (!$isProductSyncSuccess) {
+            $this->yotpoOrdersLogger->info('Products sync failed - Order ID - ' . $order->getId(), []);
+            return [];
         }
         if ($isYotpoSyncedOrder) {
             $yotpoOrderId = $yotpoSyncedOrders[$orderId]['yotpo_id'];
@@ -359,14 +366,15 @@ class Processor extends Main
      *
      * @param array <mixed> $productIds
      * @param Order $order
-     * @return void
+     * @return bool
      */
     public function checkAndSyncProducts($productIds, $order)
     {
         $unSyncedProductIds = $this->data->getUnSyncedProductIds($productIds, $order);
         if ($unSyncedProductIds) {
-            $this->catalogProcessor->process($unSyncedProductIds);
+            return $this->catalogProcessor->process($unSyncedProductIds, $order);
         }
+        return true;
     }
 
     /**

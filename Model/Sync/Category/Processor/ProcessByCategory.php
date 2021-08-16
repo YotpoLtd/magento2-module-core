@@ -77,6 +77,7 @@ class ProcessByCategory extends Main
             foreach ((array)$this->config->getAllStoreIds(false) as $storeId) {
                 $this->emulateFrontendArea($storeId);
                 if (!$this->config->isCatalogSyncActive()) {
+                    $this->stopEnvironmentEmulation();
                     continue;
                 }
                 $this->yotpoCoreCatalogLogger->info(
@@ -88,12 +89,15 @@ class ProcessByCategory extends Main
                     sprintf('Category Sync - Finish - Store ID: %s', $storeId)
                 );
             }
+            $this->stopEnvironmentEmulation();
         } catch (NoSuchEntityException $e) {
+            $this->stopEnvironmentEmulation();
             throw new NoSuchEntityException(
                 __('Category Sync - ProcessByCategory - process() - NoSuchEntityException %1', $e->getMessage())
             );
 
         } catch (LocalizedException $e) {
+            $this->stopEnvironmentEmulation();
             throw new LocalizedException(
                 __('Category Sync - ProcessByCategory - process() - LocalizedException %1', $e->getMessage())
             );
