@@ -8,6 +8,8 @@ use Magento\Framework\App\Config\ReinitableConfigInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Exception\AlreadyExistsException;
+use Magento\Framework\Exception\LocalizedException;
+use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\ScopeInterface;
 use Yotpo\Core\Model\Api\Token as YotpoApi;
 use Yotpo\Reviews\Model\Config as YotpoConfig;
@@ -16,7 +18,7 @@ use Yotpo\Reviews\Model\Config as YotpoConfig;
  * Class Save
  * Class for app-key validation
  */
-class Save implements ObserverInterface
+class Save extends Main implements ObserverInterface
 {
     /**
      * @var ReinitableConfigInterface
@@ -39,47 +41,61 @@ class Save implements ObserverInterface
     private $yotpoApi;
 
     /**
+     * @var CatalogMapping
+     */
+    protected $catalogMapping;
+
+    /**
      * Save constructor.
      * @param TypeListInterface $cacheTypeList
      * @param ReinitableConfigInterface $config
      * @param YotpoConfig $yotpoConfig
      * @param YotpoApi $yotpoApi
+     * CatalogMapping $catalogMapping
      */
     public function __construct(
         TypeListInterface $cacheTypeList,
         ReinitableConfigInterface $config,
         YotpoConfig $yotpoConfig,
-        YotpoApi $yotpoApi
+        YotpoApi $yotpoApi,
+        CatalogMapping $catalogMapping
     ) {
         $this->cacheTypeList = $cacheTypeList;
         $this->appConfig = $config;
         $this->yotpoConfig = $yotpoConfig;
         $this->yotpoApi = $yotpoApi;
+        $this->catalogMapping = $catalogMapping;
+    }
+
+    /**
+     * @param Observer $observer
+     * @throws AlreadyExistsException
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function execute(Observer $observer)
+    {
+        $this->doYotpoApiKeyValidation($observer);
+        $this->catalogMapping->doYotpoCatalogMappingChanges($observer);
     }
 
     /**
      * @param Observer $observer
      * @return bool|void
-     * @throws \Magento\Framework\Exception\LocalizedException
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @throws AlreadyExistsException
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
      */
-    public function execute(Observer $observer)
+    public function doYotpoApiKeyValidation(Observer $observer)
     {
         $changedPaths = (array)$observer->getEvent()->getChangedPaths();
         if ($changedPaths) {
             $this->cacheTypeList->cleanType(Config::TYPE_IDENTIFIER);
             $this->appConfig->reinit();
-
-            $scope = $scopes = \Magento\Framework\App\Config\ScopeConfigInterface::SCOPE_TYPE_DEFAULT;
-            if (($scopeId = $observer->getEvent()->getStore())) {
-                $scope = ScopeInterface::SCOPE_STORE;
-                $scopes = ScopeInterface::SCOPE_STORES;
-            } elseif (($scopeId = $observer->getEvent()->getWebsite())) {
-                $scope = ScopeInterface::SCOPE_WEBSITE;
-                $scopes = ScopeInterface::SCOPE_WEBSITES;
-            } else {
-                $scopeId = 0;
-            }
+            $scopeDetails = $this->getScopes($observer);
+            $scopeId = (int) $scopeDetails['scope_id'];
+            $scope = $scopeDetails['scope'];
+            $scopes = $scopeDetails['scopes'];
 
             $appKey = $this->yotpoConfig->getAppKey($scopeId, $scope);
 
@@ -91,7 +107,7 @@ class Save implements ObserverInterface
             //Check if appKey is unique:
             if ($appKey) {
                 foreach ((array) $this->yotpoConfig->getAllStoreIds() as $key => $storeId) {
-                    if (($scopeId && $storeId !== $scopeId) && $this->yotpoConfig->getAppKey($storeId) === $appKey) {
+                    if (($scopeId && $storeId != $scopeId) && $this->yotpoConfig->getAppKey($storeId) === $appKey) {
                         $this->resetStoreCredentials($scopeId, $scopes);
                         throw new AlreadyExistsException(__(
                             "The APP KEY you've entered is already in use by another store on this system.
@@ -117,7 +133,7 @@ class Save implements ObserverInterface
      * @param int|null $scopeId
      * @param string $scope
      * @return void
-     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @throws NoSuchEntityException
      */
     private function resetStoreCredentials($scopeId = null, $scope = ScopeInterface::SCOPE_STORES)
     {

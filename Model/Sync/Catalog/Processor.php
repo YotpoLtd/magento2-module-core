@@ -3,6 +3,7 @@ namespace Yotpo\Core\Model\Sync\Catalog;
 
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\Framework\Exception\NoSuchEntityException;
+use Magento\Sales\Model\Order;
 use Yotpo\Core\Model\AbstractJobs;
 use Yotpo\Core\Model\Config as CoreConfig;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
@@ -113,13 +114,16 @@ class Processor extends AbstractJobs
 
     /**
      * Logic part to process the Catalog Api
-     * @param array<mixed> $unSyncedProductIds
-     * @return void
+     *
+     * @param null|array <mixed> $unSyncedProductIds
+     * @param Order $order
+     * @return bool
      */
-    public function process($unSyncedProductIds = null)
+    public function process($unSyncedProductIds = null, $order = null)
     {
         try {
             $allStores = (array)$this->coreConfig->getAllStoreIds(false);
+            $unSyncedStoreIds = [];
             foreach ($allStores as $storeId) {
                 if (in_array($storeId, $this->runStoreIds)) {
                     continue;
@@ -127,10 +131,11 @@ class Processor extends AbstractJobs
                 $this->runStoreIds[] = $storeId;
                 $this->emulateFrontendArea($storeId);
                 try {
-                    if (!$this->coreConfig->isCatalogSyncActive()) {
+                    if (!$order && !$this->coreConfig->isCatalogSyncActive()) {
                         $this->yotpoCatalogLogger->info(
                             __('Product Sync - Disabled - Store ID: %1', $storeId)
                         );
+                        $this->stopEnvironmentEmulation();
                         continue;
                     }
                     $this->productSyncLimit = $this->coreConfig->getConfig('product_sync_limit');
@@ -142,16 +147,24 @@ class Processor extends AbstractJobs
                     $collection = $this->getCollectionForSync($unSyncedProductIds);
                     $this->syncItems($collection->getItems(), $storeId);
                 } catch (\Exception $e) {
+                    $unSyncedStoreIds[] = $storeId;
                     $this->yotpoCatalogLogger->info(
                         __('Product Sync has stopped with exception :  %1, Store ID: %2', $e->getMessage(), $storeId)
                     );
                 }
                 $this->stopEnvironmentEmulation();
             }
+            $this->stopEnvironmentEmulation();
+            if ($order && in_array($order->getStoreId(), $unSyncedStoreIds)) {
+                return false;
+            } else {
+                return true;
+            }
         } catch (\Exception $e) {
             $this->yotpoCatalogLogger->info(
                 __('Catalog sync::process() - Exception: ', [$e->getTraceAsString()])
             );
+            return false;
         }
     }
 
@@ -544,12 +557,14 @@ class Processor extends AbstractJobs
     {
         $collection = $this->collectionFactory->create();
         $collection->addAttributeToSelect('*');
-        $collection->addAttributeToFilter(
-            [
-                ['attribute' => CoreConfig::CATALOG_SYNC_ATTR_CODE, 'null' => true],
-                ['attribute' => CoreConfig::CATALOG_SYNC_ATTR_CODE, 'eq' => '0'],
-            ]
-        );
+        if (!$unSyncedProductIds) {
+            $collection->addAttributeToFilter(
+                [
+                    ['attribute' => CoreConfig::CATALOG_SYNC_ATTR_CODE, 'null' => true],
+                    ['attribute' => CoreConfig::CATALOG_SYNC_ATTR_CODE, 'eq' => '0'],
+                ]
+            );
+        }
         if ($unSyncedProductIds) {
             $collection->addFieldToFilter('entity_id', ['in' => $unSyncedProductIds]);
         }
