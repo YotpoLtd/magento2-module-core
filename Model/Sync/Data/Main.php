@@ -76,16 +76,29 @@ class Main
         foreach ($order->getAllVisibleItems() as $orderItem) {
             $orderItems[$orderItem->getProduct()->getId()] = $orderItem->getProduct();
         }
+        return $this->getProductIds($productIds, $order->getStoreId(), $orderItems);
+    }
+
+    /**
+     * Get product ids
+     *
+     * @param array <mixed> $productIds
+     * @param int|null $storeId
+     * @param array <mixed> $items
+     * @return mixed
+     */
+    public function getProductIds($productIds, $storeId, $items)
+    {
         $productIds = array_unique($productIds);
         $connection = $this->resourceConnection->getConnection();
         $table = $connection->getTableName('yotpo_product_sync');
         $products = $connection->select()
             ->from($table, ['product_id', 'yotpo_id', 'yotpo_id_parent', 'visible_variant_yotpo_id'])
             ->where('product_id IN(?) ', $productIds)
-            ->where('store_id=(?)', $order->getStoreId());
+            ->where('store_id=(?)', $storeId);
         $products = $connection->fetchAssoc($products, []);
         foreach ($products as $product) {
-            $orderItemProduct = $orderItems[$product['product_id']] ?? null;
+            $orderItemProduct = $items[$product['product_id']] ?? null;
             $yotpoIdKey = 'yotpo_id';
             if ($orderItemProduct
                 && $orderItemProduct->isVisibleInSiteVisibility()

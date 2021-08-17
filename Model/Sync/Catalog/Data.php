@@ -255,8 +255,9 @@ class Data extends Main
     {
         $collection = $this->collectionFactory->create();
         $collection->addAttributeToSelect('*');
-        $collection->addAttributeToFilter('entity_id', ['in' => $configIds]);
-
+        $IdField = $this->yotpoCoreConfig->getEavRowIdFieldName();
+        /** @phpstan-ignore-next-line */
+        $collection->addAttributeToFilter($IdField, ['in' => $configIds]);
         if ($collection->getSize()) {
             foreach ($collection->getItems() as $item) {
                 $this->getChildOptions($item);
@@ -491,7 +492,7 @@ class Data extends Main
             if ($key === 'is_blocklisted') {
                 $resultArray[$key] = $itemValue === 1 || $itemValue == 'Yes' || $itemValue === true;
             } elseif ($key === 'review_form_tag') {
-                $resultArray[$key] = $itemValue ?: null;
+                $resultArray[$key] = $itemValue ?: '';
             } else {
                 $resultArray[$key] = $itemValue;
             }
