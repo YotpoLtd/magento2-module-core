@@ -14,6 +14,7 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Yotpo\Core\Model\Sync\Category\Processor\ProcessByProduct as CatgorySyncProcessor;
+use Magento\Quote\Model\Quote;
 
 /**
  * Class Processor - Process catalog sync
@@ -76,6 +77,11 @@ class Processor extends AbstractJobs
     protected $entityIdFieldValue;
 
     /**
+     * @var boolean
+     */
+    private $normalSync = true;
+
+    /**
      * Processor constructor.
      * @param AppEmulation $appEmulation
      * @param CoreConfig $coreConfig
@@ -113,10 +119,26 @@ class Processor extends AbstractJobs
     }
 
     /**
-     * Logic part to process the Catalog Api
-     *
+     * Sync products during checkout
      * @param null|array <mixed> $unSyncedProductIds
-     * @param Order $order
+     * @return bool
+     */
+    public function processCheckoutProducts($unSyncedProductIds)
+    {
+        $this->normalSync = false;
+        try {
+            $storeId = $this->coreConfig->getStoreId();
+            $collection = $this->getCollectionForSync($unSyncedProductIds);
+            $this->syncItems($collection->getItems(), $storeId);
+            return true;
+        } catch (NoSuchEntityException $e) {
+            return false;
+        }
+    }
+    /**
+     * Process the Catalog Api
+     * @param null|array <mixed> $unSyncedProductIds
+     * @param Order|Quote $order
      * @return bool
      */
     public function process($unSyncedProductIds = null, $order = null)
@@ -187,7 +209,6 @@ class Processor extends AbstractJobs
             $sqlData = $sqlDataIntTable = [];
             $externalIds = [];
             $visibleVariantsData = $visibleVariants ? [] : $items['visible_variants'];
-            $visibleVariantsDataKeys = array_keys($visibleVariantsData);
             $visibleVariantsDataValues = array_values($visibleVariantsData);
             foreach ($items['sync_data'] as $itemId => $itemData) {
                 $rowId = $itemData['row_id'];
@@ -267,7 +288,7 @@ class Processor extends AbstractJobs
                 $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($sqlData));
             }
 
-            if (count($sqlDataIntTable)) {
+            if (count($sqlDataIntTable) && $this->normalSync) {
                 $this->insertOnDuplicate(
                     'catalog_product_entity_int',
                     $sqlDataIntTable
@@ -281,24 +302,26 @@ class Processor extends AbstractJobs
                     $parentIds,
                     $visibleVariants
                 );
-                if ($yotpoExistingProducts) {
+                if ($yotpoExistingProducts && $this->normalSync) {
                     $dataToSent = array_merge(
                         $dataToSent,
                         $this->catalogData->filterDataForCatSync($yotpoExistingProducts)
                     );
                 }
             }
-            $this->coreConfig->saveConfig('catalog_last_sync_time', $lastSyncTime);
-            $dataForCategorySync = [];
-            if ($dataToSent && !$visibleVariants) {
-                $dataForCategorySync = $this->getProductsForCategorySync(
-                    $dataToSent,
-                    $collectionItems,
-                    $dataForCategorySync
-                );
-            }
-            if (count($dataForCategorySync) > 0) {
-                $this->catgorySyncProcessor->process($dataForCategorySync);
+            if ($this->normalSync) {
+                $this->coreConfig->saveConfig('catalog_last_sync_time', $lastSyncTime);
+                $dataForCategorySync = [];
+                if ($dataToSent && !$visibleVariants) {
+                    $dataForCategorySync = $this->getProductsForCategorySync(
+                        $dataToSent,
+                        $collectionItems,
+                        $dataForCategorySync
+                    );
+                }
+                if (count($dataForCategorySync) > 0) {
+                    $this->catgorySyncProcessor->process($dataForCategorySync);
+                }
             }
             if ($visibleVariantsDataValues && !$visibleVariants) {
                 $this->syncItems($visibleVariantsDataValues, $storeId, true);
