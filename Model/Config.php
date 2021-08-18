@@ -95,6 +95,7 @@ class Config
         'attr_isbn' => ['path' => 'yotpo_core/sync_settings/catalog_sync/settings_catalog/attr_isbn'],
         'catalog_last_sync_time' => ['path' => 'yotpo_core/sync_settings/catalog_sync/last_sync_time'],
         'catalog_sync_frequency' => ['path' => 'yotpo_core/sync_settings/catalog_sync/frequency'],
+        'orders_sync_frequency' => ['path' => 'yotpo_core/sync_settings/orders_sync/frequency'],
         'catalog_sync_enable' => ['path' => 'yotpo_core/sync_settings/catalog_sync/enable'],
         'sync_limit_collections' => ['path' => 'yotpo_core/sync_settings/catalog_sync/sync_limit_collections'],
         'orders_sync_active' => ['path' => 'yotpo_core/sync_settings/orders_sync/enable'],

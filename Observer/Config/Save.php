@@ -46,25 +46,33 @@ class Save extends Main implements ObserverInterface
     protected $catalogMapping;
 
     /**
+     * @var CronFrequency
+     */
+    protected $cronFrequency;
+
+    /**
      * Save constructor.
      * @param TypeListInterface $cacheTypeList
      * @param ReinitableConfigInterface $config
      * @param YotpoConfig $yotpoConfig
      * @param YotpoApi $yotpoApi
      * CatalogMapping $catalogMapping
+     * CronFrequency $cronFrequency
      */
     public function __construct(
         TypeListInterface $cacheTypeList,
         ReinitableConfigInterface $config,
         YotpoConfig $yotpoConfig,
         YotpoApi $yotpoApi,
-        CatalogMapping $catalogMapping
+        CatalogMapping $catalogMapping,
+        CronFrequency $cronFrequency
     ) {
         $this->cacheTypeList = $cacheTypeList;
         $this->appConfig = $config;
         $this->yotpoConfig = $yotpoConfig;
         $this->yotpoApi = $yotpoApi;
         $this->catalogMapping = $catalogMapping;
+        $this->cronFrequency = $cronFrequency;
     }
 
     /**
@@ -77,6 +85,7 @@ class Save extends Main implements ObserverInterface
     {
         $this->doYotpoApiKeyValidation($observer);
         $this->catalogMapping->doYotpoCatalogMappingChanges($observer);
+        $this->cronFrequency->doCronFrequencyChanges($observer);
     }
 
     /**

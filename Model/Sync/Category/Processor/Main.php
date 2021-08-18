@@ -89,7 +89,8 @@ class Main extends AbstractJobs
         $categories =   $connection->select()
             ->from($table)
             ->where('category_id IN(?) ', $magentoCategories)
-            ->where('store_id=(?)', $storeId);
+            ->where('store_id=(?)', $storeId)
+            ->where('yotpo_id > 0');
 
         $categories =   $connection->fetchAssoc($categories, []);
         foreach ($categories as $cat) {

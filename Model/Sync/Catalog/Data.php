@@ -534,6 +534,7 @@ class Data extends Main
      */
     public function getProductDescription(Product $item)
     {
-        return trim($item->getData('description')) ?:  trim($item->getData('short_description'));
+        return trim(strip_tags($item->getData('description'))) ?:
+            trim(strip_tags($item->getData('short_description')));
     }
 }
