@@ -72,7 +72,6 @@ class ProcessByCategory extends Main
      */
     public function process()
     {
-
         try {
             foreach ((array)$this->config->getAllStoreIds(false) as $storeId) {
                 $this->emulateFrontendArea($storeId);
@@ -111,9 +110,8 @@ class ProcessByCategory extends Main
      */
     public function processEntity()
     {
-
         $currentTime        =   date('Y-m-d H:i:s');
-        $batchSize          =   $this->config->getConfig('sync_limit_collections');
+        $batchSize          =   $this->config->getConfig('product_sync_limit');
         $existColls         =   [];
         $categoriesToUpdate =   [];
         $attributeId = $this->data->getAttributeId(Config::CATEGORY_SYNC_ATTR_CODE);

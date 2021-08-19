@@ -14,7 +14,6 @@
                 <attribute type="expanded">1</attribute>
                 <field id="active" translate="label comment" type="select" sortOrder="30" showInDefault="0" showInWebsite="0" showInStore="1">
                     <label>Enable Yotpo</label>
-                    <config_path>yotpo/settings/active</config_path>
                     <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\NoScopes</frontend_model>
                     <comment><![CDATA[To connect Yotpo to your store, enter your <a href="https://docs.magento.com/m2/ee/user_guide/marketing/yotpo-connect.html#enable-yotpo-and-connect-your-magento-store" title="App Key and API Secret" target="_blank" style="color:#2b7dbd">App Key and API Secret</a> in the fields below and save your configuration.]]></comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
@@ -61,7 +60,7 @@
                     </field>
                     <field id="frequency" translate="label comment" sortOrder="390" type="text" showInDefault="1" showInWebsite="0" showInStore="0">
                         <label>Frequency:</label>
-                        <comment><![CDATA[e.g, */5 * * * *]]></comment>
+                        <comment><![CDATA[e.g, */2 * * * * - every 2 minutes]]></comment>
                         <backend_model>Yotpo\Core\Model\Config\Backend\Sync\Scheduler</backend_model>
                     </field>
                     <field id="orders_sync_limit" translate="label comment" sortOrder="395" type="text" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -108,7 +107,7 @@
                     </field>
                     <field id="frequency" translate="label comment" sortOrder="500" type="text" showInDefault="1" showInWebsite="0" showInStore="0">
                         <label>Frequency:</label>
-                        <comment><![CDATA[e.g, */5 * * * *  - Every 5 minutes]]></comment>
+                        <comment><![CDATA[e.g, */2 * * * * - every 2 minutes]]></comment>
                         <backend_model>Yotpo\Core\Model\CronConfig</backend_model>
                     </field>
                     <field id="product_sync_limit" translate="label comment" sortOrder="500" type="text" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -166,6 +165,12 @@
                         </field>
                     </group>
                 </group>
+                <field id="debug_mode_active" translate="label comment" type="select" sortOrder="710" showInDefault="1"
+                       showInWebsite="1" showInStore="1" canRestore="1">
+                    <label>Enable Debug Mode</label>
+                    <config_path>yotpo/settings/debug_mode_active</config_path>
+                    <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                </field>
             </group>
         </section>
     </system>

@@ -320,7 +320,6 @@ class Processor extends Main
         $orderId = $order->getEntityId();
         $dataType = $isYotpoSyncedOrder ? 'update' : 'create';
         $orderData = $this->data->prepareData($order, $dataType);
-        $isProductSyncSuccess = false;
         if (!$orderData) {
             $this->yotpoOrdersLogger->info('Orders sync - no new data to sync', []);
             return [];
@@ -329,10 +328,10 @@ class Processor extends Main
         $productIds = $this->data->getLineItemsIds();
         if ($productIds) {
             $isProductSyncSuccess = $this->checkAndSyncProducts($productIds, $order);
-        }
-        if (!$isProductSyncSuccess) {
-            $this->yotpoOrdersLogger->info('Products sync failed - Order ID - ' . $order->getId(), []);
-            return [];
+            if (!$isProductSyncSuccess) {
+                $this->yotpoOrdersLogger->info('Products sync failed - Order ID - ' . $order->getId(), []);
+                return [];
+            }
         }
         if ($isYotpoSyncedOrder) {
             $yotpoOrderId = $yotpoSyncedOrders[$orderId]['yotpo_id'];
