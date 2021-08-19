@@ -128,6 +128,7 @@ class Save extends Main implements ObserverInterface
 
             if ($this->yotpoConfig->isEnabled($scopeId, $scope) &&
                 !($this->yotpoApi->createAuthToken($scopeId, $scope))) {
+                file_put_contents(BP.'/var/log/debug-yotpo-api.log', __FILE__.__LINE__.PHP_EOL, FILE_APPEND);
                 $this->resetStoreCredentials($scopeId, $scopes);
                 throw new AlreadyExistsException(__(
                     "Please make sure the APP KEY and SECRET you've entered are correct"

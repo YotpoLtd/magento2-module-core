@@ -63,6 +63,8 @@ class Yclient
         array $options = [],
         string $requestMethod = Request::HTTP_METHOD_GET
     ) {
+        file_put_contents(BP.'/var/log/debug-yotpo-api.log', __FILE__.__LINE__.'$requestMethod='.$requestMethod.',$baseUrl='.$baseUrl.',
+        $uriEndpoint='.$uriEndpoint.',$options='.json_encode($options).PHP_EOL, FILE_APPEND);
         $this->setCustomLogHandler($options);
         if (array_key_exists('entityLog', $options)) {
             unset($options['entityLog']);
@@ -80,6 +82,8 @@ class Yclient
             $logData[] = $options;
             $this->yotpoApiLogger->info($logMessage, $logData);
             $logData = [];
+            file_put_contents(BP.'/var/log/debug-yotpo-api.log', __FILE__.__LINE__.'$requestMethod='.$requestMethod.',$baseUrl='.$baseUrl.',
+        $uriEndpoint='.$uriEndpoint.',$options='.json_encode($options).PHP_EOL, FILE_APPEND);
             $response = $client->request(
                 $requestMethod,
                 $uriEndpoint,
@@ -90,9 +94,15 @@ class Yclient
             $responseContent = $responseBody->getContents();
             $responseBody->rewind();
             $logData[] = 'response = ' . $responseContent;
+            file_put_contents(BP.'/var/log/debug-yotpo-api.log', __FILE__.__LINE__.'$responseContent='.$responseContent.PHP_EOL, FILE_APPEND);
+            file_put_contents(BP.'/var/log/debug-yotpo-api.log', __FILE__.__LINE__.'$logData='.implode('===='.$logData).PHP_EOL, FILE_APPEND);
             $this->yotpoApiLogger->info($logMessage, $logData);
 
         } catch (GuzzleException $exception) {
+            file_put_contents(BP.'/var/log/debug-yotpo-api.log', __FILE__.__LINE__.'$exception='.$exception->getTraceAsString().PHP_EOL, FILE_APPEND);
+            file_put_contents(BP.'/var/log/debug-yotpo-api.log', __FILE__.__LINE__.'$exceptionMessage='.$exception->getMessage().PHP_EOL, FILE_APPEND);
+
+
             /** @var Response $response */
             $response = $this->responseFactory->create([
                 'status' => $exception->getCode(),
@@ -122,6 +132,9 @@ class Yclient
         string $uriEndpoint,
         Array $options = []
     ) {
+        file_put_contents(BP.'/var/log/debug-yotpo-api.log', __FILE__.__LINE__.'$method='.$method.',$baseUrl='.$baseUrl.',
+        $uriEndpoint='.$uriEndpoint.',$options='.json_encode($options).PHP_EOL, FILE_APPEND);
+
         $response = $this->doRequest($baseUrl, $uriEndpoint, $options, $method);
         $status = $response->getStatusCode();
         $responseBody = $response->getBody();

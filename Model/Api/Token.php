@@ -63,6 +63,7 @@ class Token
      */
     public function createAuthToken($scopeId = null, string $scope = ScopeInterface::SCOPE_STORE)
     {
+        file_put_contents(BP.'/var/log/debug-yotpo-api.log', __FILE__.__LINE__.PHP_EOL, FILE_APPEND);
         $token = null;
         $endPoint = $this->config->getConfig('api_url_access_tokens', $scopeId, $scope);
         $data = [
@@ -71,6 +72,8 @@ class Token
         $appKey = $this->config->getConfig('app_key', $scopeId, $scope);
         $baseUrl = str_ireplace('{store_id}', $appKey, $this->config->getConfig('api', $scopeId, $scope));
         $options = ['json' => $data];
+        file_put_contents(BP.'/var/log/debug-yotpo-api.log', __FILE__.__LINE__.'$baseUrl='.$baseUrl.',$endPoint='.$endPoint.', options='.json_encode($options).PHP_EOL, FILE_APPEND);
+
         $tokenResponse = $this->yotpoHttpclient->send(
             Request::HTTP_METHOD_POST,
             $baseUrl,
