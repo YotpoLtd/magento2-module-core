@@ -143,7 +143,7 @@ class Yclient
      */
     public function setCustomLogHandler(array $options)
     {
-        $customHandlerClass = '';
+        $customHandlerClass = \Yotpo\Core\Model\Api\Logger\Handler::class;
         $handlerInstance    = '';
         if (array_key_exists('entityLog', $options)) {
             $customHandlerClass = $options['entityLog'];

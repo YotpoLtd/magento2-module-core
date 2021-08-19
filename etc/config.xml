@@ -3,6 +3,9 @@
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
     <default>
         <yotpo_core>
+            <settings>
+                <active>0</active>
+            </settings>
             <env>
                 <yotpo_api_url>https://api.yotpo.com/core/v3/stores/{store_id}/</yotpo_api_url>
                 <yotpo_api_url_messaging>https://api.yotpo.com/messaging/v3/stores/{store_id}/</yotpo_api_url_messaging>
@@ -10,9 +13,6 @@
                 <yotpo_widget_url>//staticw2.yotpo.com/</yotpo_widget_url>
                 <yotpo_api_url_access_tokens>access_tokens</yotpo_api_url_access_tokens>
             </env>
-            <settings>
-                <debug_mode_active>1</debug_mode_active>
-            </settings>
             <sync_settings>
                 <orders_sync>
                     <enable>1</enable>
