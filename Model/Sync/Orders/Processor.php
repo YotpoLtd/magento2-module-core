@@ -15,6 +15,7 @@ use Yotpo\Core\Model\Sync\Orders\Logger as YotpoOrdersLogger;
 use Yotpo\Core\Model\Api\Sync as YotpoCoreSync;
 use Yotpo\Core\Helper\Data as CoreHelperData;
 use Yotpo\Core\Model\Sync\Catalog\Processor as CatalogProcessor;
+use Magento\Framework\App\State as AppState;
 
 /**
  * Class Processor - Process orders sync
@@ -52,6 +53,11 @@ class Processor extends Main
     protected $catalogProcessor;
 
     /**
+     * @var AppState
+     */
+    protected $appState;
+
+    /**
      * Processor constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -62,6 +68,7 @@ class Processor extends Main
      * @param Logger $yotpoOrdersLogger
      * @param CoreHelperData $helperData
      * @param CatalogProcessor $catalogProcessor
+     * @param AppState $appState
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -72,13 +79,15 @@ class Processor extends Main
         OrdersData $data,
         YotpoOrdersLogger $yotpoOrdersLogger,
         CoreHelperData $helperData,
-        CatalogProcessor $catalogProcessor
+        CatalogProcessor $catalogProcessor,
+        AppState $appState
     ) {
         $this->yotpoCoreSync = $yotpoCoreSync;
         $this->orderFactory = $orderFactory;
         $this->yotpoOrdersLogger = $yotpoOrdersLogger;
         $this->helperData = $helperData;
         $this->catalogProcessor = $catalogProcessor;
+        $this->appState = $appState;
         parent::__construct($appEmulation, $resourceConnection, $yotpoCoreConfig, $data);
     }
 
@@ -134,6 +143,7 @@ class Processor extends Main
      */
     public function processOrders()
     {
+        $orders = [];
         $ordersToUpdate = [];
         $magentoOrders = [];
         $yotpoTableFinalData = [];
@@ -159,6 +169,7 @@ class Processor extends Main
         }
         $orderCollection->getSelect()->limit($batchSize);
         foreach ($orderCollection->getItems() as $order) {
+            $orders[] = $order;
             $orderId = $order->getEntityId();
             $magentoOrders[$orderId] = $order;
             $orderIds[] = $orderId;
@@ -169,6 +180,7 @@ class Processor extends Main
         }
         if ($orderIds) {
             $this->data->prepareShipmentStatuses($orderIds);
+            $this->data->prepareParentData($orders);
             if ($customerIds) {
                 $this->data->prepareCustomAttributes($customerIds);
             }
@@ -239,6 +251,7 @@ class Processor extends Main
         $currentTime = date('Y-m-d H:i:s');
         $yotpoTableFinalData = [];
         $magentoOrders = [];
+        $orders[] = $magentoOrder;
         $customerIds = [];
         $ordersToUpdate[] = $magentoOrderId;
         $couponCodes[] = $magentoOrder->getCouponCode();
@@ -268,6 +281,7 @@ class Processor extends Main
                     }
                 }
             }
+            $this->data->prepareParentData($orders);
             $this->data->prepareShipmentStatuses($ordersToUpdate);
             $customerIds ? $this->data->prepareCustomAttributes($customerIds) :
                 $this->data->prepareGuestUsersCustomAttributes($ordersToUpdate);

@@ -115,4 +115,43 @@ class Main
         }
         return $productIds;
     }
+
+    /**
+     * Get parent product ids
+     *
+     * @param array <mixed> $productIds
+     * @param int|null $storeId
+     * @return mixed
+     */
+    public function getParentProductIds($productIds, $storeId)
+    {
+        $productIds = array_unique($productIds);
+        $parentProductIds = [];
+        $parentProductIdsYotpo = [];
+
+        $connection = $this->resourceConnection->getConnection();
+        $table = $connection->getTableName('yotpo_product_sync');
+        $products = $connection->select()
+            ->from($table, ['product_id', 'yotpo_id_parent'])
+            ->where('product_id IN(?) ', $productIds)
+            ->where('yotpo_id_parent != ?', 0)
+            ->where('store_id=(?)', $storeId);
+        $products = $connection->fetchAssoc($products, []);
+        foreach ($products as $product) {
+            if ($product['yotpo_id_parent']) {
+                $parentProductIdsYotpo[$product['yotpo_id_parent']] = $product['product_id'];
+            }
+        }
+        if ($parentProductIdsYotpo) {
+            $products = $connection->select()
+                ->from($table, ['product_id', 'yotpo_id'])
+                ->where('yotpo_id IN(?)', array_keys($parentProductIdsYotpo))
+                ->where('store_id=(?)', $storeId);
+            $products = $connection->fetchAssoc($products, []);
+            foreach ($products as $product) {
+                $parentProductIds[$parentProductIdsYotpo[$product['yotpo_id']]] = $product['product_id'];
+            }
+        }
+        return $parentProductIds;
+    }
 }

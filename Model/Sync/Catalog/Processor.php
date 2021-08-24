@@ -210,6 +210,7 @@ class Processor extends AbstractJobs
             $externalIds = [];
             $visibleVariantsData = $visibleVariants ? [] : $items['visible_variants'];
             $visibleVariantsDataValues = array_values($visibleVariantsData);
+            $visibleVariantsDataKeys = array_keys($visibleVariantsData);
             foreach ($items['sync_data'] as $itemId => $itemData) {
                 $rowId = $itemData['row_id'];
                 unset($itemData['row_id']);
@@ -226,15 +227,13 @@ class Processor extends AbstractJobs
                     $sqlDataIntTable[] = $tempSqlDataIntTable;
                     continue;
                 }
-
-                if (!$visibleVariants
-                    && array_key_exists($itemId, $parentIds)
-                    && !array_key_exists($parentIds[$itemId], $items['sync_data'])
-                ) {
-                    $visibleVariants = true;
-                }
-
                 $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData, $visibleVariants);
+                if (!$apiParam) {
+                    $parentProductId = $parentIds[$itemId] ?? 0;
+                    if ($parentProductId) {
+                        continue;
+                    }
+                }
                 $this->yotpoCatalogLogger->info(
                     __('Data ready to sync - Method: %1 - Store ID: %2', $apiParam['method'], $storeId)
                 );
@@ -252,7 +251,7 @@ class Processor extends AbstractJobs
                 if (!$visibleVariants) {
                     $tempSqlArray['yotpo_id_parent']  = $apiParam['yotpo_id_parent'] ?: 0;
                 }
-                if ($this->coreConfig->canUpdateCustomAttribute($tempSqlArray['response_code'])) {
+                if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
                     $tempSqlDataIntTable = [
                         'attribute_id' => $attributeId,
                         'store_id' => $storeId,
@@ -406,7 +405,7 @@ class Processor extends AbstractJobs
                         $externalIds[] = $data['external_id'];
                     }
                     $tempSqlArray[$yotpoIdkey] = 0;
-                    $this->writeFailedLog($apiParam['method'], $storeId, $data);
+                    $this->writeFailedLog($apiParam['method'], $storeId, []);
                 }
                 break;
             case $this->coreConfig->getProductSyncMethod('updateProduct'):
@@ -426,7 +425,7 @@ class Processor extends AbstractJobs
                         $tempSqlArray['yotpo_id_unassign'] = 0;
                     }
                 } else {
-                    $this->writeFailedLog($apiParam['method'], $storeId, $data);
+                    $this->writeFailedLog($apiParam['method'], $storeId, []);
                 }
                 break;
         }
@@ -500,6 +499,11 @@ class Processor extends AbstractJobs
                     'is_deleted_at_yotpo' => 0,
                     'store_id' => $storeId
                 ];
+                if (!$itemData['yotpo_id']) {
+                    $tempDeleteQry['is_deleted_at_yotpo'] = 1;
+                    $sqlData[] = $tempDeleteQry;
+                    continue;
+                }
                 $params = $this->getDeleteApiParams($itemData, 'yotpo_id');
                 $itemData = ['is_discontinued' => true];
                 $response = $this->processRequest($params, $itemData);
@@ -653,6 +657,8 @@ class Processor extends AbstractJobs
                     ['{yotpo_product_id}'],
                     [$yotpoIdParent]
                 );
+            } elseif (isset($parentIds[$productId])) {
+                return [];
             }
         }
 
@@ -801,12 +807,13 @@ class Processor extends AbstractJobs
                         isset($parentData[$parentIds[$externalId]]['yotpo_id']) &&
                         $parentYotpoId = $parentData[$parentIds[$externalId]]['yotpo_id']) {
                         $filters['variants'][$parentYotpoId][] = $externalId;
+                    } else {
+                        $filters['products'][] = $externalId;
                     }
                 } else {
                     $filters['products'][] = $externalId;
                 }
             }
-
             foreach ($filters as $key => $filter) {
                 if (($key === 'products') && (count($filter) > 0)) {
                     $requestIds = implode(',', $filter);
@@ -827,7 +834,6 @@ class Processor extends AbstractJobs
                     }
                 }
             }
-
             if (count($sqlData)) {
                 $this->insertOnDuplicate(
                     'yotpo_product_sync',
