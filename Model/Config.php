@@ -425,6 +425,17 @@ class Config
     }
 
     /**
+     * @param string $responseCode
+     * @return bool
+     */
+    public function canUpdateCustomAttributeForProducts($responseCode = ''): bool
+    {
+        return ($responseCode
+                && in_array($responseCode, $this->successfulResponseCodes))
+            || !$this->canResync($responseCode) || $responseCode == '409';
+    }
+
+    /**
      * Get default website ID
      *
      * @return int

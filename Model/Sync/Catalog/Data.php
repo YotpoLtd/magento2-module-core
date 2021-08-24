@@ -201,7 +201,6 @@ class Data extends Main
           'parent_ids' => [],
           'parent_data' => []
         ];
-
         $syncItems = $productsId = $productsObject = [];
         foreach ($items as $item) {
             $productsId[] = $item->getData('entity_id');
@@ -222,14 +221,12 @@ class Data extends Main
                 }
             }
         }
-
         $return['sync_data'] = $syncItems;
         $return['parent_ids'] = $parentIds;
         $yotpoData = $this->fetchYotpoData($productsId, $parentIds);
         $return['yotpo_data'] = $yotpoData['yotpo_data'];
         $return['parent_data'] = $yotpoData['parent_data'];
         $return['visible_variants'] = $visibleVariantsData;
-
         return $return;
     }
 
@@ -255,9 +252,7 @@ class Data extends Main
     {
         $collection = $this->collectionFactory->create();
         $collection->addAttributeToSelect('*');
-        $IdField = $this->yotpoCoreConfig->getEavRowIdFieldName();
-        /** @phpstan-ignore-next-line */
-        $collection->addAttributeToFilter($IdField, ['in' => $configIds]);
+        $collection->addAttributeToFilter('entity_id', ['in' => $configIds]);
         if ($collection->getSize()) {
             foreach ($collection->getItems() as $item) {
                 $this->getChildOptions($item);

@@ -106,19 +106,34 @@ class Data extends Main
     protected $couponsCollection = [];
 
     /**
-     * @var array<mixed>
+     * @var array <mixed>
      */
     protected $customersAttributeCollection = [];
 
     /**
-     * @var array<mixed>
+     * @var array <mixed>
      */
     protected $guestUsersAttributeCollection = [];
 
     /**
-     * @var array<mixed>
+     * @var array <mixed>
      */
     protected $lineItemsProductIds = [];
+
+    /**
+     * @var array <mixed>
+     */
+    protected $yotpoParentProductIds = [];
+
+    /**
+     * @var array <mixed>
+     */
+    protected $magentoParentProductIds = [];
+
+    /**
+     * @var array <mixed>
+     */
+    protected $parentProductIds = [];
 
     /**
      * @var ShipmentCollectionFactory
@@ -139,6 +154,26 @@ class Data extends Main
      * @var CustomerRepository
      */
     protected $customerRepository;
+
+    /**
+     * @var ProductTypeConfigurable
+     */
+    protected $configurableType;
+
+    /**
+     * @var ProductTypeGrouped
+     */
+    protected $groupedType;
+
+    /**
+     * @var ProductTypeBundle
+     */
+    protected $bundleType;
+
+    /**
+     * @var array <mixed>
+     */
+    protected $loadedProducts;
 
     /**
      * @var string[]
@@ -192,6 +227,9 @@ class Data extends Main
      * @param CustomerRepository $customerRepository
      * @param ProductRepository $productRepository
      * @param OrderRepository $orderRepository
+     * @param ProductTypeConfigurable $configurableType
+     * @param ProductTypeGrouped $groupedType
+     * @param ProductTypeBundle $bundleType
      */
     public function __construct(
         CoreHelper $coreHelper,
@@ -205,7 +243,10 @@ class Data extends Main
         SearchCriteriaBuilder $searchCriteriaBuilder,
         CustomerRepository $customerRepository,
         ProductRepository $productRepository,
-        OrderRepository $orderRepository
+        OrderRepository $orderRepository,
+        ProductTypeConfigurable $configurableType,
+        ProductTypeGrouped $groupedType,
+        ProductTypeBundle $bundleType
     ) {
         $this->coreHelper = $coreHelper;
         $this->storeManager = $storeManager;
@@ -218,6 +259,9 @@ class Data extends Main
         $this->customerRepository = $customerRepository;
         $this->productRepository = $productRepository;
         $this->orderRepository = $orderRepository;
+        $this->configurableType = $configurableType;
+        $this->groupedType = $groupedType;
+        $this->bundleType = $bundleType;
         parent::__construct($resourceConnection);
     }
 
@@ -365,19 +409,16 @@ class Data extends Main
                         //Skip if item is fully canceled or refunded
                         continue;
                     }
-                    if (($orderItem->getProductType() === ProductTypeGrouped::TYPE_CODE
-                        || $orderItem->getProductType() === ProductTypeConfigurable::TYPE_CODE
-                        || $orderItem->getProductType() === ProductTypeBundle::TYPE_CODE
-                        || $orderItem->getProductType() === 'giftcard')
-                        && (isset($lineItems[$product->getId()]))) {
-                        $lineItems[$product->getId()]['total_price'] +=
+                    $productId = $this->parentProductIds[$product->getId()];
+                    if (isset($lineItems[$productId])) {
+                        $lineItems[$productId]['total_price'] +=
                             $orderItem->getData('row_total_incl_tax') - $orderItem->getData('amount_refunded');
-                        $lineItems[$product->getId()]['subtotal_price'] += $orderItem->getRowTotal();
-                        $lineItems[$product->getId()]['quantity'] += $orderItem->getQtyOrdered() * 1;
+                        $lineItems[$productId]['subtotal_price'] += $orderItem->getRowTotal();
+                        $lineItems[$productId]['quantity'] += $orderItem->getQtyOrdered() * 1;
                     } else {
-                        $this->lineItemsProductIds[] = $product->getId();
-                        $lineItems[$product->getId()] = [
-                            'external_product_id' => $product->getId(),
+                        $this->lineItemsProductIds[] = $productId;
+                        $lineItems[$productId] = [
+                            'external_product_id' => $productId,
                             'quantity' => $orderItem->getQtyOrdered() * 1,
                             'total_price' => $orderItem->getData('row_total_incl_tax') -
                                 $orderItem->getData('amount_refunded'),
@@ -395,6 +436,110 @@ class Data extends Main
                 $e->getMessage(), []);
         }
         return $lineItems;
+    }
+
+    /**
+     * Prepare parent data of orderitems
+     *
+     * @param array <mixed> $orders
+     * @return void
+     * @throws NoSuchEntityException
+     */
+    public function prepareParentData($orders)
+    {
+        $orderItemProductIds = [];
+        foreach ($orders as $order) {
+            foreach ($order->getAllVisibleItems() as $orderItem) {
+                $orderItemProductId = $orderItem->getProductId();
+                /** @var OrderItem $orderItem */
+                if ($orderItem->getProductType() == 'simple' && !$orderItem->getParentItemId()
+                && !$orderItem->getProduct()->isVisibleInSiteVisibility()) {/** @phpstan-ignore-line */
+                    $orderItemProductIds[] = $orderItemProductId;
+                } else {
+                    $this->parentProductIds[$orderItemProductId] = $orderItemProductId;
+                }
+            }
+        }
+        if ($orderItemProductIds) {
+            $yotpoParentIds = $this->getYotpoParentIds($orderItemProductIds);
+            if ($yotpoParentIds) {
+                $missingProductIds = array_diff($orderItemProductIds, array_keys($yotpoParentIds));
+                if ($missingProductIds) {
+                    $this->getMagentoParentIds($missingProductIds);
+                } else {
+                    $this->parentProductIds = array_replace($this->parentProductIds, $this->yotpoParentProductIds);
+                }
+            } else {
+                $this->getMagentoParentIds($orderItemProductIds);
+                $this->parentProductIds = array_replace($this->parentProductIds, $this->yotpoParentProductIds);
+            }
+        }
+    }
+
+    /**
+     * @param array <mixed> $orderItemProductIds
+     * @return array <mixed>
+     * @throws NoSuchEntityException
+     */
+    public function getYotpoParentIds($orderItemProductIds)
+    {
+        $yotpoProducts = $this->getParentProductIds($orderItemProductIds, $this->config->getStoreId());
+        foreach ($yotpoProducts as $productId => $parentId) {
+            $this->yotpoParentProductIds[$productId] = $parentId;
+        }
+        return $this->yotpoParentProductIds;
+    }
+
+    /**
+     * @param array <mixed> $missingProductIds
+     * @return void
+     */
+    public function getMagentoParentIds($missingProductIds)
+    {
+        $productTypes = ['configurable','grouped', 'bundle'];
+        foreach ($productTypes as $productType) {
+            $missingMagentoParentIds = array_diff($missingProductIds, array_keys($this->magentoParentProductIds));
+            if ($missingMagentoParentIds) {
+                $this->getParentIds($missingProductIds, $productType);
+                $this->parentProductIds = array_replace($this->parentProductIds, $this->magentoParentProductIds);
+            } else {
+                $this->parentProductIds = array_replace($this->parentProductIds, $this->magentoParentProductIds);
+                break;
+            }
+        }
+    }
+
+    /**
+     * @param array <mixed> $missingProductIds
+     * @param string $producType
+     * @return array <mixed>
+     */
+    public function getParentIds($missingProductIds, $producType)
+    {
+        foreach ($missingProductIds as $missingProductId) {
+            switch ($producType) {
+                case $this->configurableType::TYPE_CODE:
+                    $typeInstance = $this->configurableType;
+                    break;
+                case $this->groupedType::TYPE_CODE:
+                    $typeInstance = $this->groupedType;
+                    break;
+                case $this->bundleType::TYPE_CODE:
+                    $typeInstance = $this->bundleType;
+                    break;
+                default:
+                    $typeInstance = '';
+                    break;
+            }
+            if ($typeInstance) {
+                $parentIds = $typeInstance->getParentIdsByChild($missingProductId);
+                $parentId = array_shift($parentIds);
+                if ($parentId) {
+                    $this->magentoParentProductIds[$missingProductId] = $parentId;
+                }
+            }
+        }
+        return $this->magentoParentProductIds;
     }
 
     /**
@@ -764,15 +909,12 @@ class Data extends Main
         foreach ($shipmentItems as $shipmentItem) {
             $orderItem = $this->shipOrderItems[$shipmentItem->getOrderItemId()];
             $product = $this->prepareProductObject($orderItem);
-            if (($orderItem->getProductType() === ProductTypeGrouped::TYPE_CODE
-                    || $orderItem->getProductType() === ProductTypeConfigurable::TYPE_CODE
-                    || $orderItem->getProductType() === ProductTypeBundle::TYPE_CODE
-                    || $orderItem->getProductType() === 'giftcard')
-                && (isset($items[$product->getId()]))) {
-                $items[$product->getId()]['quantity'] += $shipmentItem->getQty() * 1;
+            $productId = $this->parentProductIds[$product->getId()];
+            if (isset($items[$productId])) {
+                $items[$productId]['quantity'] += $shipmentItem->getQty() * 1;
             } else {
-                $items[$product->getId()] = [
-                    'external_product_id' => $product->getId(),
+                $items[$productId] = [
+                    'external_product_id' => $productId,
                     'quantity' => $shipmentItem->getQty() * 1
                 ];
             }

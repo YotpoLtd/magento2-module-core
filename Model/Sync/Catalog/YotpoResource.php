@@ -5,6 +5,7 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Yotpo\Core\Model\Config as CoreConfig;
 use Magento\GroupedProduct\Model\ResourceModel\Product\Link as GroupedLink;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ProductTypeConfigurable;
 
 /**
  * Class YotpoResource
@@ -23,16 +24,28 @@ class YotpoResource
     protected $coreConfig;
 
     /**
+     * @var ProductTypeConfigurable
+     */
+    protected $productTypeConfigurable;
+
+    /**
+     * @var array <mixed>
+     */
+    protected $loadedConfigProducts;
+
+    /**
      * Data constructor.
      * @param ResourceConnection $resourceConnection
      * @param CoreConfig $coreConfig
      */
     public function __construct(
         ResourceConnection $resourceConnection,
-        CoreConfig $coreConfig
+        CoreConfig $coreConfig,
+        ProductTypeConfigurable $productTypeConfigurable
     ) {
         $this->resourceConnection = $resourceConnection;
         $this->coreConfig = $coreConfig;
+        $this->productTypeConfigurable= $productTypeConfigurable;
     }
 
     /**
@@ -130,18 +143,18 @@ class YotpoResource
      */
     public function getConfigProductIds(array $simpleIds): array
     {
-        $connection = $this->resourceConnection->getConnection();
-        $select = $connection->select()->from(
-            $connection->getTableName('catalog_product_super_link'),
-            ['product_id', 'parent_id']
-        )->where(
-            $connection->quoteInto('product_id IN (?)', $simpleIds)
-        );
-
-        $items = $connection->fetchAll($select);
         $configIds = [];
-        foreach ($items as $item) {
-            $configIds[$item['product_id']] = $item['parent_id'];
+        foreach ($simpleIds as $simpleId) {
+            if (!isset($this->loadedConfigProducts[$simpleId])) {
+                $parent = $this->productTypeConfigurable->getParentIdsByChild($simpleId);
+                if ($parent) {
+                    $configIds[$simpleId] = $parent[0];
+                    $this->loadedConfigProducts[$simpleId] = $configIds[$simpleId];
+                }
+            } else {
+                $configIds[$simpleId] = $this->loadedConfigProducts[$simpleId];
+            }
+
         }
         return $configIds;
     }
