@@ -126,8 +126,8 @@ class Main
     public function getParentProductIds($productIds, $storeId)
     {
         $productIds = array_unique($productIds);
-        $parentProductIds = [];
         $parentProductIdsYotpo = [];
+        $returnParentIds = [];
 
         $connection = $this->resourceConnection->getConnection();
         $table = $connection->getTableName('yotpo_product_sync');
@@ -137,21 +137,41 @@ class Main
             ->where('yotpo_id_parent != ?', 0)
             ->where('store_id=(?)', $storeId);
         $products = $connection->fetchAssoc($products, []);
+        $yotpoIds = [];
         foreach ($products as $product) {
             if ($product['yotpo_id_parent']) {
-                $parentProductIdsYotpo[$product['yotpo_id_parent']] = $product['product_id'];
+                $yotpoIds[] = $product['yotpo_id_parent'];
+                $parentProductIdsYotpo[$product['product_id']] = $product['yotpo_id_parent'];
             }
         }
         if ($parentProductIdsYotpo) {
             $products = $connection->select()
                 ->from($table, ['product_id', 'yotpo_id'])
-                ->where('yotpo_id IN(?)', array_keys($parentProductIdsYotpo))
+                ->where('yotpo_id IN(?)', $yotpoIds)
                 ->where('store_id=(?)', $storeId);
-            $products = $connection->fetchAssoc($products, []);
-            foreach ($products as $product) {
-                $parentProductIds[$parentProductIdsYotpo[$product['yotpo_id']]] = $product['product_id'];
+            $products = $connection->fetchAll($products);
+            foreach ($parentProductIdsYotpo as $productId => $yotpoId) {
+                if ($productIdParent = $this->findProductIdUsingYotpoId($yotpoId, $products)) {
+                    $returnParentIds[$productId] = $productIdParent;
+                }
+            }
+
+        }
+        return $returnParentIds;
+    }
+
+    /**
+     * @param int $yotpoId
+     * @param array <mixed> $products
+     * @return int
+     */
+    public function findProductIdUsingYotpoId($yotpoId, $products)
+    {
+        foreach ($products as $product) {
+            if ($product['yotpo_id'] == $yotpoId) {
+                return $product['product_id'];
             }
         }
-        return $parentProductIds;
+        return 0;
     }
 }
