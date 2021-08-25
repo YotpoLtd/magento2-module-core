@@ -123,11 +123,6 @@ class Data extends Main
     /**
      * @var array <mixed>
      */
-    protected $yotpoParentProductIds = [];
-
-    /**
-     * @var array <mixed>
-     */
     protected $magentoParentProductIds = [];
 
     /**
@@ -463,15 +458,13 @@ class Data extends Main
         if ($orderItemProductIds) {
             $yotpoParentIds = $this->getYotpoParentIds($orderItemProductIds);
             if ($yotpoParentIds) {
+                $this->parentProductIds = array_replace($this->parentProductIds, $yotpoParentIds);
                 $missingProductIds = array_diff($orderItemProductIds, array_keys($yotpoParentIds));
                 if ($missingProductIds) {
                     $this->getMagentoParentIds($missingProductIds);
-                } else {
-                    $this->parentProductIds = array_replace($this->parentProductIds, $this->yotpoParentProductIds);
                 }
             } else {
                 $this->getMagentoParentIds($orderItemProductIds);
-                $this->parentProductIds = array_replace($this->parentProductIds, $this->yotpoParentProductIds);
             }
         }
     }
@@ -483,11 +476,12 @@ class Data extends Main
      */
     public function getYotpoParentIds($orderItemProductIds)
     {
+        $yotpoParentIds = [];
         $yotpoProducts = $this->getParentProductIds($orderItemProductIds, $this->config->getStoreId());
         foreach ($yotpoProducts as $productId => $parentId) {
-            $this->yotpoParentProductIds[$productId] = $parentId;
+            $yotpoParentIds[$productId] = $parentId;
         }
-        return $this->yotpoParentProductIds;
+        return $yotpoParentIds;
     }
 
     /**
