@@ -11,7 +11,7 @@ use Yotpo\Core\Model\Config;
 /**
  * Create custom product attribute for yotpo
  */
-class CreateProductAttribute implements DataPatchInterface, PatchVersionInterface
+class CreateProductAttribute implements DataPatchInterface
 {
     /**
      * @var ModuleDataSetupInterface
@@ -75,14 +75,6 @@ class CreateProductAttribute implements DataPatchInterface, PatchVersionInterfac
     public static function getDependencies()
     {
         return [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public static function getVersion()
-    {
-        return '1.0.0';
     }
 
     /**
