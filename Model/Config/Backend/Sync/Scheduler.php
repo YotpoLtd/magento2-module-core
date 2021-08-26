@@ -21,7 +21,7 @@ class Scheduler extends ConfigValue
     /**
      * Path of the cron string
      */
-    const CRON_STRING_PATH = 'crontab/default/jobs/yotpo_cron_core_orders_sync/schedule/cron_expr';
+    const CRON_STRING_PATH = 'crontab/yotpo/jobs/yotpo_cron_core_orders_sync/schedule/cron_expr';
 
     /**
      * @var ValueFactory

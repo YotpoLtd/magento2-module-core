@@ -17,18 +17,26 @@ class Data
         if (!$phone) {
             return $phone;
         }
-        $phoneCodes = PhoneCodes::$phoneCodes;
-        $phone = preg_replace("/[^0-9+]/", "", $phone);
-        if ($phone && stripos($phone, '+') !== false) {
-            return $phone;
-        }
 
+        $phoneCodes = PhoneCodes::$phoneCodes;
+        $phoneCode = '';
         if ($phoneCodes) {
             if (array_key_exists($country, $phoneCodes)) {
-                return '+' . $phoneCodes[$country] . $phone;
+                $phoneCode = $phoneCodes[$country];
             }
         }
-        return $phone;
+
+        $phoneCodeChk =  (string) preg_replace("/[^0-9]/", "", $phoneCode);
+        $phone =  (string) preg_replace("/[^0-9]/", "", $phone);
+        $prefix = substr($phone, 0, 2);
+
+        if (strpos($phone, $phoneCodeChk) === 0 || $prefix == '00') {
+            $formattedPhone = '+'.$phone;
+        } else {
+            $formattedPhone = '+'.$phoneCode.$phone;
+        }
+
+        return $formattedPhone;
     }
 
     /**
