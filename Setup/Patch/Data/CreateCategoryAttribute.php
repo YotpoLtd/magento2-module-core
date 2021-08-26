@@ -11,7 +11,7 @@ use Magento\Framework\Setup\Patch\PatchVersionInterface;
  * Class CreateCategoryAttribute - Create custom category attribute for yotpo
  */
 
-class CreateCategoryAttribute implements DataPatchInterface, PatchVersionInterface
+class CreateCategoryAttribute implements DataPatchInterface
 {
     /**
      * @var ModuleDataSetupInterface
@@ -60,14 +60,6 @@ class CreateCategoryAttribute implements DataPatchInterface, PatchVersionInterfa
     public static function getDependencies()
     {
         return [];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public static function getVersion()
-    {
-        return '1.0.0';
     }
 
     /**
