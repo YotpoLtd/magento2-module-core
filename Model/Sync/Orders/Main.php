@@ -93,6 +93,21 @@ class Main extends AbstractJobs
     }
 
     /**
+     * @param int $orderId
+     * @param string $currentTime
+     * @return array <mixed>
+     */
+    public function prepareYotpoTableDataForMissingProducts($orderId, $currentTime = '')
+    {
+        return [
+            'order_id' => $orderId,
+            'yotpo_id' => null,
+            'synced_to_yotpo' => $currentTime,
+            'response_code' =>  $this->config->getCustRespCodeMissingProd()
+        ];
+    }
+
+    /**
      * Inserts or updates custom table data
      *
      * @param array<mixed> $yotpoTableFinalData

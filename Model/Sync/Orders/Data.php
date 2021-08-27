@@ -445,6 +445,9 @@ class Data extends Main
         $orderItemProductIds = [];
         foreach ($orders as $order) {
             foreach ($order->getAllVisibleItems() as $orderItem) {
+                if (!$orderItem->getProduct()) {
+                    continue;
+                }
                 $orderItemProductId = $orderItem->getProductId();
                 /** @var OrderItem $orderItem */
                 if ($orderItem->getProductType() == 'simple' && !$orderItem->getParentItemId()

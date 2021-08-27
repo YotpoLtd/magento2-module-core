@@ -30,7 +30,7 @@ class ProcessByProduct extends Main
         $existingCollections    =   $this->getYotpoSyncedCategories(array_keys($categories));
 
         foreach ($existingCollections as $catId => $cat) {
-            if (!$this->config->canResync($cat['response_code'])) {
+            if (!$this->config->canResync($cat['response_code'], $cat['yotpo_id'])) {
                 $this->yotpoCoreCatalogLogger->info(
                     'Category Sync - Process categories by product - Category can\'t be synced %1 , response_code - %1',
                     [$catId, $cat['response_code']]

@@ -74,7 +74,11 @@ class Main
     {
         $orderItems = [];
         foreach ($order->getAllVisibleItems() as $orderItem) {
-            $orderItems[$orderItem->getProduct()->getId()] = $orderItem->getProduct();
+            $product = $orderItem->getProduct();
+            if (!$product) {
+                continue;
+            }
+            $orderItems[$product->getId()] = $product;
         }
         return $this->getProductIds($productIds, $order->getStoreId(), $orderItems);
     }

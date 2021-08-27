@@ -172,11 +172,12 @@ class Main extends AbstractJobs
 
     /**
      * @param array<mixed> $category
+     * @param array <mixed>|int|string $yotpoId
      * @return bool
      */
-    public function canResync(array $category = []): bool
+    public function canResync(array $category = [], $yotpoId = []): bool
     {
-        return $this->config->canResync($category['response_code']);
+        return $this->config->canResync($category['response_code'], $yotpoId);
     }
 
     /**

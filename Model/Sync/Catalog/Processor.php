@@ -216,7 +216,7 @@ class Processor extends AbstractJobs
                 unset($itemData['row_id']);
                 if ($yotpoData
                     && array_key_exists($itemId, $yotpoData)
-                    && !$this->coreConfig->canResync($yotpoData[$itemId]['response_code'])
+                    && !$this->coreConfig->canResync($yotpoData[$itemId]['response_code'], $yotpoData[$itemId])
                 ) {
                     $tempSqlDataIntTable = [
                         'attribute_id' => $attributeId,
