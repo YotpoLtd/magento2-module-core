@@ -36,7 +36,7 @@ class Config
     /**
      * @var int[]
      */
-    protected $successfulResponseCodes = [200,201,204];
+    protected $successfulResponseCodes = [200,201,204,222];
 
     /**
      * @var string[]
@@ -406,11 +406,25 @@ class Config
 
     /**
      * @param string $responseCode
+     * @param array <mixed>|int|string $yotpoId
      * @return bool
      */
-    public function canResync($responseCode = ''): bool
+    public function canResync($responseCode = '', $yotpoId = []): bool
     {
-        return (!$responseCode || $responseCode == '409' || $responseCode <=400 || $responseCode >= 500);
+        if (!$yotpoId) {
+            $yotpoId = ['yotpo_id' => ''];
+        } elseif (!is_array($yotpoId)) {
+            $yotpoId = ['yotpo_id' => $yotpoId];
+        }
+        if ($yotpoId['yotpo_id']
+            && $responseCode == '404'
+        ) {
+            return false;
+        }
+        return (!$responseCode || $responseCode == '404' ||
+            $responseCode == '409' || $responseCode <=400 ||
+            $responseCode >= 500
+        );
     }
 
     /**
@@ -551,5 +565,13 @@ class Config
     public function getConfigPath(string $key)
     {
         return $this->config[$key]['path'];
+    }
+
+    /**
+     * @return int
+     */
+    public function getCustRespCodeMissingProd()
+    {
+        return 222;
     }
 }

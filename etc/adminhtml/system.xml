@@ -131,36 +131,36 @@
                             </label>
                             <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Heading</frontend_model>
                         </field>
-                        <field id="attr_mpn" translate="label comment" type="select" sortOrder="550" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>MPN</label>
+                        <field id="attr_product_group" translate="label comment" type="select" sortOrder="550" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>Product Group</label>
                             <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
                         </field>
-                        <field id="attr_brand" translate="label comment" type="select" sortOrder="560" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Brand</label>
-                            <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
-                        </field>
-                        <field id="attr_ean" translate="label comment" type="select" sortOrder="570" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>EAN</label>
-                            <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
-                        </field>
-                        <field id="attr_upc" translate="label comment" type="select" sortOrder="580" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>UPC</label>
-                            <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
-                        </field>
-                        <field id="attr_isbn" translate="label comment" type="select" sortOrder="590" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>ISBN</label>
-                            <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
-                        </field>
-                        <field id="attr_blocklist" translate="label comment" type="select" sortOrder="600" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Add product to blocklist</label>
-                            <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
-                        </field>
-                        <field id="attr_crf" translate="label comment" type="select" sortOrder="610" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <field id="attr_crf" translate="label comment" type="select" sortOrder="560" showInDefault="1" showInWebsite="1" showInStore="1">
                             <label>Review from CRF Tag</label>
                             <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
                         </field>
-                        <field id="attr_product_group" translate="label comment" type="select" sortOrder="620" showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Product Group</label>
+                        <field id="attr_blocklist" translate="label comment" type="select" sortOrder="570" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>Add product to blocklist</label>
+                            <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                        </field>
+                        <field id="attr_mpn" translate="label comment" type="select" sortOrder="580" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>MPN</label>
+                            <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                        </field>
+                        <field id="attr_brand" translate="label comment" type="select" sortOrder="590" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>Brand</label>
+                            <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                        </field>
+                        <field id="attr_ean" translate="label comment" type="select" sortOrder="600" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>EAN</label>
+                            <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                        </field>
+                        <field id="attr_upc" translate="label comment" type="select" sortOrder="610" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>UPC</label>
+                            <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
+                        </field>
+                        <field id="attr_isbn" translate="label comment" type="select" sortOrder="620" showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>ISBN</label>
                             <source_model>Yotpo\Core\Model\Config\Source\ProductAttribute</source_model>
                         </field>
                     </group>

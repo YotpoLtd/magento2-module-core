@@ -159,7 +159,11 @@ class ProcessByCategory extends Main
 
                 $response           =   $this->syncAsNewCollection($magentoCategory);
 
-            } elseif ($this->canResync($yotpoSyncedCategories[$magentoCategory->getId()])) {
+            } elseif ($this->canResync(
+                $yotpoSyncedCategories[$magentoCategory->getId()],
+                $yotpoSyncedCategories['yotpo_id']
+            )
+            ) {
                 if (array_key_exists('yotpo_id', $yotpoSyncedCategories[$magentoCategory->getId()])
                     && $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id']) {
                     $response   =   $this->syncExistingCollection(
