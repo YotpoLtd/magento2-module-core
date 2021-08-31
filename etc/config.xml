@@ -30,10 +30,7 @@
                     </order_status>
                     <shipment_status>
                         <map_shipment_status>
-                            <item1>
-                                <yotpo_shipment_status>out_for_delivery</yotpo_shipment_status>
-                                <store_shipment_status></store_shipment_status>
-                            </item1>
+                            {"_1_1":{"yotpo_shipment_status":"out_for_delivery","store_shipment_status":""}}
                         </map_shipment_status>
                     </shipment_status>
                 </orders_sync>
