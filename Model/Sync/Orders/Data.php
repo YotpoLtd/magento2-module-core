@@ -397,13 +397,15 @@ class Data extends Main
                         - Product not found for order: ' . $order->getEntityId(), []);
                         continue;
                     }
-                    if ($orderItem->getData('amount_refunded') >= $orderItem->getData('row_total_incl_tax') ||
+                    /*if ($orderItem->getData('amount_refunded') >= $orderItem->getData('row_total_incl_tax') ||
                         $orderItem->getData('qty_ordered') <= ($orderItem->getData('qty_refunded')
                             + $orderItem->getData('qty_canceled'))
                     ) {
                         //Skip if item is fully canceled or refunded
+                        /*$this->yotpoOrdersLogger->info('Orders sync::prepareLineItems()
+                        - Product cancelled for order: ' . $order->getEntityId(), []);
                         continue;
-                    }
+                    }*/
                     $productId = $this->parentProductIds[$product->getId()];
                     if (isset($lineItems[$productId])) {
                         $lineItems[$productId]['total_price'] +=

@@ -82,6 +82,7 @@
                         <attribute type="expanded">1</attribute>
                         <field id="map_order_status" translate="label comment" sortOrder="450"
                                showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label><![CDATA[&nbsp;]]></label>
                             <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\MapOrderStatus</frontend_model>
                             <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
                         </field>
@@ -92,6 +93,7 @@
                         <attribute type="expanded">0</attribute>
                         <field id="map_shipment_status" translate="label comment" sortOrder="470"
                                showInDefault="1" showInWebsite="1" showInStore="1">
+                               <label><![CDATA[&nbsp;]]></label>
                             <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\MapShipmentStatus</frontend_model>
                             <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
                         </field>

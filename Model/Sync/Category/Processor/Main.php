@@ -200,6 +200,9 @@ class Main extends AbstractJobs
      */
     public function getCategoriesFromPathNames($categories): array
     {
+        if (!$categories) {
+            return [];
+        }
         $magentoCategories  =   [];
         $categoryPathIds    =   [];
         $categoriesByPath   =   [];
