@@ -98,7 +98,7 @@ class Save extends Main implements ObserverInterface
     public function doYotpoApiKeyValidation(Observer $observer)
     {
         $changedPaths = (array)$observer->getEvent()->getChangedPaths();
-        if ($changedPaths) {
+        if ($changedPaths && $this->isYotpoKeysChanged($changedPaths)) {
             $this->cacheTypeList->cleanType(Config::TYPE_IDENTIFIER);
             $this->appConfig->reinit();
             $scopeDetails = $this->getScopes($observer);
@@ -149,5 +149,19 @@ class Save extends Main implements ObserverInterface
         $this->yotpoConfig->resetStoreCredentials($scopeId, $scope);
         $this->cacheTypeList->cleanType(Config::TYPE_IDENTIFIER);
         $this->appConfig->reinit();
+    }
+
+    /**
+     * @param array <string> $changedPaths
+     * @return bool
+     */
+    public function isYotpoKeysChanged($changedPaths = [])
+    {
+        $yotpoKeyPaths = ['app_key', 'secret', 'yotpo_active'];
+        $pathsToCheck = [];
+        foreach ($yotpoKeyPaths as $yotpoPath) {
+            $pathsToCheck[] = $this->yotpoConfig->getConfigPath($yotpoPath);
+        }
+        return (bool)array_intersect($pathsToCheck, $changedPaths);
     }
 }

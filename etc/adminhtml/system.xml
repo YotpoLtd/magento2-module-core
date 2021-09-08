@@ -84,7 +84,7 @@
                                showInDefault="1" showInWebsite="1" showInStore="1">
                             <label><![CDATA[&nbsp;]]></label>
                             <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\MapOrderStatus</frontend_model>
-                            <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                            <backend_model>Yotpo\Core\Model\Config\Backend\Serialized\ArraySerialized\OrderStatus</backend_model>
                         </field>
                     </group>
                     <group id="shipment_status" translate="label" type="text" sortOrder="460" showInDefault="1"
@@ -95,7 +95,7 @@
                                showInDefault="1" showInWebsite="1" showInStore="1">
                                <label><![CDATA[&nbsp;]]></label>
                             <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\MapShipmentStatus</frontend_model>
-                            <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
+                            <backend_model>Yotpo\Core\Model\Config\Backend\Serialized\ArraySerialized\OrderStatus</backend_model>
                         </field>
                     </group>
                 </group>

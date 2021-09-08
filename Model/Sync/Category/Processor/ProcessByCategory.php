@@ -161,7 +161,7 @@ class ProcessByCategory extends Main
 
             } elseif ($this->canResync(
                 $yotpoSyncedCategories[$magentoCategory->getId()],
-                $yotpoSyncedCategories['yotpo_id']
+                $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id']
             )
             ) {
                 if (array_key_exists('yotpo_id', $yotpoSyncedCategories[$magentoCategory->getId()])
