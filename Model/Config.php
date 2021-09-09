@@ -24,6 +24,8 @@ class Config
     const CATALOG_SYNC_ATTR_CODE = 'synced_to_yotpo_product';
     const CATEGORY_SYNC_ATTR_CODE = 'synced_to_yotpo_collection';
 
+    const UPDATE_SQL_LIMIT = 50000;
+
     const MODULE_NAME = 'Yotpo_Core';
 
     /**
@@ -573,5 +575,13 @@ class Config
     public function getCustRespCodeMissingProd()
     {
         return 222;
+    }
+
+    /**
+     * @return int
+     */
+    public function getUpdateSqlLimit(): int
+    {
+        return self::UPDATE_SQL_LIMIT;
     }
 }

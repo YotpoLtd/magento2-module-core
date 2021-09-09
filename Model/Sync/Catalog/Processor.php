@@ -143,6 +143,7 @@ class Processor extends AbstractJobs
      */
     public function process($unSyncedProductIds = null, $order = null)
     {
+        $this->runStoreIds = [];
         try {
             $allStores = (array)$this->coreConfig->getAllStoreIds(false);
             $unSyncedStoreIds = [];

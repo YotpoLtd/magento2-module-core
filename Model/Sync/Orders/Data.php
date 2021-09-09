@@ -471,6 +471,11 @@ class Data extends Main
             } else {
                 $this->getMagentoParentIds($orderItemProductIds);
             }
+            foreach ($orderItemProductIds as $oIProductId) {
+                if (!isset($this->parentProductIds[$oIProductId])) {
+                    $this->parentProductIds[$oIProductId] = $oIProductId;
+                }
+            }
         }
     }
 
