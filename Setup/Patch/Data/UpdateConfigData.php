@@ -36,18 +36,11 @@ class UpdateConfigData implements DataPatchInterface
      * @var array<mixed>
      */
     private $defaultOrderStatusValues =
-        ['_1_1' => ['store_order_status' => 'canceled', 'yotpo_order_status' => 'cancelled'],
-            '_1_2' => ['store_order_status' => 'closed', 'yotpo_order_status' => 'success'],
+        ['_1_1' => ['store_order_status' => 'pending', 'yotpo_order_status' => 'pending'],
+            '_1_2' => ['store_order_status' => 'processing', 'yotpo_order_status' => 'pending'],
             '_1_3' => ['store_order_status' => 'complete', 'yotpo_order_status' => 'success'],
-            '_1_4' => ['store_order_status' => 'fraud', 'yotpo_order_status' => 'failure'],
-            '_1_5' => ['store_order_status' => 'holded', 'yotpo_order_status' => 'pending'],
-            '_1_6' => ['store_order_status' => 'payment_review', 'yotpo_order_status' => 'pending'],
-            '_1_7' => ['store_order_status' => 'paypal_canceled_reversal', 'yotpo_order_status' => 'cancelled'],
-            '_1_8' => ['store_order_status' => 'paypal_reversed', 'yotpo_order_status' => 'cancelled'],
-            '_1_9' => ['store_order_status' => 'pending', 'yotpo_order_status' => 'pending'],
-            '_1_10' => ['store_order_status' => 'pending_payment', 'yotpo_order_status' => 'pending'],
-            '_1_11' => ['store_order_status' => 'processing', 'yotpo_order_status' => 'pending'],
-            '_1_12' => ['store_order_status' => 'pending_paypal', 'yotpo_order_status' => 'pending'],
+            '_1_4' => ['store_order_status' => 'closed', 'yotpo_order_status' => 'cancelled'],
+            '_1_5' => ['store_order_status' => 'canceled', 'yotpo_order_status' => 'cancelled']
         ];
 
     /**
@@ -133,8 +126,17 @@ class UpdateConfigData implements DataPatchInterface
             $storeOrderStatus = $item['store_order_status'];
             if (in_array($storeOrderStatus, $existingItems)) {
                 $item['yotpo_order_status'] = self::ORDER_STATUS_SUCCESS;
+                unset($existingItems[array_search($storeOrderStatus, $existingItems)]);
             }
             $defaultOrderStatusValues[$key] = $item;
+        }
+        $counter = count($defaultOrderStatusValues);
+        foreach ($existingItems as $item) {
+            $counter++;
+            $defaultOrderStatusValues['_1_' . $counter] = [
+                'store_order_status' => $item,
+                'yotpo_order_status' => self::ORDER_STATUS_SUCCESS
+            ];
         }
         return $this->serializer->serialize($defaultOrderStatusValues);
     }
