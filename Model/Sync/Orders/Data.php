@@ -54,6 +54,8 @@ class Data extends Main
     const YOTPO_STATUS_PARTIALLY_REFUNDED = 'partially_refunded';
     const YOTPO_STATUS_REFUNDED = 'refunded';
     const YOTPO_STATUS_VOIDED = 'voided';
+    const YOTPO_STATUS_SUCCESS = 'success';
+    const YOTPO_STATUS_CANCELLED = 'cancelled';
 
     /**
      * Custom attribute code for SMS marketing
@@ -265,15 +267,17 @@ class Data extends Main
      *
      * @param Order $order
      * @param string $syncType
+     * @param array <mixed> $yotpoOrderObject
      * @return array|array[]
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function prepareData($order, $syncType)
+    public function prepareData($order, $syncType, $yotpoOrderObject)
     {
         $billingAddress = $order->getBillingAddress();
         $shippingAddress = $order->getShippingAddress();
         $orderStatus = $order->getStatus();
+        $mappedYotpoOrderStatus = $this->getYotpoOrderStatus($orderStatus);
         $data = [
             'order' => [
                 'order_date' => $this->coreHelper->formatDate($order->getCreatedAt()),
@@ -295,8 +299,9 @@ class Data extends Main
                 'line_items' => array_values($this->prepareLineItems($order)),
                 'fulfillments' =>
                     $orderStatus === self::ORDER_STATUS_CLOSED || $orderStatus === self::ORDER_STATUS_CANCELED
+                    || $mappedYotpoOrderStatus == self::YOTPO_STATUS_CANCELLED
                     ? null
-                    : $this->prepareFulfillments($order)
+                    : $this->prepareFulfillments($order, $syncType, $yotpoOrderObject)
             ]
         ];
         if ($syncType === 'create') {
@@ -371,10 +376,11 @@ class Data extends Main
     /**
      * Prepare lineitems data
      *
+     * @param bool $isFulfillmentObject
      * @param Order $order
      * @return array<mixed>
      */
-    public function prepareLineItems($order)
+    public function prepareLineItems($order, $isFulfillmentObject = false)
     {
         $lineItems = [];
         try {
@@ -399,29 +405,33 @@ class Data extends Main
                     }
                     $productId = $this->parentProductIds[$product->getId()];
                     if (isset($lineItems[$productId])) {
-                        $lineItems[$productId]['total_price'] +=
-                            $orderItem->getData('row_total_incl_tax') - $orderItem->getData('amount_refunded');
-                        $lineItems[$productId]['subtotal_price'] += $orderItem->getRowTotal();
+                        if (!$isFulfillmentObject) {
+                            $lineItems[$productId]['total_price'] +=
+                                $orderItem->getData('row_total_incl_tax') - $orderItem->getData('amount_refunded');
+                            $lineItems[$productId]['subtotal_price'] += $orderItem->getRowTotal();
+                        }
                         $lineItems[$productId]['quantity'] += $orderItem->getQtyOrdered() * 1;
                     } else {
                         $this->lineItemsProductIds[] = $productId;
                         $lineItems[$productId] = [
                             'external_product_id' => $productId,
-                            'quantity' => $orderItem->getQtyOrdered() * 1,
-                            'total_price' => $orderItem->getData('row_total_incl_tax') -
-                                $orderItem->getData('amount_refunded'),
-                            'subtotal_price' => $orderItem->getRowTotal(),
-                            'coupon_code' => $couponCode
+                            'quantity' => $orderItem->getQtyOrdered() * 1
                         ];
+                        if (!$isFulfillmentObject) {
+                            $lineItems[$productId]['total_price'] = $orderItem->getData('row_total_incl_tax') -
+                                $orderItem->getData('amount_refunded');
+                            $lineItems[$productId]['subtotal_price'] = $orderItem->getRowTotal();
+                            $lineItems[$productId]['coupon_code'] = $couponCode;
+                        }
                     }
                 } catch (\Exception $e) {
-                    $this->yotpoOrdersLogger->info('Orders sync::prepareLineItems() - exception: ' .
-                        $e->getMessage(), []);
+                    $this->yotpoOrdersLogger->info('Orders sync::prepareLineItems() - exception for orderId: '.
+                        $order->getId() . ' ' . $e->getMessage(), []);
                 }
             }
         } catch (\Exception $e) {
-            $this->yotpoOrdersLogger->info('Orders sync::prepareLineItems() - exception: ' .
-                $e->getMessage(), []);
+            $this->yotpoOrdersLogger->info('Orders sync::prepareLineItems() - exception: for orderId: ' .
+                $order->getId(). ' ' .$e->getMessage(), []);
         }
         return $lineItems;
     }
@@ -552,27 +562,50 @@ class Data extends Main
      * Prepare fulfillment data
      *
      * @param Order $order
+     * @param string $syncType
+     * @param array <mixed> $yotpoOrderObject
      * @return array <mixed>
      */
-    public function prepareFulfillments($order)
+    public function prepareFulfillments($order, $syncType, $yotpoOrderObject)
     {
         try {
             $fulfillments = [];
-            if ($this->shipmentsCollection) {
-                if (isset($this->shipmentsCollection[$order->getEntityId()])) {
+            $mappedOrderStatus = $this->getYotpoOrderStatus($order->getStatus());
+
+            if ($syncType == 'update' && $yotpoOrderObject[$order->getId()]['yotpo_id']) {
+                $isFulfillmentBasedOnShipping = $yotpoOrderObject[$order->getId()]['is_fulfillment_based_on_shipment'];
+            } else {
+                $isFulfillmentBasedOnShipping = $this->config->getConfig('is_fulfillment_based_on_shipment');
+            }
+
+            if ($isFulfillmentBasedOnShipping) {
+                if ($this->shipmentsCollection && isset($this->shipmentsCollection[$order->getEntityId()])) {
                     $shipments = $this->shipmentsCollection[$order->getEntityId()];
                     foreach ($shipments as $orderShipment) {
                         $shipmentItems = $orderShipment->getItems();
                         $items = $this->prepareFulFillmentItemsArray($shipmentItems);
                         $fulfillment = [
                             'fulfillment_date' => $this->coreHelper->formatDate($orderShipment->getCreatedAt()),
-                            'status' => $this->getYotpoOrderStatus($order->getStatus()),
+                            'status' => self::YOTPO_STATUS_SUCCESS,
                             'shipment_info' => $this->getShipment($orderShipment),
                             'fulfilled_items' => array_values($items),
                             'external_id' => $orderShipment->getEntityId()
                         ];
                         $fulfillments[] = $fulfillment;
                     }
+                } else {
+                    $fulfillments = [];
+                }
+            } else {
+                if ($mappedOrderStatus == self::YOTPO_STATUS_PENDING) {
+                    $fulfillments = [];
+                } elseif ($mappedOrderStatus == self::YOTPO_STATUS_SUCCESS) {
+                    $fulfillments[] = [
+                        'fulfillment_date' => $this->coreHelper->formatDate($order->getUpdatedAt()),
+                        'status' => self::YOTPO_STATUS_SUCCESS,
+                        'fulfilled_items' => array_values($this->prepareLineItems($order, true)),
+                        'external_id' => $order->getId()
+                    ];
                 }
             }
         } catch (NoSuchEntityException $e) {

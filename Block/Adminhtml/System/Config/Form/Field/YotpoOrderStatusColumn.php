@@ -56,9 +56,8 @@ class YotpoOrderStatusColumn extends Select
     private function getSourceOptions(): array
     {
         return [
-            ['label' => 'Fulfillment pending', 'value' => 'pending'],
-            ['label' => 'Fulfillment open', 'value' => 'open'],
-            ['label' => 'Fulfillment success', 'value' => 'success'],
+            ['label' => 'Order created', 'value' => 'pending'],
+            ['label' => 'Order fulfilled', 'value' => 'success'],
             ['label' => 'Order cancelled', 'value' => 'cancelled']
         ];
     }
