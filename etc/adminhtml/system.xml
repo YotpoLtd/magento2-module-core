@@ -87,6 +87,15 @@
                             <backend_model>Yotpo\Core\Model\Config\Backend\Serialized\ArraySerialized\OrderStatus</backend_model>
                         </field>
                     </group>
+                    <group id="shipments" translate="label" type="text" sortOrder="441" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Shipments</label>
+                        <attribute type="expanded">0</attribute>
+                        <field id="shipments_flag" type="select" translate="label comment" sortOrder="451"
+                               showInDefault="1" showInWebsite="1" showInStore="1">
+                            <label>Sync Yotpo order fulfillment information based on shipment records</label>
+                            <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                        </field>
+                    </group>
                     <group id="shipment_status" translate="label" type="text" sortOrder="460" showInDefault="1"
                            showInWebsite="1" showInStore="1">
                         <label>Map the shipment statuses on your store with the corresponding Yotpo statuses</label>

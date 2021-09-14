@@ -31,10 +31,12 @@
             "order_id": true,
             "yotpo_id": true,
             "synced_to_yotpo": true,
-            "response_code": true
+            "response_code": true,
+            "is_fulfillment_based_on_shipment": true
         },
         "index": {
-            "YOTPO_ORDERS_SYNC_ENTITY_ID": true
+            "YOTPO_ORDERS_SYNC_ENTITY_ID": true,
+            "YOTPO_ORDERS_SYNC_IS_FULFILLMENT_BASED_ON_SHIPMENT": true
         },
         "constraint": {
             "PRIMARY": true,

@@ -51,8 +51,8 @@ class Main extends AbstractJobs
     /**
      * Get synced orders
      *
-     * @param array<mixed> $magentoOrders
-     * @return array<mixed>
+     * @param array <mixed> $magentoOrders
+     * @return array <mixed>
      */
     public function getYotpoSyncedOrders($magentoOrders)
     {
@@ -71,23 +71,53 @@ class Main extends AbstractJobs
     }
 
     /**
-     * @param array<mixed>|DataObject $response
-     * @return array<mixed>
+     * @param array <mixed>|DataObject $response
+     * @return int|string|null
      */
-    public function prepareYotpoTableData($response)
+    public function getYotpoIdFromResponse($response)
+    {
+        /** @phpstan-ignore-next-line */
+        $responseData = $response->getData('response');
+        $yotpoId = null;
+        /** @phpstan-ignore-next-line */
+        if ($response->getData('yotpo_id')) {
+            /** @phpstan-ignore-next-line */
+            $yotpoId = $response->getData('yotpo_id');
+        }
+        if ($responseData && isset($responseData['orders']) && $responseData['orders']) {
+            $yotpoId = $responseData['orders'][0]['yotpo_id'];
+        } elseif ($responseData && isset($responseData['order']) && $responseData['order']) {
+            $yotpoId = $responseData['order']['yotpo_id'];
+        }
+        return $yotpoId;
+    }
+    /**
+     * @param array <mixed>|DataObject $response
+     * @param bool $isYotpoSyncedOrder
+     * @param array <mixed> $yotpoSyncedOrders
+     * @param int|null $magentoOrderId
+     * @return array <mixed>
+     */
+    public function prepareYotpoTableData($response, $isYotpoSyncedOrder, $yotpoSyncedOrders, $magentoOrderId)
     {
         $data = [
             /** @phpstan-ignore-next-line */
             'response_code' =>  $response->getData('status'),
         ];
-        /** @phpstan-ignore-next-line */
-        $responseData   =   $response->getData('response');
-        if ($responseData && isset($responseData['orders'])) {
-            $data['yotpo_id']   =   $responseData['orders'][0]['yotpo_id'];
-        } elseif ($responseData && isset($responseData['order'])) {
-            $data['yotpo_id'] = $responseData['order']['yotpo_id'];
+
+        $data['yotpo_id'] = $this->getYotpoIdFromResponse($response);
+
+        if (!$isYotpoSyncedOrder) {
+            $data['is_fulfillment_based_on_shipment'] =
+                $this->config->getConfig('is_fulfillment_based_on_shipment');
         } else {
-            $data['yotpo_id']   =   null;
+            $shipmentFlag = $yotpoSyncedOrders[$magentoOrderId]['is_fulfillment_based_on_shipment'];
+            if ($shipmentFlag == null) {
+                $data['is_fulfillment_based_on_shipment'] =
+                    $this->config->getConfig('is_fulfillment_based_on_shipment');
+            } else {
+                $data['is_fulfillment_based_on_shipment'] = $shipmentFlag;
+            }
         }
         return $data;
     }
@@ -103,7 +133,8 @@ class Main extends AbstractJobs
             'order_id' => $orderId,
             'yotpo_id' => null,
             'synced_to_yotpo' => $currentTime,
-            'response_code' =>  $this->config->getCustRespCodeMissingProd()
+            'response_code' =>  $this->config->getCustRespCodeMissingProd(),
+            'is_fulfillment_based_on_shipment'  =>  null
         ];
     }
 
@@ -118,10 +149,11 @@ class Main extends AbstractJobs
         $finalData = [];
         foreach ($yotpoTableFinalData as $data) {
             $finalData[] = [
-                'order_id'        =>  $data['order_id'],
-                'yotpo_id'        =>  $data['yotpo_id'],
-                'synced_to_yotpo' =>  $data['synced_to_yotpo'],
-                'response_code'   =>  $data['response_code']
+                'order_id'                          =>  $data['order_id'],
+                'yotpo_id'                          =>  $data['yotpo_id'],
+                'synced_to_yotpo'                   =>  $data['synced_to_yotpo'],
+                'response_code'                     =>  $data['response_code'],
+                'is_fulfillment_based_on_shipment'  =>  $data['is_fulfillment_based_on_shipment']
             ];
         }
         $this->insertOnDuplicate('yotpo_orders_sync', $finalData);

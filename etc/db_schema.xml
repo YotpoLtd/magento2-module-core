@@ -53,6 +53,7 @@
                 comment="Yotpo ID"/>
         <column xsi:type="datetime" name="synced_to_yotpo" nullable="true" comment="Synced to Yotpo"/>
         <column xsi:type="varchar" name="response_code" nullable="true" length="5" comment="Response Code"/>
+        <column xsi:type="boolean" name="is_fulfillment_based_on_shipment" nullable="true" comment="Fulfillment Sync Method"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
@@ -61,6 +62,9 @@
         </constraint>
         <index referenceId="YOTPO_ORDERS_SYNC_ENTITY_ID" indexType="btree">
             <column name="entity_id"/>
+        </index>
+        <index referenceId="YOTPO_ORDERS_SYNC_IS_FULFILLMENT_BASED_ON_SHIPMENT" indexType="btree">
+            <column name="is_fulfillment_based_on_shipment"/>
         </index>
     </table>
     <table name="sales_order" resource="sales" engine="innodb" comment="Sales Flat Order">

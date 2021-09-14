@@ -58,6 +58,11 @@ class Processor extends Main
     protected $appState;
 
     /**
+     * @var int
+     */
+    protected $currentStoreId;
+
+    /**
      * Processor constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -103,6 +108,7 @@ class Processor extends Main
         /** @phpstan-ignore-next-line */
         foreach ($this->config->getAllStoreIds(false) as $storeId) {
             $this->emulateFrontendArea((int)$storeId);
+            $this->currentStoreId = $this->config->getStoreId();
             if (!$this->config->isOrdersSyncActive()) {
                 $this->stopEnvironmentEmulation();
                 continue;
@@ -125,6 +131,7 @@ class Processor extends Main
     {
         $storeId = $order->getStoreId();
         $this->emulateFrontendArea((int)$storeId);
+        $this->currentStoreId = $this->config->getStoreId();
         if (!$this->config->isOrdersSyncActive()) {
             $this->stopEnvironmentEmulation();
             return;
@@ -167,6 +174,7 @@ class Processor extends Main
         if ($mappedOrderStatuses) {
             $orderCollection->addFieldToFilter('status', ['in' => array_keys($mappedOrderStatuses)]);
         }
+
         $orderCollection->getSelect()->limit($batchSize);
         $ordersWithMissedProducts = [];
         foreach ($orderCollection->getItems() as $order) {
@@ -218,7 +226,9 @@ class Processor extends Main
                 }
                 /** @var Order $magentoOrder */
                 $response = $this->syncOrder($magentoOrder, $isYotpoSyncedOrder, $yotpoSyncedOrders);
-                $yotpoTableData = $response ? $this->prepareYotpoTableData($response) : false;
+                $yotpoTableData = $response ?
+                    $this->prepareYotpoTableData($response, $isYotpoSyncedOrder, $yotpoSyncedOrders, $magentoOrderId)
+                    : false;
                 if ($yotpoTableData) {
                     if (!$yotpoTableData['yotpo_id'] && array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
                         $yotpoTableData['yotpo_id'] = $yotpoSyncedOrders[$magentoOrderId]['yotpo_id'];
@@ -312,10 +322,15 @@ class Processor extends Main
                 $this->data->prepareGuestUsersCustomAttributes($ordersToUpdate);
             $this->data->prepareCouponCodes($couponCodes);
             $response = $this->syncOrder($magentoOrder, $isYotpoSyncedOrder, $yotpoSyncedOrders);
-            $yotpoTableData = $response ? $this->prepareYotpoTableData($response) : false;
+            $yotpoTableData = $response ?
+                $this->prepareYotpoTableData(
+                    $response,
+                    $isYotpoSyncedOrder,
+                    $yotpoSyncedOrders,
+                    $magentoOrder->getId()
+                ) : false;
             $this->yotpoOrdersLogger->info('Last sync date updated for order : '
                 . $magentoOrderId, []);
-
             if ($yotpoTableData) {
                 if (!$yotpoTableData['yotpo_id'] && array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
                     $yotpoTableData['yotpo_id'] = $yotpoSyncedOrders[$magentoOrderId]['yotpo_id'];
@@ -358,12 +373,12 @@ class Processor extends Main
         $incrementId = $order->getIncrementId();
         $orderId = $order->getEntityId();
         $dataType = $isYotpoSyncedOrder ? 'update' : 'create';
-        $orderData = $this->data->prepareData($order, $dataType);
+        $orderData = $this->data->prepareData($order, $dataType, $yotpoSyncedOrders);
         if (!$orderData) {
             $this->yotpoOrdersLogger->info('Orders sync - no new data to sync', []);
             return [];
         }
-        $this->yotpoOrdersLogger->info('Orders sync - data prepared', []);
+        $this->yotpoOrdersLogger->info('Orders sync - data prepared - Order ID - ' . $orderId, []);
         $productIds = $this->data->getLineItemsIds();
         if ($productIds) {
             $isProductSyncSuccess = $this->checkAndSyncProducts($productIds, $order);
@@ -372,18 +387,32 @@ class Processor extends Main
                 return [];
             }
         }
-        if ($isYotpoSyncedOrder) {
+        $yotpoOrderId = null;
+        if ($isYotpoSyncedOrder && $yotpoSyncedOrders[$orderId]['yotpo_id']) {
             $yotpoOrderId = $yotpoSyncedOrders[$orderId]['yotpo_id'];
+        } else {
+            $response = $this->yotpoCoreSync->sync(
+                'GET',
+                $this->config->getEndpoint('orders'),
+                ['external_ids' => $incrementId]
+            );
+            if ($response->getData('is_success')) {
+                $yotpoOrderId = $this->getYotpoIdFromResponse($response);
+            }
+        }
+        if ($yotpoOrderId) {
             $url = $this->config->getEndpoint('orders_update', ['{yotpo_order_id}'], [$yotpoOrderId]);
             $method = $this->config::METHOD_PATCH;
         } else {
             $url = $this->config->getEndpoint('orders');
             $method = $this->config::METHOD_POST;
         }
-
         $orderData['entityLog'] = 'orders';
         $response = $this->yotpoCoreSync->sync($method, $url, $orderData);
         if ($response->getData('is_success')) {
+            if ($yotpoOrderId) {
+                $response->setData('yotpo_id', $yotpoOrderId);
+            }
             if ($realTImeSync) {
                 $orderIds[] = $orderId;
                 $this->updateOrderAttribute($orderIds, self::SYNCED_TO_YOTPO_ORDER, 1);
@@ -410,7 +439,9 @@ class Processor extends Main
     {
         $unSyncedProductIds = $this->data->getUnSyncedProductIds($productIds, $order);
         if ($unSyncedProductIds) {
-            return $this->catalogProcessor->process($unSyncedProductIds, $order);
+            $sync = $this->catalogProcessor->process($unSyncedProductIds, $order);
+            $this->emulateFrontendArea($this->currentStoreId);
+            return $sync;
         }
         return true;
     }

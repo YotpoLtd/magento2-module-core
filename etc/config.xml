@@ -22,7 +22,7 @@
                     <order_status>
                         <map_order_status>
                             {"_1_1":{"store_order_status":"pending","yotpo_order_status":"pending"},
-                            "_1_2":{"store_order_status":"processing","yotpo_order_status":"open"},
+                            "_1_2":{"store_order_status":"processing","yotpo_order_status":"pending"},
                             "_1_3":{"store_order_status":"complete","yotpo_order_status":"success"},
                             "_1_4":{"store_order_status":"closed","yotpo_order_status":"cancelled"},
                             "_1_5":{"store_order_status":"canceled","yotpo_order_status":"cancelled"}}
