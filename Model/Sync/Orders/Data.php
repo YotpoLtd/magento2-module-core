@@ -307,7 +307,8 @@ class Data extends Main
         if ($syncType === 'create') {
             $data['order']['external_id'] = $order->getIncrementId();
         }
-        if ($orderStatus === self::ORDER_STATUS_CANCELED || $orderStatus === self::ORDER_STATUS_CLOSED) {
+        if ($orderStatus === self::ORDER_STATUS_CANCELED || $orderStatus === self::ORDER_STATUS_CLOSED
+            || $mappedYotpoOrderStatus == self::YOTPO_STATUS_CANCELLED) {
             $data['order']['cancellation'] =
                 [
                     'cancellation_date' => $this->coreHelper->formatDate($order->getUpdatedAt())
