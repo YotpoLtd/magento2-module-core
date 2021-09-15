@@ -119,6 +119,8 @@ class Config
             ['path' =>
                 'yotpo_core/sync_settings/orders_sync/shipments/shipments_flag'
             ],
+        'last_reset_orders_sync_time' => ['path' => 'yotpo_core/sync_settings/orders_sync/last_reset_orders_sync_time',
+            'read_from_db' => true],
     ];
 
     /**
@@ -268,7 +270,6 @@ class Config
         if (isset($this->config[$key]['encrypted']) && $this->config[$key]['encrypted'] === true && $value) {
             $value = $this->encryptor->encrypt($value);
         }
-
         $this->configWriter->save($configPath, $value, $scope, $scopeId);
     }
 

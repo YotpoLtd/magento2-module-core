@@ -1,0 +1,57 @@
+<?php
+
+use Magento\Framework\Escaper;
+use Yotpo\Core\Block\Adminhtml\System\Config\ResetOrdersSyncButton;
+
+/* @var $block ResetOrdersSyncButton */
+/* @var Escaper $escaper */
+
+$escaper = $escaper ?? $block;
+?>
+
+<script>
+    require([
+        'jquery',
+        'prototype',
+        'mage/translate'
+    ], function ($) {
+        $successDiv = $('#reset_orders_sync_message_success');
+        $errorDiv = $('#reset_orders_sync_message_error');
+        var currentStore = <?= $escaper->escapeHtml($block->getStoreScope()) ?>;
+        $errorDiv.hide();
+        $successDiv.hide();
+        $('#yotpo_reset_orders_sync_btn').click(function () {
+            new Ajax.Request('<?= $escaper->escapeHtml($block->getAjaxUrl()) ?>', {
+                asynchronous: true,
+                showLoader: true,
+                parameters: {
+                    store: currentStore
+                },
+                onSuccess: function (response) {
+                    var respStatus = JSON.parse(response.responseText);
+                    var status = respStatus.status;
+                    var errorText = [];
+                    if (status.error.length) {
+                        var errorText = status.error.join('<br/>');
+                        $errorDiv.html(errorText);
+                        $errorDiv.show();
+                    }
+                    if (status.success.length) {
+                        var successText = status.success.join('<br/>');
+                        $successDiv.html(successText);
+                        $successDiv.show();
+                    }
+                },
+                onError: function () {
+                    $errorDiv.show();
+                    $errorDiv.text($.mage.__('Something went wrong. Please try again'));
+                },
+            });
+        });
+
+    });
+</script>
+
+<?= $block->getButtonHtml() ?>
+<div id="reset_orders_sync_message_success" class="message message-success" style="display: none;"></div>
+<div id="reset_orders_sync_message_error" class="message message-error" style="display: none;"></div>

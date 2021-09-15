@@ -74,6 +74,17 @@
                         <label>Real time sync:</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
+                    <field id="last_reset_orders_sync_time" translate="label comment" sortOrder="420" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
+                        <label>Last reset sync:</label>
+                        <backend_model>Yotpo\Core\Model\Config\Backend\FormatDate</backend_model>
+                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\RemoveScopes</frontend_model>
+                    </field>
+                    <field id="reset_orders_sync" translate="label comment" sortOrder="420" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
+                        <comment>
+                            This button will update your sync settings and trigger a mass update.
+                        </comment>
+                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\ResetOrdersSyncButton</frontend_model>
+                    </field>
                     <field id="download_logs" translate="label" type="label" sortOrder="420" showInDefault="1" showInWebsite="1" showInStore="1">
                         <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Link\DownloadOrdersLogs</frontend_model>
                     </field>
@@ -84,7 +95,7 @@
                                showInDefault="1" showInWebsite="1" showInStore="1">
                             <label><![CDATA[&nbsp;]]></label>
                             <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\MapOrderStatus</frontend_model>
-                            <backend_model>Yotpo\Core\Model\Config\Backend\Serialized\ArraySerialized\OrderStatus</backend_model>
+                            <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
                         </field>
                     </group>
                     <group id="shipments" translate="label" type="text" sortOrder="441" showInDefault="1" showInWebsite="1" showInStore="1">
@@ -95,16 +106,19 @@
                             <label>Sync Yotpo order fulfillment information based on shipment records</label>
                             <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         </field>
-                    </group>
-                    <group id="shipment_status" translate="label" type="text" sortOrder="460" showInDefault="1"
-                           showInWebsite="1" showInStore="1">
-                        <label>Map the shipment statuses on your store with the corresponding Yotpo statuses</label>
-                        <attribute type="expanded">0</attribute>
+                        <field id="shipment_heading" translate="label" sortOrder="470" showInStore="1" showInWebsite="1" showInDefault="1">
+                            <label>
+                                <![CDATA[<br/><br/>Map the shipment statuses on your store with the corresponding Yotpo statuses.<br/>
+                                If you want to add multiple statuses, use comma to separate the values]]>
+                            </label>
+                            <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Heading</frontend_model>
+                        </field>
                         <field id="map_shipment_status" translate="label comment" sortOrder="470"
                                showInDefault="1" showInWebsite="1" showInStore="1">
-                               <label><![CDATA[&nbsp;]]></label>
+                            <label><![CDATA[&nbsp;]]></label>
+                            <config_path>yotpo_core/sync_settings/orders_sync/shipment_status/map_shipment_status</config_path>
                             <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\MapShipmentStatus</frontend_model>
-                            <backend_model>Yotpo\Core\Model\Config\Backend\Serialized\ArraySerialized\OrderStatus</backend_model>
+                            <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
                         </field>
                     </group>
                 </group>
