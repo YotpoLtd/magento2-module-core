@@ -141,10 +141,11 @@ class Main extends AbstractJobs
             'response_code' =>  $response->getData('status'),
         ];
         $responseData   =   $response->getData('response');
-        if ($responseData && $responseData['collection']) {
+        $data['yotpo_id']   =   null;
+        if ($response->getData('yotpo_id')) {
+            $data['yotpo_id']   =   $response->getData('yotpo_id');
+        } elseif ($responseData && $responseData['collection']) {
             $data['yotpo_id']   =   $responseData['collection']['yotpo_id'];
-        } else {
-            $data['yotpo_id']   =   null;
         }
         return $data;
     }

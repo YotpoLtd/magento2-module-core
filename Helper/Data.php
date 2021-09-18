@@ -2,11 +2,28 @@
 
 namespace Yotpo\Core\Helper;
 
+use Magento\Framework\Stdlib\DateTime\Timezone;
+
 /**
  * Class Data for helper functions
  */
 class Data
 {
+    /**
+     * @var Timezone
+     */
+    private $timezone;
+
+    /**
+     * Data constructor.
+     * @param Timezone $timezone
+     */
+    public function __construct(
+        Timezone $timezone
+    ) {
+        $this->timezone = $timezone;
+    }
+
     /**
      * @param string $phone
      * @param string $country
@@ -42,11 +59,21 @@ class Data
     /**
      * Format date
      *
-     * @param string|null $date
+     * @param \DateTimeInterface|string|null $date
      * @return false|string|null
      */
     public function formatDate($date)
     {
+        if ($date) {
+            $date = $this->timezone->formatDateTime(
+                $date,
+                \IntlDateFormatter::SHORT,
+                \IntlDateFormatter::SHORT,
+                null,
+                null,
+                "yyyy-MM-dd HH:mm:ss"
+            );
+        }
         $time = $date ? strtotime($date) : null;
         return $time ? date("Y-m-d\TH:i:s\Z", $time) : null;
     }

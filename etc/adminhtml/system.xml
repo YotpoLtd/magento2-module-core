@@ -103,13 +103,13 @@
                         <attribute type="expanded">0</attribute>
                         <field id="shipments_flag" type="select" translate="label comment" sortOrder="451"
                                showInDefault="1" showInWebsite="1" showInStore="1">
-                            <label>Sync Yotpo order fulfillment information based on shipment records</label>
+                            <label><![CDATA[Sync Yotpo order fulfillment information based on<br/>shipment records]]></label>
                             <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                         </field>
                         <field id="shipment_heading" translate="label" sortOrder="470" showInStore="1" showInWebsite="1" showInDefault="1">
                             <label>
                                 <![CDATA[<br/><br/>Map the shipment statuses on your store with the corresponding Yotpo statuses.<br/>
-                                If you want to add multiple statuses, use comma to separate the values]]>
+                                If you want to add multiple statuses, use a comma to separate the values]]>
                             </label>
                             <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Heading</frontend_model>
                         </field>

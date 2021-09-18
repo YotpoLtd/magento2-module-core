@@ -394,7 +394,7 @@ class Processor extends Main
             $response = $this->yotpoCoreSync->sync(
                 'GET',
                 $this->config->getEndpoint('orders'),
-                ['external_ids' => $incrementId]
+                ['external_ids' => $incrementId, 'entityLog' => 'orders']
             );
             if ($response->getData('is_success')) {
                 $yotpoOrderId = $this->getYotpoIdFromResponse($response);
@@ -422,7 +422,7 @@ class Processor extends Main
             $response = $this->yotpoCoreSync->sync(
                 'GET',
                 $this->config->getEndpoint('orders'),
-                ['external_ids' => $incrementId]
+                ['external_ids' => $incrementId, 'entityLog' => 'orders']
             );
         }
         return $response;
@@ -458,7 +458,7 @@ class Processor extends Main
     {
         $this->update(
             'sales_order',
-            [$attributeName => $value],
+            [$attributeName => $value, 'updated_at' => new \Zend_Db_Expr('updated_at')],
             ['entity_id' . ' IN (?)' => $orderIds]
         );
     }
