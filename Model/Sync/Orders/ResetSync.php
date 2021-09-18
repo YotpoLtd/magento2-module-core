@@ -3,6 +3,7 @@
 namespace Yotpo\Core\Model\Sync\Orders;
 
 use Magento\Backend\App\Action\Context;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Message\ManagerInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -54,9 +55,15 @@ class ResetSync
     /**
      * @param mixed $storeId
      * @return void
+     * @throws NoSuchEntityException
+     * @throws LocalizedException
      */
     public function resetOrderStatusSync($storeId)
     {
+        if (!$this->config->isEnabled($storeId)) {
+            $this->addMessage('error', 'Yotpo is disabled for Store ID - ' . $storeId);
+            return;
+        }
         $connection = $this->resourceConnection->getConnection('sales');
         $tableName = $connection->getTableName('sales_order');
         $select = $connection->select()
@@ -75,7 +82,7 @@ class ResetSync
             ];
             $connection->update(
                 $tableName,
-                ['synced_to_yotpo_order' => 0],
+                ['synced_to_yotpo_order' => 0, 'updated_at' => new \Zend_Db_Expr('updated_at')],
                 $condition
             );
         }
