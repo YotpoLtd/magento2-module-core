@@ -431,7 +431,7 @@ class Data extends AbstractData
                             'status' => self::YOTPO_STATUS_SUCCESS,
                             'shipment_info' => $this->getShipment($orderShipment),
                             'fulfilled_items' => array_values($items),
-                            'external_id' => $orderShipment->getEntityId()
+                            'external_id' => $orderShipment->getIncrementId()
                         ];
                         $fulfillments[] = $fulfillment;
                     }

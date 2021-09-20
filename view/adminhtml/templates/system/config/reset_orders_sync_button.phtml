@@ -21,6 +21,8 @@ $escaper = $escaper ?? $block;
         $errorDiv.hide();
         $successDiv.hide();
         $('#yotpo_reset_orders_sync_btn').click(function () {
+            $('.message.message-success').hide();
+            $('.message.message-error').hide();
             new Ajax.Request('<?= $escaper->escapeHtml($block->getAjaxUrl()) ?>', {
                 asynchronous: true,
                 showLoader: true,
