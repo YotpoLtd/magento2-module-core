@@ -15,7 +15,7 @@
                 <field id="active" translate="label comment" type="select" sortOrder="30" showInDefault="0" showInWebsite="0" showInStore="1">
                     <label>Enable Yotpo</label>
                     <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\NoScopes</frontend_model>
-                    <comment><![CDATA[To connect Yotpo to your store, enter your <a href="https://docs.magento.com/m2/ee/user_guide/marketing/yotpo-connect.html#enable-yotpo-and-connect-your-magento-store" title="App Key and API Secret" target="_blank" style="color:#2b7dbd">App Key and API Secret</a> in the fields below and save your configuration.]]></comment>
+                    <comment><![CDATA[To connect Yotpo to your store, enter your <a href="https://support.yotpo.com/en/article/finding-your-yotpo-app-key-and-secret-key" title="App Key and API Secret" target="_blank" style="color:#2b7dbd">App Key and API Secret</a> in the fields below and save your configuration.]]></comment>
                     <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                 </field>
                 <field id="app_key" translate="label comment" type="text" sortOrder="40" showInDefault="0" showInWebsite="0" showInStore="1">
@@ -29,7 +29,7 @@
                     <config_path>yotpo/settings/secret</config_path>
                     <backend_model>Magento\Config\Model\Config\Backend\Encrypted</backend_model>
                     <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\NoScopes</frontend_model>
-                    <comment><![CDATA[<a href="https://docs.magento.com/m2/ee/user_guide/marketing/yotpo-connect.html#enable-yotpo-and-connect-your-magento-store" target="_blank" title="I can't find my API Secret" style="color:#2b7dbd">I can't find my API Secret</a>]]></comment>
+                    <comment><![CDATA[<a href="https://support.yotpo.com/en/article/finding-your-yotpo-app-key-and-secret-key" target="_blank" title="I can't find my API Secret" style="color:#2b7dbd">I can't find my API Secret</a>]]></comment>
                 </field>
                 <field id="module_version" translate="label" type="text" sortOrder="60" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Module Version</label>
@@ -64,7 +64,8 @@
                         <backend_model>Yotpo\Core\Model\Config\Backend\Sync\Scheduler</backend_model>
                     </field>
                     <field id="orders_sync_limit" translate="label comment" sortOrder="395" type="text" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Limit:</label>
+                        <label>Batch limit:</label>
+                        <comment>The batch limit on each cron job.</comment>
                     </field>
                     <field id="enable" translate="label comment" type="select" sortOrder="400" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable sync:</label>
@@ -136,7 +137,8 @@
                         <backend_model>Yotpo\Core\Model\CronConfig</backend_model>
                     </field>
                     <field id="product_sync_limit" translate="label comment" sortOrder="500" type="text" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Limit:</label>
+                        <label>Batch limit:</label>
+                        <comment>The batch limit on each cron job.</comment>
                     </field>
                     <field id="enable" translate="label comment" type="select" sortOrder="510" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable sync:</label>
