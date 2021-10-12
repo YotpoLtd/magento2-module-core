@@ -45,61 +45,61 @@
                 <attribute type="expanded">0</attribute>
                 <group id="orders_sync" translate="label" type="text" sortOrder="350" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Orders</label>
-                    <field id="last_sync_time" translate="label comment" sortOrder="360" type="label" showInDefault="0" showInWebsite="1" showInStore="1">
+                    <field id="enable" translate="label comment" type="select" sortOrder="360" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable sync:</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    </field>
+                    <field id="sync_orders_since" translate="label comment" sortOrder="370" type="date" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Sync orders since:</label>
+                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Date</frontend_model>
+                    </field>
+                    <field id="last_sync_time" translate="label comment" sortOrder="380" type="label" showInDefault="0" showInWebsite="1" showInStore="1">
                         <label>Last sync:</label>
                         <backend_model>Yotpo\Core\Model\Config\Backend\FormatDate</backend_model>
                         <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\RemoveScopes</frontend_model>
                     </field>
-                    <field id="total_orders_synced" translate="label comment" sortOrder="370" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
+                    <field id="total_orders_synced" translate="label comment" sortOrder="390" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
                         <label>Total orders synced:</label>
                         <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\SyncStatus</frontend_model>
                     </field>
-                    <field id="sync_orders_since" translate="label comment" sortOrder="380" type="date" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Sync orders since:</label>
-                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Date</frontend_model>
+                    <field id="enable_real_time_sync" translate="label comment" type="select" sortOrder="400" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Real time sync:</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
-                    <field id="frequency" translate="label comment" sortOrder="390" type="text" showInDefault="1" showInWebsite="0" showInStore="0">
+                    <field id="frequency" translate="label comment" sortOrder="410" type="text" showInDefault="1" showInWebsite="0" showInStore="0">
                         <label>Frequency:</label>
                         <comment><![CDATA[e.g, */2 * * * * - every 2 minutes]]></comment>
                         <backend_model>Yotpo\Core\Model\Config\Backend\Sync\Scheduler</backend_model>
                     </field>
-                    <field id="orders_sync_limit" translate="label comment" sortOrder="395" type="text" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <field id="orders_sync_limit" translate="label comment" sortOrder="420" type="text" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Batch limit:</label>
                         <comment>The batch limit on each cron job.</comment>
                     </field>
-                    <field id="enable" translate="label comment" type="select" sortOrder="400" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Enable sync:</label>
-                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    </field>
-                    <field id="enable_real_time_sync" translate="label comment" type="select" sortOrder="410" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Real time sync:</label>
-                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    </field>
-                    <field id="last_reset_orders_sync_time" translate="label comment" sortOrder="420" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
+                    <field id="last_reset_orders_sync_time" translate="label comment" sortOrder="430" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
                         <label>Last reset sync:</label>
                         <backend_model>Yotpo\Core\Model\Config\Backend\FormatDate</backend_model>
                         <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\RemoveScopes</frontend_model>
                     </field>
-                    <field id="reset_orders_sync" translate="label comment" sortOrder="420" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
+                    <field id="reset_orders_sync" translate="label comment" sortOrder="440" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
                         <comment>
                             This button will update your sync settings and trigger a mass update.
                         </comment>
                         <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\ResetOrdersSyncButton</frontend_model>
                     </field>
-                    <field id="download_logs" translate="label" type="label" sortOrder="420" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <field id="download_logs" translate="label" type="label" sortOrder="440" showInDefault="1" showInWebsite="1" showInStore="1">
                         <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Link\DownloadOrdersLogs</frontend_model>
                     </field>
                     <group id="order_status" translate="label" type="text" sortOrder="440" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Map the order statuses on your store with the corresponding Yotpo statuses</label>
                         <attribute type="expanded">1</attribute>
-                        <field id="map_order_status" translate="label comment" sortOrder="450"
+                        <field id="map_order_status" translate="label comment" sortOrder="445"
                                showInDefault="1" showInWebsite="1" showInStore="1">
                             <label><![CDATA[&nbsp;]]></label>
                             <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\MapOrderStatus</frontend_model>
                             <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
                         </field>
                     </group>
-                    <group id="shipments" translate="label" type="text" sortOrder="441" showInDefault="1" showInWebsite="1" showInStore="1">
+                    <group id="shipments" translate="label" type="text" sortOrder="450" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Shipments</label>
                         <attribute type="expanded">0</attribute>
                         <field id="shipments_flag" type="select" translate="label comment" sortOrder="451"
@@ -126,6 +126,10 @@
                 <group id="catalog_sync" translate="label" type="text" sortOrder="480" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Catalog</label>
                     <attribute type="expanded">0</attribute>
+                    <field id="enable" translate="label comment" type="select" sortOrder="485" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable sync:</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
+                    </field>
                     <field id="last_sync_time" translate="label comment" sortOrder="490" type="label" showInDefault="0" showInWebsite="1" showInStore="1">
                         <label>Last Sync:</label>
                         <backend_model>Yotpo\Core\Model\Config\Backend\FormatDate</backend_model>
@@ -139,10 +143,6 @@
                     <field id="product_sync_limit" translate="label comment" sortOrder="500" type="text" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Batch limit:</label>
                         <comment>The batch limit on each cron job.</comment>
-                    </field>
-                    <field id="enable" translate="label comment" type="select" sortOrder="510" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Enable sync:</label>
-                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
                     <field id="download_logs" translate="label" type="label" sortOrder="520" showInDefault="1" showInWebsite="1" showInStore="1">
                         <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Link\DownloadCatalogLogs</frontend_model>

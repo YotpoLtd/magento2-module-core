@@ -44,7 +44,7 @@ class UpdateConfigData implements DataPatchInterface
         ];
 
     /**
-     * InsertConfigData constructor.
+     * UpdateConfigData constructor.
      * @param ModuleDataSetupInterface $moduleDataSetup
      * @param SerializerInterface $serializer
      * @param ResourceConnection $resourceConnection
