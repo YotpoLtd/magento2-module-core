@@ -45,6 +45,15 @@
                 <attribute type="expanded">0</attribute>
                 <group id="orders_sync" translate="label" type="text" sortOrder="350" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Orders</label>
+                    <field id="last_sync_time" translate="label comment" sortOrder="352" type="label" showInDefault="0" showInWebsite="1" showInStore="1">
+                        <label>Last sync:</label>
+                        <backend_model>Yotpo\Core\Model\Config\Backend\FormatDate</backend_model>
+                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\RemoveScopes</frontend_model>
+                    </field>
+                    <field id="total_orders_synced" translate="label comment" sortOrder="355" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
+                        <label>Total orders synced:</label>
+                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\SyncStatus</frontend_model>
+                    </field>
                     <field id="enable" translate="label comment" type="select" sortOrder="360" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Enable sync:</label>
                         <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
@@ -52,15 +61,6 @@
                     <field id="sync_orders_since" translate="label comment" sortOrder="370" type="date" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Sync orders since:</label>
                         <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Date</frontend_model>
-                    </field>
-                    <field id="last_sync_time" translate="label comment" sortOrder="380" type="label" showInDefault="0" showInWebsite="1" showInStore="1">
-                        <label>Last sync:</label>
-                        <backend_model>Yotpo\Core\Model\Config\Backend\FormatDate</backend_model>
-                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\RemoveScopes</frontend_model>
-                    </field>
-                    <field id="total_orders_synced" translate="label comment" sortOrder="390" type="label" showInDefault="0" showInWebsite="0" showInStore="1">
-                        <label>Total orders synced:</label>
-                        <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\SyncStatus</frontend_model>
                     </field>
                     <field id="enable_real_time_sync" translate="label comment" type="select" sortOrder="400" showInDefault="1" showInWebsite="1" showInStore="1">
                         <label>Real time sync:</label>
@@ -90,8 +90,14 @@
                         <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Link\DownloadOrdersLogs</frontend_model>
                     </field>
                     <group id="order_status" translate="label" type="text" sortOrder="440" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Map the order statuses on your store with the corresponding Yotpo statuses</label>
+                        <label>Status Mapping</label>
                         <attribute type="expanded">1</attribute>
+                        <field id="order_status_heading" translate="label" sortOrder="442" showInStore="1" showInWebsite="1" showInDefault="1">
+                            <label>
+                                <![CDATA[Map the order statuses on your store with the corresponding Yotpo statuses.]]>
+                            </label>
+                            <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\Heading</frontend_model>
+                        </field>
                         <field id="map_order_status" translate="label comment" sortOrder="445"
                                showInDefault="1" showInWebsite="1" showInStore="1">
                             <label><![CDATA[&nbsp;]]></label>
@@ -126,14 +132,14 @@
                 <group id="catalog_sync" translate="label" type="text" sortOrder="480" showInDefault="1" showInWebsite="1" showInStore="1">
                     <label>Catalog</label>
                     <attribute type="expanded">0</attribute>
-                    <field id="enable" translate="label comment" type="select" sortOrder="485" showInDefault="1" showInWebsite="1" showInStore="1">
-                        <label>Enable sync:</label>
-                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
-                    </field>
-                    <field id="last_sync_time" translate="label comment" sortOrder="490" type="label" showInDefault="0" showInWebsite="1" showInStore="1">
+                    <field id="last_sync_time" translate="label comment" sortOrder="485" type="label" showInDefault="0" showInWebsite="1" showInStore="1">
                         <label>Last Sync:</label>
                         <backend_model>Yotpo\Core\Model\Config\Backend\FormatDate</backend_model>
                         <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\RemoveScopes</frontend_model>
+                    </field>
+                    <field id="enable" translate="label comment" type="select" sortOrder="490" showInDefault="1" showInWebsite="1" showInStore="1">
+                        <label>Enable sync:</label>
+                        <source_model>Magento\Config\Model\Config\Source\Yesno</source_model>
                     </field>
                     <field id="frequency" translate="label comment" sortOrder="500" type="text" showInDefault="1" showInWebsite="0" showInStore="0">
                         <label>Frequency:</label>
