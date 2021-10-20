@@ -2,6 +2,11 @@
 <config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
         xsi:noNamespaceSchemaLocation="urn:magento:module:Magento_Store:etc/config.xsd">
     <default>
+        <yotpo>
+            <settings>
+                <debug_mode_active>1</debug_mode_active>
+            </settings>
+        </yotpo>
         <yotpo_core>
             <settings>
                 <active>0</active>
@@ -28,11 +33,11 @@
                             "_1_5":{"store_order_status":"canceled","yotpo_order_status":"cancelled"}}
                         </map_order_status>
                     </order_status>
-                    <shipment_status>
+                    <shipments>
                         <map_shipment_status>
                             {"_1_1":{"yotpo_shipment_status":"out_for_delivery","store_shipment_status":""}}
                         </map_shipment_status>
-                    </shipment_status>
+                    </shipments>
                 </orders_sync>
                 <catalog_sync>
                     <frequency>*/2 * * * *</frequency>
