@@ -113,7 +113,7 @@ class Config
             ],
         'orders_shipment_status' =>
             ['path' =>
-                'yotpo_core/sync_settings/orders_sync/shipment_status/map_shipment_status'
+                'yotpo_core/sync_settings/orders_sync/shipments/map_shipment_status'
             ],
         'is_fulfillment_based_on_shipment' =>
             ['path' =>

@@ -123,7 +123,6 @@
                         <field id="map_shipment_status" translate="label comment" sortOrder="470"
                                showInDefault="1" showInWebsite="1" showInStore="1">
                             <label><![CDATA[&nbsp;]]></label>
-                            <config_path>yotpo_core/sync_settings/orders_sync/shipment_status/map_shipment_status</config_path>
                             <frontend_model>Yotpo\Core\Block\Adminhtml\System\Config\Form\Field\MapShipmentStatus</frontend_model>
                             <backend_model>Magento\Config\Model\Config\Backend\Serialized\ArraySerialized</backend_model>
                         </field>
