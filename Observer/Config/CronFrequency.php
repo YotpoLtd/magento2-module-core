@@ -105,7 +105,7 @@ class CronFrequency
     private function resetCronScheduler($cronJobCodes = [])
     {
         $connection  = $this->resourceConnection->getConnection();
-        $tableName = $connection->getTableName('cron_schedule');
+        $tableName = $this->resourceConnection->getTableName('cron_schedule');
         $whereConditions = [
             $connection->quoteInto('job_code IN (?)', $cronJobCodes),
             $connection->quoteInto('status=?', Schedule::STATUS_PENDING),

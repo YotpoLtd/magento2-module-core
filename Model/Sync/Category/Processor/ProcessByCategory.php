@@ -305,7 +305,7 @@ class ProcessByCategory extends Main
     {
         $connection =   $this->resourceConnection->getConnection();
         $storeId    =   $this->config->getStoreId();
-        $table      =   $connection->getTableName('yotpo_category_sync');
+        $table      =   $this->resourceConnection->getTableName('yotpo_category_sync');
         $categories =   $connection->select()
             ->from($table)
             ->where('store_id=(?)', $storeId)
@@ -372,7 +372,7 @@ class ProcessByCategory extends Main
     {
         $connection =   $this->resourceConnection->getConnection();
         $connection->update(
-            $connection->getTableName('yotpo_category_sync'),
+            $this->resourceConnection->getTableName('yotpo_category_sync'),
             ['is_deleted_at_yotpo'  =>  '1'],
             [
                 'category_id IN (?)' => $categoryIds,

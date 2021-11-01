@@ -89,7 +89,7 @@ class AbstractJobs
         $connection = $this->resourceConnection->getConnection();
         foreach ($insertData as $data) {
             $connection->insertOnDuplicate(
-                $connection->getTableName($table),
+                $this->resourceConnection->getTableName($table),
                 $data
             );
         }
@@ -105,7 +105,7 @@ class AbstractJobs
     {
         $connection = $this->resourceConnection->getConnection();
         $connection->update(
-            $connection->getTableName($table),
+            $this->resourceConnection->getTableName($table),
             $insertData,
             $whereCondition
         );

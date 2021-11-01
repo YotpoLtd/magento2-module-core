@@ -69,7 +69,7 @@ class SaveBefore implements ObserverInterface
             $vmCategories = json_decode($vmCategories, true);
 
             $select = $connection->select()->from(
-                ['e' => $connection->getTableName('catalog_category_product')],
+                ['e' => $this->resourceConnection->getTableName('catalog_category_product')],
                 ['product_id']
             )->where(
                 'e.category_id =?',
@@ -94,7 +94,7 @@ class SaveBefore implements ObserverInterface
             ];
 
             $connection->update(
-                $connection->getTableName('catalog_product_entity_int'),
+                $this->resourceConnection->getTableName('catalog_product_entity_int'),
                 ['value' => 0],
                 $cond
             );

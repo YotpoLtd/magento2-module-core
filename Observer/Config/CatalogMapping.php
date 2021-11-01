@@ -94,7 +94,7 @@ class CatalogMapping extends Main
     public function resetCatalogSync()
     {
         $connection = $this->resourceConnection->getConnection();
-        $tableName = $connection->getTableName('catalog_product_entity_int');
+        $tableName = $this->resourceConnection->getTableName('catalog_product_entity_int');
         $select = $connection->select()
             ->from($tableName, 'value_id')
             ->where('attribute_id = ?', $this->catalogDataMain->getAttributeId(Config::CATALOG_SYNC_ATTR_CODE))

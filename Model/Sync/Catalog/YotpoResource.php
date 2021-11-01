@@ -60,7 +60,7 @@ class YotpoResource
         $request = array_merge($productsId, $parentIds);
         $connection = $this->resourceConnection->getConnection();
         $select = $connection->select()->from(
-            ['yotpo' => $connection->getTableName('yotpo_product_sync')],
+            ['yotpo' => $this->resourceConnection->getTableName('yotpo_product_sync')],
             ['*']
         )->where(
             $connection->quoteInto('yotpo.product_id IN (?)', $request)
@@ -99,7 +99,7 @@ class YotpoResource
     {
         $connection = $this->resourceConnection->getConnection();
         $select = $connection->select()->from(
-            ['yotpo' => $connection->getTableName('yotpo_product_sync')],
+            ['yotpo' => $this->resourceConnection->getTableName('yotpo_product_sync')],
             ['product_id', 'yotpo_id', 'yotpo_id_parent']
         )->where(
             $connection->quoteInto('yotpo.is_deleted = ?', 1)
@@ -124,7 +124,7 @@ class YotpoResource
     {
         $connection = $this->resourceConnection->getConnection();
         $select = $connection->select()->from(
-            ['yotpo' => $connection->getTableName('yotpo_product_sync')],
+            ['yotpo' => $this->resourceConnection->getTableName('yotpo_product_sync')],
             ['product_id', 'yotpo_id_unassign', 'yotpo_id_parent']
         )->where(
             $connection->quoteInto('yotpo.yotpo_id_unassign != ?', 0)
@@ -168,7 +168,7 @@ class YotpoResource
     {
         $connection = $this->resourceConnection->getConnection();
         $select = $connection->select()->from(
-            $connection->getTableName('catalog_product_link'),
+            $this->resourceConnection->getTableName('catalog_product_link'),
             ['product_id' => 'linked_product_id', 'parent_id' => 'product_id']
         )->where(
             $connection->quoteInto('linked_product_id IN (?)', $simpleIds)

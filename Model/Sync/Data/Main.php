@@ -40,7 +40,7 @@ class Main
         if (!array_key_exists($code, $this->attributeIds)) {
             $connection = $this->resourceConnection->getConnection();
             $query = $connection->select()->from(
-                ['e' => $connection->getTableName('eav_attribute')],
+                ['e' => $this->resourceConnection->getTableName('eav_attribute')],
                 'e.attribute_id'
             )->where(
                 $connection->quoteIdentifier('e.attribute_code') . ' = ?',
@@ -59,7 +59,7 @@ class Main
     {
         $connection = $this->resourceConnection->getConnection();
         $select = $connection->
-                    select()->from(['e' => $connection->getTableName('yotpo_orders_sync')], 'COUNT(*)');
+                    select()->from(['e' => $this->resourceConnection->getTableName('yotpo_orders_sync')], 'COUNT(*)');
         return $connection->fetchOne($select);
     }
 
@@ -95,7 +95,7 @@ class Main
     {
         $productIds = array_unique($productIds);
         $connection = $this->resourceConnection->getConnection();
-        $table = $connection->getTableName('yotpo_product_sync');
+        $table = $this->resourceConnection->getTableName('yotpo_product_sync');
         $products = $connection->select()
             ->from($table, ['product_id', 'yotpo_id', 'yotpo_id_parent', 'visible_variant_yotpo_id'])
             ->where('product_id IN(?) ', $productIds)
@@ -134,7 +134,7 @@ class Main
         $returnParentIds = [];
 
         $connection = $this->resourceConnection->getConnection();
-        $table = $connection->getTableName('yotpo_product_sync');
+        $table = $this->resourceConnection->getTableName('yotpo_product_sync');
         $products = $connection->select()
             ->from($table, ['product_id', 'yotpo_id_parent'])
             ->where('product_id IN(?) ', $productIds)

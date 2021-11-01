@@ -120,7 +120,7 @@ class SaveAfter implements ObserverInterface
             $cond['store_id IN (?) '] = $storeIds;
         }
         $connection->update(
-            $connection->getTableName('catalog_product_entity_int'),
+            $this->resourceConnection->getTableName('catalog_product_entity_int'),
             ['value' => 0],
             $cond
         );
@@ -220,7 +220,7 @@ class SaveAfter implements ObserverInterface
         if ($product->getStoreId() != 0) {
             $cond .= ' AND '.$connection->quoteInto('store_id = ?', $product->getStoreId());
         }
-        $query = 'UPDATE '.$connection->getTableName('yotpo_product_sync').'
+        $query = 'UPDATE '.$this->resourceConnection->getTableName('yotpo_product_sync').'
                     SET yotpo_id_unassign = yotpo_id, yotpo_id = 0 WHERE '.$cond;
         $connection->query($query);
     }
@@ -249,7 +249,7 @@ class SaveAfter implements ObserverInterface
     {
         $connection = $this->resourceConnection->getConnection();
         $connection->update(
-            $connection->getTableName('yotpo_product_sync'),
+            $this->resourceConnection->getTableName('yotpo_product_sync'),
             $data,
             ['store_id IN (?)' => $storeIds, 'product_id = ?' => $productId]
         );

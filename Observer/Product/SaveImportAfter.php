@@ -99,7 +99,7 @@ class SaveImportAfter implements ObserverInterface
             'attribute_id = ?' => $this->main->getAttributeId(YotpoCoreConfig::CATALOG_SYNC_ATTR_CODE)
         ];
         $connection->update(
-            $connection->getTableName('catalog_product_entity_int'),
+            $this->resourceConnection->getTableName('catalog_product_entity_int'),
             ['value' => 0],
             $condition
         );
