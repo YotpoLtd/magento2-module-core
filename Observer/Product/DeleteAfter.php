@@ -51,7 +51,7 @@ class DeleteAfter implements ObserverInterface
         }
 
         $connection->update(
-            $connection->getTableName('yotpo_product_sync'),
+            $this->resourceConnection->getTableName('yotpo_product_sync'),
             ['is_deleted' => 1, 'is_deleted_at_yotpo' => 0],
             $connection->quoteInto('product_id = ?', $product->getId())
         );
@@ -60,7 +60,7 @@ class DeleteAfter implements ObserverInterface
             $cond = $connection->quoteInto('product_id IN (?)', $childIds);
             $cond .= ' AND yotpo_id != 0';
 
-            $query = 'UPDATE '.$connection->getTableName('yotpo_product_sync').'
+            $query = 'UPDATE '.$this->resourceConnection->getTableName('yotpo_product_sync').'
                     SET yotpo_id_unassign = yotpo_id, yotpo_id = 0 WHERE '.$cond;
 
             $connection->query($query);

@@ -85,7 +85,7 @@ class Main extends AbstractJobs
         $return     =   [];
         $connection =   $this->resourceConnection->getConnection();
         $storeId    =   $this->config->getStoreId();
-        $table      =   $connection->getTableName('yotpo_category_sync');
+        $table      =   $this->resourceConnection->getTableName('yotpo_category_sync');
         $categories =   $connection->select()
             ->from($table)
             ->where('category_id IN(?) ', $magentoCategories)

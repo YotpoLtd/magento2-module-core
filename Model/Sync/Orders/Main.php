@@ -58,7 +58,7 @@ class Main extends AbstractJobs
     {
         $return     =   [];
         $connection =   $this->resourceConnection->getConnection();
-        $table      =   $connection->getTableName('yotpo_orders_sync');
+        $table      =   $this->resourceConnection->getTableName('yotpo_orders_sync');
         $orders     =   $connection->select()
                             ->from($table)
                             ->where('order_id IN (?) ', array_keys($magentoOrders))

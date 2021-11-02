@@ -71,7 +71,7 @@ class UpdateConfigData implements DataPatchInterface
         $newData = [];
         $connection = $this->resourceConnection->getConnection();
         $select = $connection->select()->from(
-            ['coreConfigData' => $connection->getTableName('core_config_data')],
+            ['coreConfigData' => $this->resourceConnection->getTableName('core_config_data')],
             ['*']
         )->where(
             $connection->quoteInto('coreConfigData.path = ?', self::XML_PATH_CUSTOM_ORDER_STATUS)

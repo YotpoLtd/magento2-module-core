@@ -71,7 +71,7 @@ class SaveAfter implements ObserverInterface
             'attribute_id = ? ' => $this->main->getAttributeId(Config::CATEGORY_SYNC_ATTR_CODE)
         ];
         $connection->update(
-            $connection->getTableName('catalog_category_entity_int'),
+            $this->resourceConnection->getTableName('catalog_category_entity_int'),
             ['value' => 0],
             $cond
         );

@@ -65,7 +65,7 @@ class ResetSync
             return;
         }
         $connection = $this->resourceConnection->getConnection('sales');
-        $tableName = $connection->getTableName('sales_order');
+        $tableName = $this->resourceConnection->getTableName('sales_order');
         $select = $connection->select()
             ->from($tableName, 'entity_id')
             ->where('synced_to_yotpo_order = ?', 1)

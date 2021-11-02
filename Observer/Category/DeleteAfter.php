@@ -41,7 +41,6 @@ class DeleteAfter implements ObserverInterface
      *
      * @param Observer $observer
      * @return void
-     * @throws LocalizedException
      */
     public function execute(Observer $observer)
     {
@@ -50,7 +49,7 @@ class DeleteAfter implements ObserverInterface
         /** @var Category $category */
         $category = $observer->getEvent()->getData('category');
         $connection->update(
-            $connection->getTableName('yotpo_category_sync'),
+            $this->resourceConnection->getTableName('yotpo_category_sync'),
             ['is_deleted' => 1, 'is_deleted_at_yotpo' => 0],
             [
                 'category_id = ?' => $category->getData('entity_id')
