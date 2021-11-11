@@ -428,10 +428,7 @@ class Config
         ) {
             return false;
         }
-        return (!$responseCode || $responseCode == '404' ||
-            $responseCode == '409' || $responseCode <=400 ||
-            $responseCode >= 500
-        );
+        return true;
     }
 
     /**
