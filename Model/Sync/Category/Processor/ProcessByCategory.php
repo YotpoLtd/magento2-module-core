@@ -80,12 +80,12 @@ class ProcessByCategory extends Main
                     continue;
                 }
                 $this->yotpoCoreCatalogLogger->info(
-                    sprintf('Category Sync - Start - Store ID: %s', $storeId)
+                    sprintf('Category Sync - Start - Magento Store ID: %s', $storeId)
                 );
                 $this->processEntity();
                 $this->stopEnvironmentEmulation();
                 $this->yotpoCoreCatalogLogger->info(
-                    sprintf('Category Sync - Finish - Store ID: %s', $storeId)
+                    sprintf('Category Sync - Finish - Magento Store ID: %s', $storeId)
                 );
             }
             $this->stopEnvironmentEmulation();
@@ -226,7 +226,7 @@ class ProcessByCategory extends Main
             $this->updateCategoryAttribute($categoriesToUpdate);
         }
         $this->yotpoCoreCatalogLogger->info(
-            sprintf('Category Sync - sync completed - Store ID: %s', $this->config->getStoreId())
+            sprintf('Category Sync - sync completed - Magento Store ID: %s', $this->config->getStoreId())
         );
     }
 

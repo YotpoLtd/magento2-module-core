@@ -122,14 +122,14 @@ class Processor extends Main
                 try {
                     if (!$order && !$this->coreConfig->isCatalogSyncActive()) {
                         $this->yotpoCatalogLogger->info(
-                            __('Product Sync - Disabled - Store ID: %1', $storeId)
+                            __('Product Sync - Disabled - Magento Store ID: %1', $storeId)
                         );
                         $this->stopEnvironmentEmulation();
                         continue;
                     }
                     $this->productSyncLimit = $this->coreConfig->getConfig('product_sync_limit');
                     $this->yotpoCatalogLogger->info(
-                        __('Product Sync - Start - Store ID: %1', $storeId)
+                        __('Product Sync - Start - Magento Store ID: %1', $storeId)
                     );
                     $this->processDeleteData();
                     $this->processUnAssignData();
@@ -138,7 +138,11 @@ class Processor extends Main
                 } catch (\Exception $e) {
                     $unSyncedStoreIds[] = $storeId;
                     $this->yotpoCatalogLogger->info(
-                        __('Product Sync has stopped with exception :  %1, Store ID: %2', $e->getMessage(), $storeId)
+                        __(
+                            'Product Sync has stopped with exception :  %1, Magento Store ID: %2',
+                            $e->getMessage(),
+                            $storeId
+                        )
                     );
                 }
                 $this->stopEnvironmentEmulation();
@@ -201,7 +205,7 @@ class Processor extends Main
                     }
                 }
                 $this->yotpoCatalogLogger->info(
-                    __('Data ready to sync - Method: %1 - Store ID: %2', $apiParam['method'], $storeId)
+                    __('Data ready to sync - Method: %1 - Magento Store ID: %2', $apiParam['method'], $storeId)
                 );
                 $response = $this->processRequest($apiParam, $itemData);
                 $lastSyncTime = $this->getCurrentTime();
@@ -293,7 +297,7 @@ class Processor extends Main
             }
         } else {
             $this->yotpoCatalogLogger->info(
-                __('Product Sync complete : No Data, Store ID: %1', $storeId)
+                __('Product Sync complete : No Data, Magento Store ID: %1', $storeId)
             );
         }
     }
