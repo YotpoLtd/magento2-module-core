@@ -371,6 +371,17 @@ class Config
     }
 
     /**
+     * Get website identifier
+     *
+     * @return  int
+     * @throws NoSuchEntityException
+     */
+    public function getWebsiteId(): int
+    {
+        return $this->storeManager->getStore()->getWebsiteId();
+    }
+
+    /**
      * @param string $type
      * @return string
      * @throws NoSuchEntityException

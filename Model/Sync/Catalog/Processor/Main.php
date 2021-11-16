@@ -194,7 +194,7 @@ class Main extends AbstractJobs
     protected function writeSuccessLog($method, $storeId, $data)
     {
         $this->yotpoCatalogLogger->info(
-            __('%1 API ran successfully - Store Id: %2', $method, $storeId),
+            __('%1 API ran successfully - Magento Store Id: %2', $method, $storeId),
             []
         );
     }
@@ -209,7 +209,7 @@ class Main extends AbstractJobs
     protected function writeFailedLog($method, $storeId, $data)
     {
         $this->yotpoCatalogLogger->info(
-            __('%1 API Failed - Store Id: %2', $method, $storeId),
+            __('%1 API Failed - Magento Store Id: %2', $method, $storeId),
             []
         );
     }

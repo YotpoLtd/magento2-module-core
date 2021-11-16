@@ -1,11 +1,11 @@
 <?php
 namespace Yotpo\Core\Model\Sync\Catalog;
 
+use Magento\CatalogInventory\Model\StockRegistry;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Yotpo\Core\Model\Config as YotpoCoreConfig;
 use Magento\Framework\UrlInterface;
-use Magento\CatalogInventory\Model\Stock\StockItemRepository;
 use Magento\Catalog\Model\Product;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\Catalog\Model\ProductRepository;
@@ -22,11 +22,6 @@ class Data extends Main
      * @var YotpoCoreConfig
      */
     protected $yotpoCoreConfig;
-
-    /**
-     * @var StockItemRepository
-     */
-    protected $stockItemRepository;
 
     /**
      * @var YotpoResource
@@ -160,30 +155,35 @@ class Data extends Main
     ];
 
     /**
+     * @var StockRegistry
+     */
+    protected $stockRegistry;
+
+    /**
      * Data constructor.
      * @param YotpoCoreConfig $yotpoCoreConfig
-     * @param StockItemRepository $stockItemRepository
      * @param YotpoResource $yotpoResource
      * @param Configurable $resourceConfigurable
      * @param ProductRepository $productRepository
      * @param ResourceConnection $resourceConnection
      * @param CollectionFactory $collectionFactory
+     * @param StockRegistry $stockRegistry
      */
     public function __construct(
         YotpoCoreConfig $yotpoCoreConfig,
-        StockItemRepository $stockItemRepository,
         YotpoResource $yotpoResource,
         Configurable $resourceConfigurable,
         ProductRepository $productRepository,
         ResourceConnection $resourceConnection,
-        CollectionFactory $collectionFactory
+        CollectionFactory $collectionFactory,
+        StockRegistry $stockRegistry
     ) {
         $this->yotpoCoreConfig = $yotpoCoreConfig;
-        $this->stockItemRepository = $stockItemRepository;
         $this->yotpoResource = $yotpoResource;
         $this->resourceConfigurable = $resourceConfigurable;
         $this->productRepository = $productRepository;
         $this->collectionFactory = $collectionFactory;
+        $this->stockRegistry = $stockRegistry;
         $this->mappingAttributes['row_id']['attr_code'] = $this->yotpoCoreConfig->getEavRowIdFieldName();
         parent::__construct($resourceConnection);
     }
@@ -414,7 +414,7 @@ class Data extends Main
      */
     public function getProductQty($item)
     {
-        return $this->stockItemRepository->get($item->getId())->getQty();
+        return $this->stockRegistry->getStockItem($item->getId(), $this->yotpoCoreConfig->getWebsiteId())->getQty();
     }
 
     /**

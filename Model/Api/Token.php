@@ -71,6 +71,9 @@ class Token
         $appKey = $this->config->getConfig('app_key', $scopeId, $scope);
         $baseUrl = str_ireplace('{store_id}', $appKey, $this->config->getConfig('api', $scopeId, $scope));
         $options = ['json' => $data];
+        $options['headers'] = [
+            'X-Yotpo-User-Agent' => 'magento-extension/' . $this->config->getModuleVersion()
+        ];
         $tokenResponse = $this->yotpoHttpclient->send(
             Request::HTTP_METHOD_POST,
             $baseUrl,
