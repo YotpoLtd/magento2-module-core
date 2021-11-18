@@ -31,8 +31,9 @@ class Data
      */
     public function formatPhoneNumber($number, $countryCode)
     {
-        if (!$number) {
-            return $number;
+        $numberToReturn = $number;
+        if (!$numberToReturn) {
+            return $numberToReturn;
         }
         $number = str_replace(' ', '', $number);
         $number = str_replace('-', '', $number);
@@ -80,12 +81,13 @@ class Data
                         $formattedNumber = null;
                     }
                 }
-                return $formattedNumber;
+                $numberToReturn = $formattedNumber;
             } else {
-                return $number;
+                $numberToReturn = $number;
             }
         }
-        return $number;
+        $finalValidation = "/^(?=(.{8,16})$)(\+)\d+$/";
+        return $numberToReturn && preg_match($finalValidation, $numberToReturn) ? $numberToReturn : null;
     }
 
     /**
