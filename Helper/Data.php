@@ -25,35 +25,69 @@ class Data
     }
 
     /**
-     * @param string $phone
-     * @param string $country
+     * @param string $number
+     * @param string $countryCode
      * @return string|null
      */
-    public function formatPhoneNumber(string $phone, string $country)
+    public function formatPhoneNumber($number, $countryCode)
     {
-        if (!$phone) {
-            return $phone;
+        $numberToReturn = $number;
+        if (!$numberToReturn) {
+            return $numberToReturn;
         }
+        $number = str_replace(' ', '', $number);
+        $number = str_replace('-', '', $number);
+        $number = str_replace('(', '', $number);
+        $number = str_replace(')', '', $number);
+        $number = ltrim($number, '0');
 
-        $phoneCodes = PhoneCodes::$phoneCodes;
-        $phoneCode = '';
-        if ($phoneCodes) {
-            if (array_key_exists($country, $phoneCodes)) {
-                $phoneCode = $phoneCodes[$country];
+        if (!empty($countryCode)) {
+            $prefix = $this->getCountryDigitPrefixFromArray($countryCode);
+            if (!empty($prefix)) {
+                $numberCheck = ltrim($number, '+');
+                $numberCheck = ltrim($numberCheck, '0');
+                $prefixCheck = ltrim($prefix, '+');
+
+                $formattedNumber = null;
+
+                /* Discard invalid phone numbers */
+                if (strlen($numberCheck) < 7 || strlen($numberCheck) > 15) {
+                    return null;
+                }
+                if (is_numeric($number)) {
+                    if ((strpos($number, '+') === 0 || strpos($number, '00') === 0)
+                        && strpos($numberCheck, $prefixCheck) === 0
+                    ) {
+                        $formattedNumber = '+' . $numberCheck;
+                    } elseif ((strpos($number, '+') === 0 || strpos($number, '00') === 0)
+                        && strpos($numberCheck, $prefixCheck) !== 0
+                    ) {
+                        $formattedNumber = '+' . $prefixCheck . $numberCheck;
+                    } elseif (strpos($numberCheck, $prefixCheck) !== 0
+                        || (strtolower($countryCode) == 'no' && strlen($numberCheck) <= 8)
+                    ) {
+                        $formattedNumber = '+' . $prefix . $numberCheck;
+                    } elseif (strpos($numberCheck, $prefixCheck) === 0
+                        && strpos($numberCheck, '0') === strlen($prefixCheck)
+                    ) {
+                        $formattedNumber = ltrim($numberCheck, $prefix);
+                        $formattedNumber = ltrim($formattedNumber, '0');
+                        $formattedNumber = '+' . $prefixCheck . $formattedNumber;
+                    } elseif ((strpos($number, '+') !== 0) && (strpos($number, '00') !== 0)
+                        && strpos($numberCheck, $prefixCheck) === 0
+                    ) {
+                        $formattedNumber = '+' . $number;
+                    } else {
+                        $formattedNumber = null;
+                    }
+                }
+                $numberToReturn = $formattedNumber;
+            } else {
+                $numberToReturn = $number;
             }
         }
-
-        $phoneCodeChk =  (string) preg_replace("/[^0-9]/", "", $phoneCode);
-        $phone =  (string) preg_replace("/[^0-9]/", "", $phone);
-        $prefix = substr($phone, 0, 2);
-
-        if (strpos($phone, $phoneCodeChk) === 0 || $prefix == '00') {
-            $formattedPhone = '+'.$phone;
-        } else {
-            $formattedPhone = '+'.$phoneCode.$phone;
-        }
-
-        return $formattedPhone;
+        $finalValidation = "/^(?=(.{8,16})$)(\+)\d+$/";
+        return $numberToReturn && preg_match($finalValidation, $numberToReturn) ? $numberToReturn : null;
     }
 
     /**
@@ -100,5 +134,16 @@ class Data
     {
         $time = $date ? strtotime($date) : null;
         return $time ? date("Y-m-d H:i:s", $time) : null;
+    }
+
+    /**
+     * @param string $countryCode
+     * @return string
+     */
+    public function getCountryDigitPrefixFromArray($countryCode)
+    {
+        $phoneCodes = PhoneCodes::$phoneCodes;
+        $prefix = array_key_exists($countryCode, $phoneCodes) ? $phoneCodes[$countryCode] : '';
+        return $prefix;
     }
 }
