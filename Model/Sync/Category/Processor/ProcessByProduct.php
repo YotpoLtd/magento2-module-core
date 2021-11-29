@@ -28,6 +28,7 @@ class ProcessByProduct extends Main
         $url                    =   $this->config->getEndpoint('collections');
         $categories             =   $this->prepareCategories($products);
         $existingCollections    =   $this->getYotpoSyncedCategories(array_keys($categories));
+        $newCollectionsToLog = [];
 
         foreach ($existingCollections as $catId => $cat) {
             if (!$this->config->canResync($cat['response_code'], $cat['yotpo_id'])) {
@@ -41,7 +42,6 @@ class ProcessByProduct extends Main
         $categoriesByPath       =   $this->getCategoriesFromPathNames(array_values($categories));
         $existingProductsMap    =   [];
         $categoriesProduct      =   [];
-        $newCollections         =   [];
         $currentTime            =   date('Y-m-d H:i:s');
 
         foreach ($products as $yotpoProductId => $product) {
@@ -68,11 +68,14 @@ class ProcessByProduct extends Main
                     );
                     $createCollection               =   $createCollection->getData('response');
                     if ($createCollection) {
+                        $newCollections     =   [];
                         $existingCollections[$categoryId]['yotpo_id']   =   $createCollection['collection']['yotpo_id'];
                         $newCollections[$categoryId]        =   [
                             'yotpo_id' => $createCollection['collection']['yotpo_id'],
                             'synced_to_yotpo' => $currentTime
                         ];
+                        $this->addNewCollectionsToYotpoTable($newCollections);
+                        $newCollectionsToLog[] = $categoryId;
                         $yotpoCollectionId  =   $existingCollections[$categoryId]['yotpo_id'];
                     } else {
                         $existingCollections[$categoryId]   =   '';
@@ -104,10 +107,9 @@ class ProcessByProduct extends Main
             $this->unAssignProducts($catUnmap, $product->getId(), $existingProductsMap[$product->getId()]);
         }
         $this->yotpoCoreCatalogLogger->info(
-            'Category Sync by product -  Finish - Cateogyr ID - ' . implode(',', array_keys($newCollections)),
+            'Category Sync by product -  Finished - Category ID - ' . implode(',', array_unique($newCollectionsToLog)),
             []
         );
-        $this->addNewCollectionsToYotpoTable($newCollections);
     }
 
     /**

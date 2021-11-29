@@ -144,31 +144,29 @@ class Main extends AbstractJobs
         $data['yotpo_id']   =   null;
         if ($response->getData('yotpo_id')) {
             $data['yotpo_id']   =   $response->getData('yotpo_id');
-        } elseif ($responseData && $responseData['collection']) {
+        } elseif ($responseData && is_array($responseData) &&
+            array_key_exists('collection', $responseData) && $responseData['collection']
+        ) {
             $data['yotpo_id']   =   $responseData['collection']['yotpo_id'];
         }
         return $data;
     }
 
     /**
-     * @param array<mixed> $yotpoTableFinalData
+     * @param array<mixed> $data
      * @return void
      */
-    public function insertOrUpdateYotpoTableData(array $yotpoTableFinalData)
+    public function insertOrUpdateYotpoTableData(array $data)
     {
         $finalData = [];
-        foreach ($yotpoTableFinalData as $data) {
-            $finalData[] = [
-                'category_id'        =>  $data['category_id'],
-                'synced_to_yotpo'    =>  $data['synced_to_yotpo'],
-                'response_code'      =>  $data['response_code'],
-                'yotpo_id'           =>  $data['yotpo_id'],
-                'store_id'           =>  $data['store_id']
-            ];
-        }
-        if ($finalData) {
-            $this->insertOnDuplicate('yotpo_category_sync', $finalData);
-        }
+        $finalData[] = [
+            'category_id'        =>  $data['category_id'],
+            'synced_to_yotpo'    =>  $data['synced_to_yotpo'],
+            'response_code'      =>  $data['response_code'],
+            'yotpo_id'           =>  $data['yotpo_id'],
+            'store_id'           =>  $data['store_id'],
+        ];
+        $this->insertOnDuplicate('yotpo_category_sync', $finalData);
     }
 
     /**

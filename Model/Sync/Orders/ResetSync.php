@@ -61,7 +61,10 @@ class ResetSync
     public function resetOrderStatusSync($storeId)
     {
         if (!$this->config->isEnabled($storeId)) {
-            $this->addMessage('error', 'Yotpo is disabled for Store ID - ' . $storeId);
+            $this->addMessage(
+                'error',
+                'Yotpo is disabled for Store ID - ' . $this->config->getStoreName($storeId)
+            );
             return;
         }
         $connection = $this->resourceConnection->getConnection('sales');

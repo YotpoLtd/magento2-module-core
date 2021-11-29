@@ -122,14 +122,17 @@ class Processor extends Main
                 try {
                     if (!$order && !$this->coreConfig->isCatalogSyncActive()) {
                         $this->yotpoCatalogLogger->info(
-                            __('Product Sync - Disabled - Magento Store ID: %1', $storeId)
+                            __(
+                                'Product Sync - Disabled - Magento Store : %1',
+                                $this->coreConfig->getStoreName($storeId)
+                            )
                         );
                         $this->stopEnvironmentEmulation();
                         continue;
                     }
                     $this->productSyncLimit = $this->coreConfig->getConfig('product_sync_limit');
                     $this->yotpoCatalogLogger->info(
-                        __('Product Sync - Start - Magento Store ID: %1', $storeId)
+                        __('Product Sync - Start - Magento Store: %1', $this->coreConfig->getStoreName($storeId))
                     );
                     $this->processDeleteData();
                     $this->processUnAssignData();
@@ -139,9 +142,9 @@ class Processor extends Main
                     $unSyncedStoreIds[] = $storeId;
                     $this->yotpoCatalogLogger->info(
                         __(
-                            'Product Sync has stopped with exception :  %1, Magento Store ID: %2',
+                            'Product Sync has stopped with exception :  %1, Magento Store : %2',
                             $e->getMessage(),
-                            $storeId
+                            $this->coreConfig->getStoreName($storeId)
                         )
                     );
                 }
@@ -194,7 +197,14 @@ class Processor extends Main
                         'value' => 1,
                         $this->entityIdFieldValue => $rowId
                     ];
+                    $sqlDataIntTable = [];
                     $sqlDataIntTable[] = $tempSqlDataIntTable;
+                    if ($this->normalSync) {
+                        $this->insertOnDuplicate(
+                            'catalog_product_entity_int',
+                            $sqlDataIntTable
+                        );
+                    }
                     continue;
                 }
                 $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData, $visibleVariants);
@@ -205,7 +215,11 @@ class Processor extends Main
                     }
                 }
                 $this->yotpoCatalogLogger->info(
-                    __('Data ready to sync - Method: %1 - Magento Store ID: %2', $apiParam['method'], $storeId)
+                    __(
+                        'Data ready to sync - Method: %1 - Magento Store : %2',
+                        $apiParam['method'],
+                        $this->coreConfig->getStoreName($storeId)
+                    )
                 );
                 $response = $this->processRequest($apiParam, $itemData);
                 $lastSyncTime = $this->getCurrentTime();
@@ -228,7 +242,14 @@ class Processor extends Main
                         'value' => 1,
                         $this->entityIdFieldValue => $rowId
                     ];
+                    $sqlDataIntTable = [];
                     $sqlDataIntTable[] = $tempSqlDataIntTable;
+                    if ($this->normalSync) {
+                        $this->insertOnDuplicate(
+                            'catalog_product_entity_int',
+                            $sqlDataIntTable
+                        );
+                    }
                 }
                 $returnResponse = $this->processResponse(
                     $apiParam,
@@ -246,22 +267,17 @@ class Processor extends Main
                 if (!$visibleVariants) {
                     $parentData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentData, $parentIds);
                 }
+                $syncDataSql = [];
+                $syncDataSql[] = $tempSqlArray;
+                $this->insertOnDuplicate(
+                    'yotpo_product_sync',
+                    $syncDataSql
+                );
                 $sqlData[] = $tempSqlArray;
             }
             $dataToSent = [];
             if (count($sqlData)) {
-                $this->insertOnDuplicate(
-                    'yotpo_product_sync',
-                    $sqlData
-                );
                 $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($sqlData));
-            }
-
-            if (count($sqlDataIntTable) && $this->normalSync) {
-                $this->insertOnDuplicate(
-                    'catalog_product_entity_int',
-                    $sqlDataIntTable
-                );
             }
 
             if ($externalIds) {
@@ -297,7 +313,7 @@ class Processor extends Main
             }
         } else {
             $this->yotpoCatalogLogger->info(
-                __('Product Sync complete : No Data, Magento Store ID: %1', $storeId)
+                __('Product Sync complete : No Data, Magento Store : %1', $this->coreConfig->getStoreName($storeId))
             );
         }
     }
@@ -313,7 +329,6 @@ class Processor extends Main
         $data = $this->getToDeleteCollection($storeId);
         $dataCount = count($data);
         if ($dataCount > 0) {
-            $sqlData = [];
             foreach ($data as $itemId => $itemData) {
                 $tempDeleteQry = [
                     'product_id' => $itemId,
@@ -322,21 +337,25 @@ class Processor extends Main
                 ];
                 if (!$itemData['yotpo_id']) {
                     $tempDeleteQry['is_deleted_at_yotpo'] = 1;
+                    $sqlData = [];
                     $sqlData[] = $tempDeleteQry;
+                    $this->insertOnDuplicate(
+                        'yotpo_product_sync',
+                        $sqlData
+                    );
                     continue;
                 }
                 $params = $this->getDeleteApiParams($itemData, 'yotpo_id');
                 $itemData = ['is_discontinued' => true];
                 $response = $this->processRequest($params, $itemData);
                 $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
+                $sqlData = [];
                 $sqlData[] = $returnResponse['temp_sql'];
+                $this->insertOnDuplicate(
+                    'yotpo_product_sync',
+                    $sqlData
+                );
             }
-
-            $this->insertOnDuplicate(
-                'yotpo_product_sync',
-                $sqlData
-            );
-
             $this->updateProductSyncLimit($dataCount);
         }
     }
@@ -351,7 +370,6 @@ class Processor extends Main
         $data = $this->getUnAssignedCollection($storeId);
         $dataCount = count($data);
         if ($dataCount > 0) {
-            $sqlData = [];
             foreach ($data as $itemId => $itemData) {
                 $tempDeleteQry = [
                     'product_id' => $itemId,
@@ -361,17 +379,16 @@ class Processor extends Main
                 ];
                 $params = $this->getDeleteApiParams($itemData, 'yotpo_id_unassign');
 
-                $itemData = ['is_discontinued' => true];
-                $response = $this->processRequest($params, $itemData);
-                $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
+                $itemDataRequest = ['is_discontinued' => true];
+                $response = $this->processRequest($params, $itemDataRequest);
+                $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemDataRequest);
+                $sqlData = [];
                 $sqlData[] = $returnResponse['temp_sql'];
+                $this->insertOnDuplicate(
+                    'yotpo_product_sync',
+                    $sqlData
+                );
             }
-
-            $this->insertOnDuplicate(
-                'yotpo_product_sync',
-                $sqlData
-            );
-
             $this->updateProductSyncLimit($dataCount);
         }
     }

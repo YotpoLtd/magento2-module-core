@@ -18,6 +18,11 @@ class Main extends \Monolog\Logger
     protected $yotpoConfig;
 
     /**
+     * @var bool
+     */
+    private $systemInfoLog = false;
+
+    /**
      * Main constructor.
      * @param string $name
      * @param YotpoConfig $yotpoConfig
@@ -45,6 +50,7 @@ class Main extends \Monolog\Logger
     {
         $message = self::LOG_PREFIX . $message;
         if ($this->isDebugEnabled()) {
+            $this->logSystemInfo();
             return parent::info($message, $context);
         }
         return true;
@@ -59,6 +65,7 @@ class Main extends \Monolog\Logger
      */
     public function error($message, array $context = []): bool
     {
+        $this->logSystemInfo();
         $message = self::LOG_PREFIX . $message;
         return parent::error($message, $context);
     }
@@ -69,5 +76,23 @@ class Main extends \Monolog\Logger
     public function isDebugEnabled()
     {
         return $this->yotpoConfig->getConfig('debug_mode_active');
+    }
+
+    /**
+     * Log system information
+     * @return void
+     */
+    public function logSystemInfo()
+    {
+        if (!$this->systemInfoLog) {
+            parent::info('PHP Version : ' . phpversion(), []);
+            parent::info(
+                'Magento Version : ' .
+                $this->yotpoConfig->getMagentoVersion() . ' - ' . $this->yotpoConfig->getMagentoEdition(),
+                []
+            );
+            parent::info('Yotpo Module Version : ' . $this->yotpoConfig->getModuleVersion(), []);
+            $this->systemInfoLog = true;
+        }
     }
 }
