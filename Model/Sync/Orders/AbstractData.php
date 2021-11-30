@@ -4,6 +4,7 @@ namespace Yotpo\Core\Model\Sync\Orders;
 
 use Magento\Catalog\Api\Data\ProductInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Customer\Model\Data\Customer;
 use Magento\Framework\Api\SearchCriteriaBuilder;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -454,8 +455,12 @@ class AbstractData extends Main
         $phoneNumber = null;
         $countryId = null;
         $customAttributeValue = $order->getCustomerId() ?
-            $this->customersAttributeCollection[$order->getCustomerId()] :
-            $this->guestUsersAttributeCollection[$order->getEntityId()];
+            (isset($this->customersAttributeCollection[$order->getCustomerId()]) ?
+                $this->customersAttributeCollection[$order->getCustomerId()] : null
+            ) :
+            (isset($this->guestUsersAttributeCollection[$order->getEntityId()]) ?
+                $this->guestUsersAttributeCollection[$order->getEntityId()] : null
+            );
         $billingAddress = $order->getBillingAddress();
         if ($billingAddress) {
             $phoneNumber = $billingAddress->getTelephone();
@@ -484,25 +489,48 @@ class AbstractData extends Main
      */
     public function prepareCustomAttributes($customerIds)
     {
-        $customAttributeValue = false;
-        if (!$this->customersAttributeCollection) {
-            $this->searchCriteriaBuilder->addFilter(
-                'entity_id',
-                $customerIds,
-                'in'
-            );
-            $searchCriteria = $this->searchCriteriaBuilder->create();
-            $customers = $this->customerRepository->getList($searchCriteria);
-            $customersData = $customers->getItems();
-            foreach ($customersData as $customer) {
-                $customAttribute =
-                    $customer->getCustomAttribute(self::YOTPO_CUSTOM_ATTRIBUTE_SMS_MARKETING);
-                if ($customAttribute) {
-                    $customAttributeValue = $customAttribute->getValue();
+        if (!$customerIds) {
+            $this->customersAttributeCollection = [];
+            return;
+        }
+        if (!$this->customersAttributeCollection ||
+            array_diff($customerIds, array_keys($this->guestUsersAttributeCollection))
+        ) {
+            try {
+                $this->searchCriteriaBuilder->addFilter(
+                    'entity_id',
+                    $customerIds,
+                    'in'
+                );
+                $searchCriteria = $this->searchCriteriaBuilder->create();
+                $customers = $this->customerRepository->getList($searchCriteria);
+                $customersData = $customers->getItems();
+                foreach ($customersData as $customer) {
+                    /** @var Customer $customer */
+                    $customAttributeValue = $this->getSmsMarketingCustomAttributeValue($customer);
+                    $this->customersAttributeCollection[$customer->getId()] = $customAttributeValue;
                 }
-                $this->customersAttributeCollection[$customer->getId()] = $customAttributeValue;
+            } catch (NoSuchEntityException | LocalizedException $e) {
+                $this->yotpoOrdersLogger->info(' prepareCustomAttributes() :  ' . $e->getMessage(), []);
             }
         }
+    }
+
+    /**
+     * @param Customer $customer
+     * @return bool
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function getSmsMarketingCustomAttributeValue($customer)
+    {
+        $customAttributeValue = false;
+        $attributeCode = $this->config->getConfig('sms_marketing_custom_attribute', $this->config->getStoreId());
+        $customAttribute = $customer->getCustomAttribute($attributeCode);
+        if ($customAttribute) {
+            $customAttributeValue = $customAttribute->getValue();
+        }
+        return $customAttributeValue == 1;
     }
 
     /**
@@ -513,7 +541,13 @@ class AbstractData extends Main
      */
     public function prepareGuestUsersCustomAttributes($orderIds)
     {
-        if (!$this->guestUsersAttributeCollection) {
+        if (!$orderIds) {
+            $this->guestUsersAttributeCollection = [];
+            return;
+        }
+        if (!$this->guestUsersAttributeCollection ||
+            array_diff($orderIds, array_keys($this->guestUsersAttributeCollection))
+        ) {
             $this->searchCriteriaBuilder->addFilter(
                 'entity_id',
                 $orderIds,

@@ -147,13 +147,13 @@ class Main extends AbstractJobs
                 }
                 if ($response->getData('is_success')) {
                     $tempSqlArray[$yotpoIdkey] = $this->getYotpoIdFromResponse($response, $apiParam['method']);
-                    $this->writeSuccessLog($apiParam['method'], $storeId, $data);
+                    $this->writeSuccessLog($apiParam['method'], $storeId);
                 } else {
                     if ($response->getStatus() == '409') {
-                        $externalIds[] = $data['external_id'];
+                        $externalIds[] = array_key_exists('external_id', $data) ? $data['external_id'] : 0;
                     }
                     $tempSqlArray[$yotpoIdkey] = 0;
-                    $this->writeFailedLog($apiParam['method'], $storeId, []);
+                    $this->writeFailedLog($apiParam['method'], $storeId);
                 }
                 break;
             case $this->coreConfig->getProductSyncMethod('updateProduct'):
@@ -163,7 +163,7 @@ class Main extends AbstractJobs
             case $this->coreConfig->getProductSyncMethod('unassignProduct'):
             case $this->coreConfig->getProductSyncMethod('unassignProductVariant'):
                 if ($response->getData('is_success')) {
-                    $this->writeSuccessLog($apiParam['method'], $storeId, $data);
+                    $this->writeSuccessLog($apiParam['method'], $storeId);
                     if ($apiParam['method'] === $this->coreConfig->getProductSyncMethod('deleteProduct')
                         || $apiParam['method'] === $this->coreConfig->getProductSyncMethod('deleteProductVariant')) {
                         $tempSqlArray['is_deleted_at_yotpo'] = 1;
@@ -173,14 +173,14 @@ class Main extends AbstractJobs
                         $tempSqlArray['yotpo_id_unassign'] = 0;
                     }
                 } else {
-                    $this->writeFailedLog($apiParam['method'], $storeId, []);
+                    $this->writeFailedLog($apiParam['method'], $storeId);
                 }
                 break;
         }
 
         return [
             'temp_sql' => $tempSqlArray,
-            'external_id' => $externalIds
+            'external_id' => array_filter($externalIds)
         ];
     }
 
@@ -188,13 +188,18 @@ class Main extends AbstractJobs
      * Success Log
      * @param string|int $method
      * @param int $storeId
-     * @param mixed $data
      * @return void
+     * @throws NoSuchEntityException
      */
-    protected function writeSuccessLog($method, $storeId, $data)
+    protected function writeSuccessLog($method, $storeId)
     {
         $this->yotpoCatalogLogger->info(
-            __('%1 API ran successfully - Magento Store Id: %2', $method, $storeId),
+            __(
+                '%1 API ran successfully - Magento Store ID: %2, Name: %3',
+                $method,
+                $storeId,
+                $this->coreConfig->getStoreName($storeId)
+            ),
             []
         );
     }
@@ -203,13 +208,18 @@ class Main extends AbstractJobs
      * Failed Log
      * @param string|int $method
      * @param int $storeId
-     * @param mixed $data
      * @return void
+     * @throws NoSuchEntityException
      */
-    protected function writeFailedLog($method, $storeId, $data)
+    protected function writeFailedLog($method, $storeId)
     {
         $this->yotpoCatalogLogger->info(
-            __('%1 API Failed - Magento Store Id: %2', $method, $storeId),
+            __(
+                '%1 API failed - Magento Store ID: %2, Name: %3',
+                $method,
+                $storeId,
+                $this->coreConfig->getStoreName($storeId)
+            ),
             []
         );
     }
@@ -226,7 +236,19 @@ class Main extends AbstractJobs
             $this->coreConfig->getProductSyncMethod('createProduct') => 'product',
             $this->coreConfig->getProductSyncMethod('createProductVariant') => 'variant'
         ];
-        return $response->getData('response')[$array[$method]]['yotpo_id'];
+        $key = $array[$method] ?? null;
+        $yotpoId = 0;
+        if (!$key) {
+            return $yotpoId;
+        }
+        if ($response && $response->getData('response')) {
+            $responseData = $response->getData('response');
+            if ($responseData && is_array($responseData)) {
+                $yotpoId = isset($responseData[$key]) && is_array($responseData[$key])
+                && isset($responseData[$key]['yotpo_id']) ? $responseData[$key]['yotpo_id']  : 0;
+            }
+        }
+        return $yotpoId;
     }
 
     /**
@@ -440,10 +462,17 @@ class Main extends AbstractJobs
     {
         $data = ['external_ids' => $requestIds, 'entityLog' => 'catalog'];
         $response = $this->coreSync->sync('GET', $url, $data);
-        if ($type == 'variants') {
-            $products = $response->getResponse()['variants'];
-        } else {
-            $products = $response->getResponse()['products'];
+
+        $products = [];
+        if ($response && $response->getResponse()) {
+            $responseData = $response->getResponse();
+            if ($responseData && is_array($responseData)) {
+                if ($type == 'variants') {
+                    $products = array_key_exists('variants', $responseData) ? $responseData['variants'] : [];
+                } else {
+                    $products = array_key_exists('products', $responseData) ? $responseData['products'] : [];
+                }
+            }
         }
         return $products;
     }

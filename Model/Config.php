@@ -41,6 +41,11 @@ class Config
     protected $successfulResponseCodes = [200,201,204,222];
 
     /**
+     * @var array<int, string>
+     */
+    protected $storeCode = [];
+
+    /**
      * @var string[]
      */
     protected $productSyncMethods = [
@@ -121,6 +126,10 @@ class Config
             ],
         'last_reset_orders_sync_time' => ['path' => 'yotpo_core/sync_settings/orders_sync/last_reset_orders_sync_time',
             'read_from_db' => true],
+        'sms_marketing_custom_attribute' =>
+            [
+                'path' => 'yotpo_core/widget_settings/marketing_settings/attr_customer'
+            ],
     ];
 
     /**
@@ -563,6 +572,29 @@ class Config
     public function getMagentoVersion(): string
     {
         return $this->productMetadata->getVersion();
+    }
+
+    /**
+     * Get Magento Edition
+     * @return string
+     */
+    public function getMagentoEdition(): string
+    {
+        return $this->productMetadata->getEdition();
+    }
+
+    /**
+     * Get Store Code by Store ID
+     * @param int $storeId
+     * @return string
+     * @throws NoSuchEntityException
+     */
+    public function getStoreName($storeId): string
+    {
+        if (!array_key_exists($storeId, $this->storeCode)) {
+            $this->storeCode[$storeId] = $this->storeManager->getStore($storeId)->getName();
+        }
+        return $this->storeCode[$storeId];
     }
 
     /**

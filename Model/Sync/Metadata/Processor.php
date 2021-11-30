@@ -72,22 +72,42 @@ class Processor extends AbstractJobs
                 try {
                     $this->emulateFrontendArea($storeId);
                     if (!$this->yotpoConfig->isEnabled()) {
-                        $this->logger->info(__('Skipping Magento store ID: %1 [Disabled]', $storeId));
+                        $this->logger->info(
+                            __(
+                                'Skipping Magento Store ID: %1, Name: %2 [Disabled]', 
+                                $storeId,
+                                $this->yotpoConfig->getStoreName($storeId)
+                            )
+                        );
                         continue;
                     }
-                    $this->logger->info(__('Updating metadata for Magento store ID: %1 [START]', $storeId));
+                    $this->logger->info(
+                        __(
+                            'Updating metadata for Magento Store ID: %1, Name: %2 [START]',
+                            $storeId,
+                            $this->yotpoConfig->getStoreName($storeId)
+                        )
+                    );
+
                     $data = $this->prepareMetadata();
                     $data['entityLog'] = 'general';
                     $endPoint = $this->yotpoConfig->getEndpoint('metadata');
                     $response = $this->yotpoSyncMain->syncV1('POST', $endPoint, $data);
                     if ($response['is_success']) {
-                        $this->logger->info(__('Updating metadata for Magento store ID: %1 [SUCCESS]', $storeId));
+                        $this->logger->info(
+                            __(
+                                'Updating metadata for Magento Store ID: %1, Name: %2 [SUCCESS]',
+                                $storeId,
+                                $this->yotpoConfig->getStoreName($storeId)
+                            )
+                        );
                     }
                 } catch (\Exception $e) {
                     $this->logger->info(
                         __(
-                            'Exception on Magento Store ID: %1, Reason: %2',
+                            'Exception on Magento Store ID: %1, Name: %2, Reason: %3',
                             $storeId,
+                            $this->yotpoConfig->getStoreName($storeId),
                             $e->getMessage()
                         )
                     );
