@@ -123,7 +123,8 @@ class Processor extends Main
                     if (!$order && !$this->coreConfig->isCatalogSyncActive()) {
                         $this->yotpoCatalogLogger->info(
                             __(
-                                'Product Sync - Disabled - Magento Store : %1',
+                                'Product Sync - Disabled - Magento Store ID: %1, Name: %2',
+                                $storeId,
                                 $this->coreConfig->getStoreName($storeId)
                             )
                         );
@@ -132,7 +133,11 @@ class Processor extends Main
                     }
                     $this->productSyncLimit = $this->coreConfig->getConfig('product_sync_limit');
                     $this->yotpoCatalogLogger->info(
-                        __('Product Sync - Start - Magento Store: %1', $this->coreConfig->getStoreName($storeId))
+                        __(
+                            'Product Sync - Start - Magento Magento Store ID: %1, Name: %2',
+                            $storeId,
+                            $this->coreConfig->getStoreName($storeId)
+                        )
                     );
                     $this->processDeleteData();
                     $this->processUnAssignData();
@@ -142,8 +147,9 @@ class Processor extends Main
                     $unSyncedStoreIds[] = $storeId;
                     $this->yotpoCatalogLogger->info(
                         __(
-                            'Product Sync has stopped with exception :  %1, Magento Store : %2',
+                            'Product Sync has stopped with exception: %1, Magento Store ID: %2, Name: %3',
                             $e->getMessage(),
+                            $storeId,
                             $this->coreConfig->getStoreName($storeId)
                         )
                     );
@@ -216,8 +222,9 @@ class Processor extends Main
                 }
                 $this->yotpoCatalogLogger->info(
                     __(
-                        'Data ready to sync - Method: %1 - Magento Store : %2',
+                        'Data ready to sync - Method: %1 - Magento Store ID: %2, Name: %3',
                         $apiParam['method'],
+                        $storeId,
                         $this->coreConfig->getStoreName($storeId)
                     )
                 );
@@ -313,7 +320,11 @@ class Processor extends Main
             }
         } else {
             $this->yotpoCatalogLogger->info(
-                __('Product Sync complete : No Data, Magento Store : %1', $this->coreConfig->getStoreName($storeId))
+                __(
+                    'Product Sync complete : No Data, Magento Store ID: %1, Name: %2',
+                    $storeId,
+                    $this->coreConfig->getStoreName($storeId)
+                )
             );
         }
     }

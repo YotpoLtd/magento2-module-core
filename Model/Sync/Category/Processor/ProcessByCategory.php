@@ -80,13 +80,21 @@ class ProcessByCategory extends Main
                     continue;
                 }
                 $this->yotpoCoreCatalogLogger->info(
-                    sprintf('Category Sync - Start - Magento Store : %s', $this->config->getStoreName($storeId))
+                    sprintf(
+                        'Category Sync - Start - Magento Store ID: %s, Name: %s',
+                        $storeId,
+                        $this->config->getStoreName($storeId)
+                    )
                 );
 
                 $this->processEntity();
                 $this->stopEnvironmentEmulation();
                 $this->yotpoCoreCatalogLogger->info(
-                    sprintf('Category Sync - Finish - Magento Store : %s', $this->config->getStoreName($storeId))
+                    sprintf(
+                        'Category Sync - Finish - Magento Store ID: %s, Name: %s',
+                        $storeId,
+                        $this->config->getStoreName($storeId)
+                    )
                 );
             }
             $this->stopEnvironmentEmulation();
@@ -223,7 +231,8 @@ class ProcessByCategory extends Main
         $this->deleteCollections();
         $this->yotpoCoreCatalogLogger->info(
             sprintf(
-                'Category Sync - sync completed - Magento Store : %s',
+                'Category Sync - sync completed - Magento Store ID: %s, Name: %s',
+                $this->config->getStoreId(),
                 $this->config->getStoreName($this->config->getStoreId())
             )
         );

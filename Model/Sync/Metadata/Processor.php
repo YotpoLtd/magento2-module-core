@@ -73,13 +73,18 @@ class Processor extends AbstractJobs
                     $this->emulateFrontendArea($storeId);
                     if (!$this->yotpoConfig->isEnabled()) {
                         $this->logger->info(
-                            __('Skipping Magento store : %1 [Disabled]', $this->yotpoConfig->getStoreName($storeId))
+                            __(
+                                'Skipping Magento Store ID: %1, Name: %2 [Disabled]', 
+                                $storeId,
+                                $this->yotpoConfig->getStoreName($storeId)
+                            )
                         );
                         continue;
                     }
                     $this->logger->info(
                         __(
-                            'Updating metadata for Magento store : %1 [START]',
+                            'Updating metadata for Magento Store ID: %1, Name: %2 [START]',
+                            $storeId,
                             $this->yotpoConfig->getStoreName($storeId)
                         )
                     );
@@ -91,7 +96,8 @@ class Processor extends AbstractJobs
                     if ($response['is_success']) {
                         $this->logger->info(
                             __(
-                                'Updating metadata for Magento store : %1 [SUCCESS]',
+                                'Updating metadata for Magento Store ID: %1, Name: %2 [SUCCESS]',
+                                $storeId,
                                 $this->yotpoConfig->getStoreName($storeId)
                             )
                         );
@@ -99,7 +105,8 @@ class Processor extends AbstractJobs
                 } catch (\Exception $e) {
                     $this->logger->info(
                         __(
-                            'Exception on Magento Store : %1, Reason: %2',
+                            'Exception on Magento Store ID: %1, Name: %2, Reason: %3',
+                            $storeId,
                             $this->yotpoConfig->getStoreName($storeId),
                             $e->getMessage()
                         )

@@ -137,7 +137,11 @@ class Processor extends Main
             return;
         }
         $this->yotpoOrdersLogger->info(
-            'Process order for the store : ' . $this->config->getStoreName((int)$storeId),
+            __(
+                'Process order for Magento Store ID: %1, Name: %2',
+                $storeId,
+                $this->config->getStoreName((int)$storeId)
+            ),
             []
         );
         $this->processSingleEntity($order);

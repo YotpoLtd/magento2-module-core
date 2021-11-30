@@ -63,7 +63,11 @@ class ResetSync
         if (!$this->config->isEnabled($storeId)) {
             $this->addMessage(
                 'error',
-                'Yotpo is disabled for Store ID - ' . $this->config->getStoreName($storeId)
+                __(
+                    'Yotpo is disabled for Magento Store ID: %1, Name: %2',
+                    $storeId,
+                    $this->config->getStoreName($storeId)
+                )
             );
             return;
         }
