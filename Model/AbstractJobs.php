@@ -21,6 +21,11 @@ class AbstractJobs
     protected $resourceConnection;
 
     /**
+     * @var array <mixed>
+     */
+    private $immediateRetryDone = [];
+
+    /**
      * AbstractJobs constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -109,5 +114,63 @@ class AbstractJobs
             $insertData,
             $whereCondition
         );
+    }
+
+    /**
+     * @return array
+     * @param string $entity
+     * @param int|string $entityId
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function getImmediateRetryAlreadyDone($entity, $entityId, $storeId)
+    {
+        $storeId = (int) $storeId;
+        return array_key_exists($entity, $this->immediateRetryDone) &&
+        isset($this->immediateRetryDone[$entity][$storeId]) &&
+        isset($this->immediateRetryDone[$entity][$storeId][$entityId]) ?
+            $this->immediateRetryDone[$entity][$storeId][$entityId] :
+            false ;
+    }
+
+    /**
+     * @param string $entity
+     * @param int|string $entityId
+     * @param int|null $storeId
+     * @param bool $flag
+     * @return void
+     */
+    public function setImmediateRetryAlreadyDone($entity, $entityId, $storeId, $flag = true)
+    {
+        $storeId = (int) $storeId;
+        $this->immediateRetryDone[$entity][$storeId][$entityId] = $flag;
+    }
+
+    /**
+     * @param array <mixed> $response
+     * @param string $entity
+     * @param int|string $entityId
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function isImmediateRetry($response, $entity, $entityId, $storeId)
+    {
+        $storeId = (int) $storeId;
+        /** @phpstan-ignore-next-line */
+        $responseCode = $response && $response->getData('status') ? $response->getData('status') : null;
+        if ($responseCode) {
+            $isImmediateRetry = $this->isImmediateRetryResponse($responseCode);
+            return $isImmediateRetry && !$this->getImmediateRetryAlreadyDone($entity, $entityId, $storeId);
+        }
+        return false;
+    }
+
+    /**
+     * @param string | int $responseCode
+     * @return bool
+     */
+    public function isImmediateRetryResponse($responseCode)
+    {
+        return in_array($responseCode, ['404','401']);
     }
 }

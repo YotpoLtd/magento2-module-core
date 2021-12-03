@@ -58,7 +58,7 @@ class YotpoOrderStatusColumn extends Select
         return [
             ['label' => 'Order created', 'value' => 'pending'],
             ['label' => 'Order fulfilled', 'value' => 'success'],
-            ['label' => 'Order cancelled', 'value' => 'cancelled']
+            ['label' => 'Order canceled', 'value' => 'cancelled']
         ];
     }
 }

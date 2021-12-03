@@ -2,6 +2,7 @@
 namespace Yotpo\Core\Model\Api;
 
 use Magento\Framework\DataObject;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Yotpo\Core\Model\Config;
 use Yotpo\Core\Http\Yclient;
@@ -62,15 +63,15 @@ class Request
      * @param string $endPoint
      * @param array<mixed> $data
      * @param string $baseUrlKey
-     * @return \Magento\Framework\DataObject
-     * @throws NoSuchEntityException
+     * @return DataObject
+     * @throws NoSuchEntityException|LocalizedException
      */
     public function send(
         string $method,
         string $endPoint,
         array $data = [],
         string $baseUrlKey = 'api'
-    ): \Magento\Framework\DataObject {
+    ): DataObject {
         $appKey = $this->config->getConfig('app_key');
         $baseUrl = str_ireplace('{store_id}', $appKey, $this->config->getConfig($baseUrlKey));
 

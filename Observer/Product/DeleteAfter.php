@@ -5,6 +5,7 @@ use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Catalog\Model\Session as CatalogSession;
+use Yotpo\Core\Model\Config as YotpoCoreConfig;
 
 /**
  * Class DeleteAfter - Update yotpo is_delete attribute
@@ -52,18 +53,26 @@ class DeleteAfter implements ObserverInterface
 
         $connection->update(
             $this->resourceConnection->getTableName('yotpo_product_sync'),
-            ['is_deleted' => 1, 'is_deleted_at_yotpo' => 0],
+            ['is_deleted' => 1, 'is_deleted_at_yotpo' => 0, 'response_code' => YotpoCoreConfig::CUSTOM_RESPONSE_DATA],
             $connection->quoteInto('product_id = ?', $product->getId())
         );
 
         if ($childIds) {
-            $cond = $connection->quoteInto('product_id IN (?)', $childIds);
-            $cond .= ' AND yotpo_id != 0';
+            $cond = [
+                'product_id IN (?) ' => $childIds,
+                'yotpo_id != 0'
+            ];
+            $data = [
+                'yotpo_id_unassign' => new \Zend_Db_Expr('yotpo_id'),
+                'yotpo_id' => '0',
+                'response_code' => YotpoCoreConfig::CUSTOM_RESPONSE_DATA
+            ];
 
-            $query = 'UPDATE '.$this->resourceConnection->getTableName('yotpo_product_sync').'
-                    SET yotpo_id_unassign = yotpo_id, yotpo_id = 0 WHERE '.$cond;
-
-            $connection->query($query);
+            $connection->update(
+                $this->resourceConnection->getTableName('yotpo_product_sync'),
+                $data,
+                $cond
+            );
         }
     }
 }

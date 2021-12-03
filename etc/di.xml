@@ -23,7 +23,6 @@
     </type>
     <type name="Yotpo\Core\Model\Api\Logger">
         <arguments>
-            <argument name="name" xsi:type="string">YotpoCoreCatalogLogger</argument>
             <argument name="handlers"  xsi:type="array">
                 <item name="catalog" xsi:type="object">Yotpo\Core\Model\Sync\Catalog\Logger\Handler</item>
             </argument>
@@ -44,7 +43,6 @@
     </type>
     <type name="Yotpo\Core\Model\Api\Logger">
         <arguments>
-            <argument name="name" xsi:type="string">YotpoCoreOrdersLogger</argument>
             <argument name="handlers"  xsi:type="array">
                 <item name="orders" xsi:type="object">Yotpo\Core\Model\Sync\Orders\Logger\Handler</item>
             </argument>
@@ -78,9 +76,23 @@
     </type>
     <type name="Yotpo\Core\Model\Api\Logger">
         <arguments>
-            <argument name="name" xsi:type="string">YotpoCoreGeneralLogger</argument>
             <argument name="handlers"  xsi:type="array">
                 <item name="general" xsi:type="object">Yotpo\Core\Model\Logger\General\Handler</item>
+            </argument>
+        </arguments>
+    </type>
+    <preference for="Yotpo\Core\Api\Data\OrdersSyncInterface"
+                type="Yotpo\Core\Model\OrdersSync" />
+    <preference for="Yotpo\Core\Api\OrdersSyncRepositoryInterface"
+                type="Yotpo\Core\Model\OrdersSyncRepository" />
+    <preference for="Yotpo\Core\Api\CategorySyncRepositoryInterface"
+                type="Yotpo\Core\Model\CategorySyncRepository" />
+    <preference for="Yotpo\Core\Api\ProductSyncRepositoryInterface"
+                type="Yotpo\Core\Model\ProductSyncRepository" />
+    <type name="Magento\Framework\Console\CommandList">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="yotpoResync" xsi:type="object">Yotpo\Core\Console\Command\RetryYotpoSync</item>
             </argument>
         </arguments>
     </type>

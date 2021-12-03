@@ -3,6 +3,7 @@
 namespace Yotpo\Core\Helper;
 
 use Magento\Framework\Stdlib\DateTime\Timezone;
+use Magento\Framework\Stdlib\DateTime\Timezone\LocalizedDateToUtcConverterInterface;
 
 /**
  * Class Data for helper functions
@@ -15,13 +16,21 @@ class Data
     private $timezone;
 
     /**
+     * @var LocalizedDateToUtcConverterInterface
+     */
+    private $utcConverter;
+
+    /**
      * Data constructor.
      * @param Timezone $timezone
+     * @param LocalizedDateToUtcConverterInterface $utcConverter
      */
     public function __construct(
-        Timezone $timezone
+        Timezone $timezone,
+        LocalizedDateToUtcConverterInterface $utcConverter
     ) {
         $this->timezone = $timezone;
+        $this->utcConverter = $utcConverter;
     }
 
     /**
@@ -93,12 +102,13 @@ class Data
     /**
      * Format date
      *
-     * @param \DateTimeInterface|string|null $date
+     * @param string|null $date
      * @return false|string|null
      */
     public function formatDate($date)
     {
         if ($date) {
+            $date = $this->utcConverter->convertLocalizedDateToUtc($date);
             $date = $this->timezone->formatDateTime(
                 $date,
                 \IntlDateFormatter::SHORT,

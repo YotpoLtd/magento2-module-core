@@ -30,6 +30,11 @@ class Main extends AbstractJobs
     protected $resourceConnection;
 
     /**
+     * @var string
+     */
+    protected $entity = 'orders';
+
+    /**
      * Main constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection

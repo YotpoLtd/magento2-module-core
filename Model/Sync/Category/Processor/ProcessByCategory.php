@@ -15,6 +15,7 @@ use Yotpo\Core\Model\Config;
 use Magento\Catalog\Helper\Category as CategoryHelper;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
 use Yotpo\Core\Model\Sync\Category\Data;
+use Yotpo\Core\Api\CategorySyncRepositoryInterface;
 
 /**
  * Class ProcessByCategory - Process categories
@@ -32,6 +33,16 @@ class ProcessByCategory extends Main
     protected $entityIdFieldValue;
 
     /**
+     * @var CategorySyncRepositoryInterface
+     */
+    protected $categorySyncRepositoryInterface;
+
+    /**
+     * @var bool
+     */
+    protected $isCommandLineSync = false;
+
+    /**
      * ProcessByCategory constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -41,6 +52,7 @@ class ProcessByCategory extends Main
      * @param CategoryCollectionFactory $categoryCollectionFactory
      * @param YotpoCoreCatalogLogger $yotpoCoreCatalogLogger
      * @param CategoryHelper $categoryHelper
+     * @param CategorySyncRepositoryInterface $categorySyncRepositoryInterface
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -50,7 +62,8 @@ class ProcessByCategory extends Main
         YotpoCoreApiSync $yotpoCoreApiSync,
         CategoryCollectionFactory $categoryCollectionFactory,
         YotpoCoreCatalogLogger $yotpoCoreCatalogLogger,
-        CategoryHelper $categoryHelper
+        CategoryHelper $categoryHelper,
+        CategorySyncRepositoryInterface $categorySyncRepositoryInterface
     ) {
         parent::__construct(
             $appEmulation,
@@ -63,17 +76,28 @@ class ProcessByCategory extends Main
         );
         $this->categoryHelper = $categoryHelper;
         $this->entityIdFieldValue = $this->config->getEavRowIdFieldName();
+        $this->categorySyncRepositoryInterface = $categorySyncRepositoryInterface;
     }
 
     /**
+     * @param array <mixed> $retryCategories
+     * @param array <mixed> $storeIds
      * @return void
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function process()
+    public function process($retryCategories = [], $storeIds = [])
     {
         try {
-            foreach ((array)$this->config->getAllStoreIds(false) as $storeId) {
+            if (!$storeIds) {
+                $storeIds = (array)$this->config->getAllStoreIds(false);
+            }
+            foreach ($storeIds as $storeId) {
+                if ($this->isCommandLineSync) {
+                    // phpcs:ignore
+                    echo 'Category process started for store - ' .
+                        $this->config->getStoreName($storeId) . PHP_EOL;
+                }
                 $this->emulateFrontendArea($storeId);
                 if (!$this->config->isCatalogSyncActive()) {
                     $this->stopEnvironmentEmulation();
@@ -86,8 +110,8 @@ class ProcessByCategory extends Main
                         $this->config->getStoreName($storeId)
                     )
                 );
-
-                $this->processEntity();
+                $retryCategoryIds = isset($retryCategories[$storeId]) ? $retryCategories[$storeId] : [];
+                $this->processEntity($retryCategoryIds);
                 $this->stopEnvironmentEmulation();
                 $this->yotpoCoreCatalogLogger->info(
                     sprintf(
@@ -113,40 +137,48 @@ class ProcessByCategory extends Main
     }
 
     /**
-     * @throws NoSuchEntityException
-     * @throws LocalizedException
+     * @param array <mixed> $retryCategoryIds
      * @return void
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
      */
-    public function processEntity()
+    public function processEntity($retryCategoryIds = [])
     {
-        $currentTime        =   date('Y-m-d H:i:s');
-        $batchSize          =   $this->config->getConfig('product_sync_limit');
-        $existColls         =   [];
+        $currentTime = date('Y-m-d H:i:s');
+        $batchSize = $this->config->getConfig('product_sync_limit');
+        $existColls = [];
+        $categoriesToUpdate = [];
         $attributeId = $this->data->getAttributeId(Config::CATEGORY_SYNC_ATTR_CODE);
-        $collection         =   $this->categoryCollectionFactory->create();
+        $collection = $this->categoryCollectionFactory->create();
         $collection->addAttributeToSelect('*');
         $collection->addNameToResult();
+        if ($retryCategoryIds) {
+            $collection->getSelect()
+                ->where('e.entity_id in (?)', $retryCategoryIds);
+        }
         $collection->getSelect()->joinLeft(
             ['at' => $this->resourceConnection->getTableName('catalog_category_entity_int')],
-            'e.' . $this->entityIdFieldValue. ' = at.' . $this->entityIdFieldValue .
+            'e.' . $this->entityIdFieldValue . ' = at.' . $this->entityIdFieldValue .
             ' AND at.attribute_id = ' . $attributeId .
-            ' AND at.store_id=\''.$this->config->getStoreId().'\'',
+            ' AND at.store_id=\'' . $this->config->getStoreId() . '\'',
             null
         );
-        $collection->getSelect()->where(
-            '(
+        if (!$retryCategoryIds) {
+            $collection->getSelect()->where(
+                '(
               at.value is null OR at.value=0
             )'
-        );
+            );
+        }
         $collection->getSelect()->limit($batchSize);
-        $magentoCategories  =   [];
+        $magentoCategories = [];
         foreach ($collection->getItems() as $category) {
-            $magentoCategories[$category->getId()]  =   $category;
+            $magentoCategories[$category->getId()] = $category;
         }
         $existingCollections = $this->getExistingCollectionIds(array_keys($magentoCategories));
-        $categoriesByPath   =   $this->getCategoriesFromPathNames(array_values($magentoCategories));
-        $yotpoSyncedCategories  =   $this->getYotpoSyncedCategories(array_keys($magentoCategories));
-
+        $categoriesByPath = $this->getCategoriesFromPathNames(array_values($magentoCategories));
+        $yotpoSyncedCategories = $this->getYotpoSyncedCategories(array_keys($magentoCategories));
+        $yotpoTableFinalData = [];
         if (!$magentoCategories) {
             $this->yotpoCoreCatalogLogger->info(
                 'Category Sync - There are no items left to sync'
@@ -160,15 +192,16 @@ class ProcessByCategory extends Main
             if (!isset($yotpoSyncedCategories[$magentoCategory->getId()]) &&
                 !isset($existingCollections[$magentoCategory->getId()])
             ) {
-                $response           =   $this->syncAsNewCollection($magentoCategory);
+                $response = $this->syncAsNewCollection($magentoCategory);
             } else {
                 if (isset($yotpoSyncedCategories[$magentoCategory->getId()])) {
                     if ($yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id']) {
                         if ($this->canResync(
                             $yotpoSyncedCategories[$magentoCategory->getId()],
-                            $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id']
+                            $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'],
+                            $this->isCommandLineSync
                         )) {
-                            $response   =   $this->syncExistingCollection(
+                            $response = $this->syncExistingCollection(
                                 $magentoCategory,
                                 $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id']
                             );
@@ -177,27 +210,29 @@ class ProcessByCategory extends Main
                             $this->updateCategoryAttribute($categoryIdToUpdate);
                         }
                     } else {
-                        $response   =   $this->syncAsNewCollection($magentoCategory);
+                        $response = $this->syncAsNewCollection($magentoCategory);
                     }
                 } elseif (isset($existingCollections[$magentoCategory->getId()])) {
-                    $response   =   $this->syncExistingCollection(
+                    $response = $this->syncExistingCollection(
                         $magentoCategory,
                         $existingCollections[$magentoCategory->getId()]
                     );
-                    $response->setData('yotpo_id', $existingCollections[$magentoCategory->getId()]);
+                    if (!$response->getData('yotpo_id')) {
+                        $response->setData('yotpo_id', $existingCollections[$magentoCategory->getId()]);
+                    }
                 }
             }
             if ($this->checkForCollectionExistsError($response)) {
-                $response       =   false;
-                $existColls[]   =   $magentoCategory->getId();
+                $response = false;
+                $existColls[] = $magentoCategory->getId();
             }
-            $yotpoTableData     =   $response ? $this->prepareYotpoTableData($response) : [];
+            $yotpoTableData = $response ? $this->prepareYotpoTableData($response) : [];
             if ($yotpoTableData) {
                 if (array_key_exists('yotpo_id', $yotpoTableData) &&
                     !$yotpoTableData['yotpo_id']
                     && array_key_exists($magentoCategory->getId(), $yotpoSyncedCategories)
                 ) {
-                    $yotpoTableData['yotpo_id'] =   $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'];
+                    $yotpoTableData['yotpo_id'] = $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'];
                 }
                 $yotpoTableData['store_id']         =   $this->config->getStoreId();
                 $yotpoTableData['category_id']      =   $magentoCategory->getId();
@@ -210,16 +245,20 @@ class ProcessByCategory extends Main
                 $this->yotpoCoreCatalogLogger->info(
                     sprintf('Category Sync - sync success - Category ID: %s', $magentoCategory->getId())
                 );
+                if ($this->isCommandLineSync) {
+                    // phpcs:ignore
+                    echo 'Category process completed for categoryId - ' . $magentoCategory->getId() . PHP_EOL;
+                }
             }
         }
-        $existingCollections    =   $this->getExistingCollectionIds($existColls);
+        $existingCollections = $this->getExistingCollectionIds($existColls);
         foreach ($existingCollections as $mageCatId => $yotpoId) {
-            $data   =   [
-                'response_code'     =>  '201',
-                'yotpo_id'          =>  $yotpoId,
-                'store_id'          =>  $this->config->getStoreId(),
-                'category_id'       =>  $mageCatId,
-                'synced_to_yotpo'   =>  $currentTime
+            $data = [
+                'response_code' => '201',
+                'yotpo_id' => $yotpoId,
+                'store_id' => $this->config->getStoreId(),
+                'category_id' => $mageCatId,
+                'synced_to_yotpo' => $currentTime
             ];
             $this->insertOrUpdateYotpoTableData($data);
             if ($this->config->canUpdateCustomAttribute($data['response_code'])) {
@@ -248,17 +287,17 @@ class ProcessByCategory extends Main
     }
 
     /**
-     * @throws LocalizedException
-     * @throws NoSuchEntityException
      * @return void
+     * @throws NoSuchEntityException
+     * @throws LocalizedException
      */
     public function deleteCollections()
     {
         $this->yotpoCoreCatalogLogger->info('Category Sync - delete categories start');
-        $categoriesToDelete =   $this->getCollectionsToDelete();
-        $catToUpdateAsDel   =   [];
+        $categoriesToDelete = $this->getCollectionsToDelete();
+        $catToUpdateAsDel = [];
         foreach ($categoriesToDelete as $cat) {
-            $products   =   $this->getProductsUnderCategory($cat['yotpo_id']);
+            $products = $this->getProductsUnderCategory($cat['yotpo_id']);
             $this->yotpoCoreCatalogLogger->info(
                 sprintf('Category Sync - delete categories - Category ID - %s', $cat['category_id'])
             );
@@ -283,10 +322,10 @@ class ProcessByCategory extends Main
      */
     public function getProductsUnderCategory(int $yotpoId): array
     {
-        $url    =   $this->config->getEndpoint('collections_product', ['{yotpo_collection_id}'], [$yotpoId]);
-        $data['entityLog']  =   'catalog';
-        $response           =   $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
-        $response           =   $response->getData('response');
+        $url = $this->config->getEndpoint('collections_product', ['{yotpo_collection_id}'], [$yotpoId]);
+        $data['entityLog'] = 'catalog';
+        $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
+        $response = $response->getData('response');
         if (!$response) {
             return [];
         }
@@ -300,10 +339,10 @@ class ProcessByCategory extends Main
      */
     public function getCollectionsToDelete(): array
     {
-        $connection =   $this->resourceConnection->getConnection();
-        $storeId    =   $this->config->getStoreId();
-        $table      =   $this->resourceConnection->getTableName('yotpo_category_sync');
-        $categories =   $connection->select()
+        $connection = $this->resourceConnection->getConnection();
+        $storeId = $this->config->getStoreId();
+        $table = $this->resourceConnection->getTableName('yotpo_category_sync');
+        $categories = $connection->select()
             ->from($table)
             ->where('store_id=(?)', $storeId)
             ->where('is_deleted = \'1\'')
@@ -320,24 +359,44 @@ class ProcessByCategory extends Main
      */
     public function syncAsNewCollection(Category $category)
     {
-        $collectionData                 =   $this->data->prepareData($category);
-        $collectionData['entityLog']    = 'catalog';
-        $url                            =   $this->config->getEndpoint('collections');
+        $collectionData = $this->data->prepareData($category);
+        $collectionData['entityLog'] = 'catalog';
+        $url = $this->config->getEndpoint('collections');
         return $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $url, $collectionData);
     }
 
     /**
      * @param Category $category
      * @param int $yotpoId
-     * @return mixed
+     * @return mixed|void
      * @throws NoSuchEntityException
      */
     public function syncExistingCollection(Category $category, int $yotpoId)
     {
+        if (!$yotpoId) {
+            return ;
+        }
         $collectionData                 =   $this->data->prepareData($category);
         $collectionData['entityLog']    = 'catalog';
         $url    =   $this->config->getEndpoint('collections_update', ['{yotpo_collection_id}'], [$yotpoId]);
-        return $this->yotpoCoreApiSync->sync(\Zend_Http_Client::PATCH, $url, $collectionData);
+        $response =  $this->yotpoCoreApiSync->sync(\Zend_Http_Client::PATCH, $url, $collectionData);
+        $categoryId = $category->getId();
+        $storeId = $category->getStoreId();
+        if ($this->isImmediateRetry($response, $this->entity, $categoryId, $storeId)) {
+            $this->setImmediateRetryAlreadyDone($this->entity, $categoryId, $storeId);
+            $existingCollection = $this->getExistingCollectionIds([$categoryId]);
+            if (!$existingCollection) {
+                $response = $this->syncAsNewCollection($category);
+            } else {
+                $yotpoId = array_key_exists($categoryId, $existingCollection) ?
+                    $existingCollection[$categoryId]  : 0;
+                if ($yotpoId) {
+                    $response = $this->syncExistingCollection($category, $yotpoId);
+                    $response->setData('yotpo_id', $yotpoId);
+                }
+            }
+        }
+        return $response;
     }
 
     /**
@@ -371,11 +430,36 @@ class ProcessByCategory extends Main
         $connection =   $this->resourceConnection->getConnection();
         $connection->update(
             $this->resourceConnection->getTableName('yotpo_category_sync'),
-            ['is_deleted_at_yotpo'  =>  '1'],
+            ['is_deleted_at_yotpo' => '1'],
             [
                 'category_id IN (?)' => $categoryIds,
                 'store_id' => $this->config->getStoreId()
             ]
         );
+    }
+
+    /**
+     * @return void
+     * @throws NoSuchEntityException
+     * @throws LocalizedException
+     */
+    public function retryCategorySync()
+    {
+        $this->isCommandLineSync = true;
+        $categoryIds = [];
+        $storeIds = [];
+        $categoryByStore = [];
+        $items = $this->categorySyncRepositoryInterface->getByResponseCodes();
+        foreach ($items as $item) {
+            $categoryIds[] = $item['category_id'];
+            $storeIds[] = $item['store_id'];
+            $categoryByStore[$item['store_id']][] = $item['category_id'];
+        }
+        if ($categoryByStore) {
+            $this->process($categoryByStore, array_unique($storeIds));
+        } else {
+            // phpcs:ignore
+            echo 'No category data to process.' . PHP_EOL;
+        }
     }
 }

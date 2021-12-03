@@ -361,7 +361,7 @@ class Data extends Main
 
                     $method = $attr['method'];
                     $itemValue = $this->$method($item, $configKey);
-                    $value = $itemValue ?: ($method == 'getProductPrice' ? 0.00 : '');
+                    $value = $itemValue ?: ($method == 'getProductPrice' ? 0.00 : $itemValue);
                 } else {
                     $value = '';
                 }
@@ -372,7 +372,11 @@ class Data extends Main
             }
 
             $itemArray[$key] = $value;
+            if ($key == 'custom_properties' && !$value) {
+                unset($itemArray[$key]);
+            }
         }
+
         return $itemArray;
     }
 
@@ -428,13 +432,13 @@ class Data extends Main
     public function getDataFromConfig($item, $configKey = '')
     {
         $configValue =  $this->yotpoCoreConfig->getConfig($configKey) ?: '';
-
-        $value = '';
         if ($configValue) {
             $value = $item->getAttributeText($configValue) ?: '';
             if (!$value) {
                 $value = $item->getData($configValue) ?: '';
             }
+        } else {
+            return null;
         }
         return $value ?: '';
     }
@@ -484,10 +488,15 @@ class Data extends Main
             $method = $value['method'];
             $itemValue = $this->$method($item, $configKey);
 
-            if ($key === 'is_blocklisted') {
-                $resultArray[$key] = $itemValue === 1 || $itemValue == 'Yes' || $itemValue === true;
-            } elseif ($key === 'review_form_tag') {
-                $resultArray[$key] = $itemValue ?: '';
+            if ($key === 'is_blocklisted' || $key === 'review_form_tag') {
+                $configValue =  $this->yotpoCoreConfig->getConfig($configKey) ?: '';
+                if ($configValue) {
+                    if ($key === 'is_blocklisted') {
+                        $resultArray[$key] = $itemValue === 1 || $itemValue == 'Yes' || $itemValue === true;
+                    } elseif ($key === 'review_form_tag') {
+                        $resultArray[$key] = $itemValue ?: '';
+                    }
+                }
             } else {
                 $resultArray[$key] = $itemValue;
             }

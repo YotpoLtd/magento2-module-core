@@ -2,9 +2,11 @@
 
 namespace Yotpo\Core\Model\Sync\Category\Processor;
 
+use Magento\Catalog\Model\Category;
 use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Webapi\Rest\Request;
+use Yotpo\Core\Model\Config as YotpoCoreConfig;
 
 /**
  * Class ProcessByProduct - Process category sync
@@ -16,6 +18,11 @@ class ProcessByProduct extends Main
      * @var null
      */
     protected $collections = null;
+
+    /**
+     * @var string
+     */
+    protected $entity = 'product_category';
 
     /**
      * @param array<mixed> $products
@@ -68,15 +75,28 @@ class ProcessByProduct extends Main
                     );
                     $createCollection               =   $createCollection->getData('response');
                     if ($createCollection) {
-                        $newCollections     =   [];
-                        $existingCollections[$categoryId]['yotpo_id']   =   $createCollection['collection']['yotpo_id'];
-                        $newCollections[$categoryId]        =   [
-                            'yotpo_id' => $createCollection['collection']['yotpo_id'],
-                            'synced_to_yotpo' => $currentTime
-                        ];
-                        $this->addNewCollectionsToYotpoTable($newCollections);
-                        $newCollectionsToLog[] = $categoryId;
-                        $yotpoCollectionId  =   $existingCollections[$categoryId]['yotpo_id'];
+                        if (is_array($createCollection) && isset($createCollection['collection'])
+                            && is_array($createCollection['collection'])
+                            && isset($createCollection['collection']['yotpo_id'])
+                        ) {
+                            $yotpoIdCreated = $createCollection['collection']['yotpo_id'];
+                        } else {
+                            $yotpoIdCreated = null;
+                        }
+                        if ($yotpoIdCreated) {
+                            $newCollections = [];
+                            $existingCollections[$categoryId]['yotpo_id'] = $yotpoIdCreated;
+                            $newCollections[$categoryId] = [
+                                'yotpo_id' => $yotpoIdCreated,
+                                'synced_to_yotpo' => $currentTime
+                            ];
+                            $this->addNewCollectionsToYotpoTable($newCollections);
+                            $newCollectionsToLog[] = $categoryId;
+                            $yotpoCollectionId = $existingCollections[$categoryId]['yotpo_id'];
+                        } else {
+                            $existingCollections[$categoryId]   =   '';
+                            $yotpoCollectionId  =   '';
+                        }
                     } else {
                         $existingCollections[$categoryId]   =   '';
                         $yotpoCollectionId  =   '';
@@ -85,18 +105,17 @@ class ProcessByProduct extends Main
                     $yotpoCollectionId  =   $existingCollections[$categoryId]['yotpo_id'];
                 }
                 if ($yotpoCollectionId && !array_key_exists($categoryId, $existingProductsMap[$product->getId()])) {
-                    $addProductUrl  =   $this->config->getEndpoint(
-                        'collections_product',
-                        ['{yotpo_collection_id}'],
-                        [$yotpoCollectionId]
+                    $yotpoCollectionId = $this->addProductsToCollection(
+                        $yotpoCollectionId,
+                        $addProductData,
+                        $product,
+                        $categoryId,
+                        $categories
                     );
-                    $addProductData['entityLog']    =   'catalog';
-
-                    $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $addProductUrl, $addProductData);
-                    $existingProductsMap[$product->getId()][$categoryId]   =   $yotpoCollectionId;
+                    $existingProductsMap[$product->getId()][$categoryId]   =   $yotpoCollectionId ?: 0;
                 }
             }
-
+            $existingProductsMap[$product->getId()] = array_filter($existingProductsMap[$product->getId()]);
             $currentMap     =   array_keys($existingProductsMap[$product->getId()]);
             $catUnmap       =   array_diff($currentMap, $categoriesProduct[$product->getId()]);
             $this->yotpoCoreCatalogLogger->info(
@@ -113,11 +132,89 @@ class ProcessByProduct extends Main
     }
 
     /**
+     * @param int|null|string $yotpoCollectionId
+     * @param array<mixed> $addProductData
+     * @param Product $product
+     * @param int $categoryId
+     * @param array<mixed> $categories
+     * @return int|null|string
+     * @throws NoSuchEntityException
+     */
+    public function addProductsToCollection(
+        $yotpoCollectionId,
+        $addProductData,
+        Product $product,
+        $categoryId,
+        $categories
+    ) {
+        $yotpoCollectionIdReturn = $yotpoCollectionId;
+        $addProductUrl  =   $this->config->getEndpoint(
+            'collections_product',
+            ['{yotpo_collection_id}'],
+            [$yotpoCollectionId]
+        );
+        $addProductData['entityLog']    =   'catalog';
+
+        $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $addProductUrl, $addProductData);
+        $storeId = $product->getStoreId();
+        if ($this->isImmediateRetry($response, $this->entity, $categoryId, $storeId)) {
+            $this->setImmediateRetryAlreadyDone($this->entity, $categoryId, $storeId);
+            $yotpoCollectionIdNew = $this->createCollection($categories[$categoryId]);
+            if ($yotpoCollectionIdNew) {
+                $yotpoCollectionIdReturn = $this->addProductsToCollection(
+                    $yotpoCollectionIdNew,
+                    $addProductData,
+                    $product,
+                    $categoryId,
+                    $categories
+                );
+            } else {
+                $yotpoCollectionIdReturn = '';
+            }
+        }
+        return $yotpoCollectionIdReturn;
+    }
+
+    /**
+     * @param Category $category
+     * @throws NoSuchEntityException
+     * @return int
+     */
+    public function createCollection(Category $category)
+    {
+        $currentTime = date('Y-m-d H:i:s');
+        $categoryId = $category->getId();
+        $existingCollection = $this->getExistingCollectionIds([$categoryId]);
+        $yotpoTableData = [];
+        $yotpoTableData['store_id'] = $this->config->getStoreId();
+        $yotpoTableData['category_id'] = $category->getId();
+        $yotpoTableData['synced_to_yotpo'] =  $currentTime;
+        if (!$existingCollection) {
+            $response = $this->syncAsNewCollection($category);
+            $yotpoId = $this->getYotpoIdFromResponse($response);
+            $yotpoTableRespData = $response ? $this->prepareYotpoTableData($response) : [];
+            if ($yotpoTableRespData && is_array($yotpoTableRespData)) {
+                $yotpoTableData = array_merge($yotpoTableData, $yotpoTableRespData);
+            }
+            $this->insertOrUpdateYotpoTableData($yotpoTableData);
+        } else {
+            $yotpoId = array_key_exists($categoryId, $existingCollection) ?
+                $existingCollection[$categoryId]  : 0;
+            $yotpoTableData['yotpo_id'] = $yotpoId;
+            $yotpoTableData['response_code'] =  YotpoCoreConfig::SUCCESS_RESPONSE_CODE;
+        }
+        if ($yotpoId) {
+            $this->insertOrUpdateYotpoTableData($yotpoTableData);
+        }
+        return $yotpoId;
+    }
+
+    /**
      * @param string $yotpoProductId
      * @return  array<mixed>
      * @throws NoSuchEntityException
      */
-    public function getYotpoCollectionsMap(string $yotpoProductId): array
+    public function getYotpoCollectionsMap($yotpoProductId): array
     {
         $return = [];
         $data   = [];
@@ -133,7 +230,9 @@ class ProcessByProduct extends Main
             if (!$collections) {
                 return $return;
             }
-            $collections    =   $collections['collections'];
+            $collections    =   is_array($collections) &&
+            isset($collections['collections']) ?
+                $collections['collections'] : '';
             if ($collections) {
                 $count = count($collections);
                 for ($i=0; $i<$count; $i++) {
@@ -185,17 +284,16 @@ class ProcessByProduct extends Main
      */
     public function addNewCollectionsToYotpoTable(array $newCollections)
     {
-        $finalData = [];
         foreach ($newCollections as $categoryId => $collection) {
-            $finalData[] = [
+            $finalData = [
                 'category_id'        =>  $categoryId,
                 'synced_to_yotpo'    =>  $collection['synced_to_yotpo'],
                 'response_code'      =>  '201',
                 'yotpo_id'           =>  $collection['yotpo_id'],
                 'store_id'           =>  $this->config->getStoreId()
             ];
+            $this->insertOrUpdateYotpoTableData($finalData);
         }
-        $this->insertOrUpdateYotpoTableData($finalData);
     }
 
     /**

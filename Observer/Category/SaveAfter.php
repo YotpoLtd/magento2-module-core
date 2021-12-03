@@ -59,6 +59,10 @@ class SaveAfter implements ObserverInterface
         /** @var Category $category */
         $category = $observer->getEvent()->getData('category');
 
+        if (!$category->getEntityId()) {
+            return;
+        }
+
         if (!($storeId = $this->config->getStoreId())) {
             $storeIds = $this->config->getAllStoreIds();
         } else {
@@ -73,6 +77,27 @@ class SaveAfter implements ObserverInterface
         $connection->update(
             $this->resourceConnection->getTableName('catalog_category_entity_int'),
             ['value' => 0],
+            $cond
+        );
+        $this->updateYotpoSyncTable($category->getId(), $storeIds);
+    }
+
+    /**
+     * @param int $categoryId
+     * @param array<mixed>|null $storeIds
+     * @return void
+     */
+    public function updateYotpoSyncTable($categoryId, $storeIds = [])
+    {
+        $connection = $this->resourceConnection->getConnection();
+
+        $cond = [
+            'store_id IN (?)' => $storeIds,
+            'category_id = ? ' => $categoryId
+        ];
+        $connection->update(
+            $this->resourceConnection->getTableName('yotpo_category_sync'),
+            ['response_code' => Config::CUSTOM_RESPONSE_DATA],
             $cond
         );
     }

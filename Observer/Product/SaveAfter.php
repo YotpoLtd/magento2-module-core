@@ -94,6 +94,8 @@ class SaveAfter implements ObserverInterface
         if ($product->hasDataChanges()) {
             $this->updateProductAttribute([$product->getRowId() ?: $product->getId()], $storeIdsToUpdate);
             $this->updateIsDeleted($product);
+            $tableData = ['response_code' => Config::CUSTOM_RESPONSE_DATA];
+            $this->updateYotpoSyncTable($tableData, $storeIds, [$product->getId()]);
         }
 
         $oldChildIds = $this->catalogSession->getChildrenIds();
@@ -142,9 +144,10 @@ class SaveAfter implements ObserverInterface
             $storeIds = $this->collectStoreIds($removedWebsite);
             $tableData = [
                 'is_deleted' => 1,
-                'is_deleted_at_yotpo' => 0
+                'is_deleted_at_yotpo' => 0,
+                'response_code' => Config::CUSTOM_RESPONSE_DATA
             ];
-            $this->updateYotpoSyncTable($tableData, $storeIds, $product->getId());
+            $this->updateYotpoSyncTable($tableData, $storeIds, [$product->getId()]);
         }
 
         $newWebsite = $this->findDifferentArray($newIds, $existingIds);
@@ -152,9 +155,10 @@ class SaveAfter implements ObserverInterface
             $storeIds = $this->collectStoreIds($newWebsite);
 
             $tableData = [
-                'is_deleted' => 0
+                'is_deleted' => 0,
+                'response_code' => Config::CUSTOM_RESPONSE_DATA
             ];
-            $this->updateYotpoSyncTable($tableData, $storeIds, $product->getId());
+            $this->updateYotpoSyncTable($tableData, $storeIds, [$product->getId()]);
 
             //If it is already deleted, should re-sync this product
             $this->updateProductAttribute([$product->getRowId() ?: $product->getId()], $storeIds);
@@ -204,6 +208,8 @@ class SaveAfter implements ObserverInterface
         $result = $this->findDifferentArray($newChild, $oldChild);
         if (count($result) > 0) {
             $this->updateProductAttribute($result, [$product->getStoreId()]);
+            $tableData = ['response_code' => Config::CUSTOM_RESPONSE_DATA];
+            $this->updateYotpoSyncTable($tableData, [$product->getStoreId()], $result);
         }
     }
 
@@ -215,14 +221,25 @@ class SaveAfter implements ObserverInterface
     protected function updateUnAssign($productIds, $product)
     {
         $connection = $this->resourceConnection->getConnection();
-        $cond = $connection->quoteInto('product_id IN (?)', $productIds);
-        $cond .= ' AND yotpo_id != 0';
+        $cond = [
+            'product_id IN (?)' => $productIds,
+            'yotpo_id != 0'
+        ];
         if ($product->getStoreId() != 0) {
-            $cond .= ' AND '.$connection->quoteInto('store_id = ?', $product->getStoreId());
+            $cond ['store_id = ?'] = $product->getStoreId();
         }
-        $query = 'UPDATE '.$this->resourceConnection->getTableName('yotpo_product_sync').'
-                    SET yotpo_id_unassign = yotpo_id, yotpo_id = 0 WHERE '.$cond;
-        $connection->query($query);
+
+        $data = [
+            'yotpo_id_unassign' => new \Zend_Db_Expr('yotpo_id'),
+            'yotpo_id' => '0',
+            'response_code' => Config::CUSTOM_RESPONSE_DATA
+        ];
+
+        $connection->update(
+            $this->resourceConnection->getTableName('yotpo_product_sync'),
+            $data,
+            $cond
+        );
     }
 
     /**
@@ -242,16 +259,16 @@ class SaveAfter implements ObserverInterface
     /**
      * @param array<mixed> $data
      * @param array<mixed> $storeIds
-     * @param int $productId
+     * @param array<mixed> $productIds
      * @return void
      */
-    public function updateYotpoSyncTable($data, $storeIds, int $productId)
+    public function updateYotpoSyncTable($data, $storeIds, $productIds)
     {
         $connection = $this->resourceConnection->getConnection();
         $connection->update(
             $this->resourceConnection->getTableName('yotpo_product_sync'),
             $data,
-            ['store_id IN (?)' => $storeIds, 'product_id = ?' => $productId]
+            ['store_id IN (?)' => $storeIds, 'product_id IN (?) ' => $productIds]
         );
     }
 

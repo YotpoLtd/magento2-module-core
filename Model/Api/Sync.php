@@ -2,6 +2,7 @@
 
 namespace Yotpo\Core\Model\Api;
 
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Yotpo\Core\Model\Api\Request as YotpoRequest;
 
@@ -17,8 +18,8 @@ class Sync extends YotpoRequest
      * @param string $method
      * @param string $url
      * @param array<mixed> $data
-     * @throws NoSuchEntityException
      * @return mixed
+     * @throws NoSuchEntityException|LocalizedException
      */
     public function sync(string $method, string $url, array $data = [])
     {
