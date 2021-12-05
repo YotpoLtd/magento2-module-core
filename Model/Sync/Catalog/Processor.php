@@ -14,6 +14,7 @@ use Magento\Framework\Stdlib\DateTime\DateTime;
 use Yotpo\Core\Model\Sync\Category\Processor\ProcessByProduct as CategorySyncProcessor;
 use Magento\Quote\Model\Quote;
 use Yotpo\Core\Model\Sync\Catalog\Processor\Main;
+use Yotpo\Core\Api\ProductSyncRepositoryInterface;
 
 /**
  * Class Processor - Process catalog sync
@@ -41,9 +42,29 @@ class Processor extends Main
     protected $categorySyncProcessor;
 
     /**
+     * @var ProductSyncRepositoryInterface
+     */
+    protected $productSyncRepositoryInterface;
+
+    /**
      * @var boolean
      */
     protected $normalSync = true;
+
+    /**
+     * @var array<mixed>
+     */
+    protected $retryItems = [];
+
+    /**
+     * @var bool
+     */
+    protected $isCommandLineSync = false;
+
+    /**
+     * @var bool
+     */
+    protected $isImmediateRetry = false;
 
     /**
      * Processor constructor.
@@ -55,8 +76,9 @@ class Processor extends Main
      * @param ResourceConnection $resourceConnection
      * @param CollectionFactory $collectionFactory
      * @param DateTime $dateTime
-     * @param YotpoResource $yotpoResource,
+     * @param YotpoResource $yotpoResource ,
      * @param CategorySyncProcessor $categorySyncProcessor
+     * @param ProductSyncRepositoryInterface $productSyncRepositoryInterface
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -68,7 +90,8 @@ class Processor extends Main
         CollectionFactory $collectionFactory,
         DateTime $dateTime,
         YotpoResource $yotpoResource,
-        CategorySyncProcessor $categorySyncProcessor
+        CategorySyncProcessor $categorySyncProcessor,
+        ProductSyncRepositoryInterface $productSyncRepositoryInterface
     ) {
         parent::__construct(
             $appEmulation,
@@ -82,6 +105,7 @@ class Processor extends Main
         $this->catalogData = $catalogData;
         $this->dateTime = $dateTime;
         $this->categorySyncProcessor = $categorySyncProcessor;
+        $this->productSyncRepositoryInterface = $productSyncRepositoryInterface;
     }
 
     /**
@@ -101,19 +125,26 @@ class Processor extends Main
             return false;
         }
     }
+
     /**
      * Process the Catalog Api
-     * @param null|array <mixed> $unSyncedProductIds
+     * @param array <mixed> $forceSyncProducts
      * @param Order|Quote $order
+     * @param array <mixed> $storeIds
      * @return bool
      */
-    public function process($unSyncedProductIds = null, $order = null)
+    public function process($forceSyncProducts = [], $order = null, $storeIds = [])
     {
         $this->runStoreIds = [];
         try {
-            $allStores = (array)$this->coreConfig->getAllStoreIds(false);
+            $allStores = array_unique($storeIds) ?: (array)$this->coreConfig->getAllStoreIds(false);
             $unSyncedStoreIds = [];
             foreach ($allStores as $storeId) {
+                if ($this->isCommandLineSync) {
+                    // phpcs:ignore
+                    echo 'Catalog process started for store - ' .
+                        $this->coreConfig->getStoreName($storeId) . PHP_EOL;
+                }
                 if (in_array($storeId, $this->runStoreIds)) {
                     continue;
                 }
@@ -141,8 +172,17 @@ class Processor extends Main
                     );
                     $this->processDeleteData();
                     $this->processUnAssignData();
-                    $collection = $this->getCollectionForSync($unSyncedProductIds);
-                    $this->syncItems($collection->getItems(), $storeId);
+                    $this->retryItems[$storeId] = [];
+                    if ($this->productSyncLimit > 0) {
+                        $forceSyncProductIds = isset($forceSyncProducts[$storeId]) ? $forceSyncProducts[$storeId] : [];
+                        $collection = $this->getCollectionForSync($forceSyncProductIds);
+                        $this->isImmediateRetry = false;
+                        $this->syncItems($collection->getItems(), $storeId);
+                    } else {
+                        $this->yotpoCatalogLogger->info(
+                            __('Product Sync - Stopped - Magento Store ID: %1', $storeId)
+                        );
+                    }
                 } catch (\Exception $e) {
                     $unSyncedStoreIds[] = $storeId;
                     $this->yotpoCatalogLogger->info(
@@ -185,17 +225,24 @@ class Processor extends Main
             $parentIds = $items['parent_ids'];
             $yotpoData = $items['yotpo_data'];
             $parentData = $items['parent_data'];
+
             $lastSyncTime = '';
             $sqlData = $sqlDataIntTable = [];
             $externalIds = [];
             $visibleVariantsData = $visibleVariants ? [] : $items['visible_variants'];
             $visibleVariantsDataValues = array_values($visibleVariantsData);
+
             foreach ($items['sync_data'] as $itemId => $itemData) {
                 $rowId = $itemData['row_id'];
                 unset($itemData['row_id']);
+
                 if ($yotpoData
                     && array_key_exists($itemId, $yotpoData)
-                    && !$this->coreConfig->canResync($yotpoData[$itemId]['response_code'], $yotpoData[$itemId])
+                    && !$this->coreConfig->canResync(
+                        $yotpoData[$itemId]['response_code'],
+                        $yotpoData[$itemId],
+                        $this->isCommandLineSync
+                    )
                 ) {
                     $tempSqlDataIntTable = [
                         'attribute_id' => $attributeId,
@@ -213,13 +260,16 @@ class Processor extends Main
                     }
                     continue;
                 }
+
                 $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData, $visibleVariants);
+
                 if (!$apiParam) {
                     $parentProductId = $parentIds[$itemId] ?? 0;
                     if ($parentProductId) {
                         continue;
                     }
                 }
+
                 $this->yotpoCatalogLogger->info(
                     __(
                         'Data ready to sync - Method: %1 - Magento Store ID: %2, Name: %3',
@@ -229,6 +279,7 @@ class Processor extends Main
                     )
                 );
                 $response = $this->processRequest($apiParam, $itemData);
+
                 $lastSyncTime = $this->getCurrentTime();
                 $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
                 $tempSqlArray = [
@@ -258,6 +309,7 @@ class Processor extends Main
                         );
                     }
                 }
+
                 $returnResponse = $this->processResponse(
                     $apiParam,
                     $response,
@@ -266,8 +318,22 @@ class Processor extends Main
                     $externalIds,
                     $visibleVariants
                 );
+
                 $tempSqlArray = $returnResponse['temp_sql'];
                 $externalIds = $returnResponse['external_id'];
+
+                if (isset($this->retryItems[$storeId][$itemId])) {
+                    unset($this->retryItems[$storeId][$itemId]);
+                }
+
+                if (count($returnResponse['four_not_four_data'])) {
+                    foreach ($returnResponse['four_not_four_data'] as $retryId) {
+                        if ($this->isImmediateRetry($response, $this->entity, $visibleVariants.$retryId, $storeId)) {
+                            $this->setImmediateRetryAlreadyDone($this->entity, $visibleVariants.$retryId, $storeId);
+                            $this->retryItems[$storeId][$retryId] = $retryId;
+                        }
+                    }
+                }
 
                 //push to parentData array if parent product is
                 // being the part of current collection
@@ -281,6 +347,10 @@ class Processor extends Main
                     $syncDataSql
                 );
                 $sqlData[] = $tempSqlArray;
+                if ($this->isCommandLineSync && !$this->isImmediateRetry) {
+                    // phpcs:ignore
+                    echo 'Catalog process completed for productid - ' . $itemId . PHP_EOL;
+                }
             }
             $dataToSent = [];
             if (count($sqlData)) {
@@ -301,6 +371,7 @@ class Processor extends Main
                     );
                 }
             }
+
             if ($this->normalSync) {
                 $this->coreConfig->saveConfig('catalog_last_sync_time', $lastSyncTime);
                 $dataForCategorySync = [];
@@ -315,6 +386,19 @@ class Processor extends Main
                     $this->categorySyncProcessor->process($dataForCategorySync);
                 }
             }
+
+            $reSyncYotpoKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
+            if (isset($this->retryItems[$storeId]) && count($this->retryItems[$storeId]) > 0) {
+                $this->update(
+                    'yotpo_product_sync',
+                    [$reSyncYotpoKey => 0, 'response_code' => coreConfig::CUSTOM_RESPONSE_DATA],
+                    ['product_id' . ' IN (?)' => $this->retryItems[$storeId], 'store_id = ?' => $storeId]
+                );
+                $collection = $this->getCollectionForSync($this->retryItems[$storeId]);
+                $this->isImmediateRetry = true;
+                $this->syncItems($collection->getItems(), $storeId, $visibleVariants);
+            }
+
             if ($visibleVariantsDataValues && !$visibleVariants) {
                 $this->syncItems($visibleVariantsDataValues, $storeId, true);
             }
@@ -356,10 +440,22 @@ class Processor extends Main
                     );
                     continue;
                 }
+
+                $apiParam = [];
+                if (isset($itemData['yotpo_id_parent'])) {
+                    $apiParam = $itemData;
+                }
+
                 $params = $this->getDeleteApiParams($itemData, 'yotpo_id');
                 $itemData = ['is_discontinued' => true];
                 $response = $this->processRequest($params, $itemData);
                 $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
+
+                if ($this->isImmediateRetryResponse($response->getData('status'))) {
+                    $this->processDeleteRetry($params, $apiParam, $itemData, $itemId);
+                    $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
+                }
+
                 $sqlData = [];
                 $sqlData[] = $returnResponse['temp_sql'];
                 $this->insertOnDuplicate(
@@ -388,11 +484,22 @@ class Processor extends Main
                     'yotpo_id_unassign' => $itemData['yotpo_id_unassign'],
                     'store_id' => $storeId
                 ];
-                $params = $this->getDeleteApiParams($itemData, 'yotpo_id_unassign');
 
+                $apiParam = [];
+                if (isset($itemData['yotpo_id_parent'])) {
+                    $apiParam = $itemData;
+                }
+
+                $params = $this->getDeleteApiParams($itemData, 'yotpo_id_unassign');
                 $itemDataRequest = ['is_discontinued' => true];
                 $response = $this->processRequest($params, $itemDataRequest);
                 $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemDataRequest);
+
+                if ($this->isImmediateRetryResponse($response->getData('status'))) {
+                    $this->processDeleteRetry($params, $apiParam, $itemData, $itemId);
+                    $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemDataRequest);
+                }
+
                 $sqlData = [];
                 $sqlData[] = $returnResponse['temp_sql'];
                 $this->insertOnDuplicate(
@@ -578,5 +685,28 @@ class Processor extends Main
             }
         }
         return $dataForCategorySync;
+    }
+
+    /**
+     * @return void
+     */
+    public function retryProductSync()
+    {
+        $this->isCommandLineSync = true;
+        $productIds = [];
+        $storeIds = [];
+        $productByStore = [];
+        $items = $this->productSyncRepositoryInterface->getByResponseCodes();
+        foreach ($items as $item) {
+            $productIds[] = $item['product_id'];
+            $storeIds[] = $item['store_id'];
+            $productByStore[$item['store_id']][] = $item['product_id'];
+        }
+        if ($productIds) {
+            $this->process($productByStore, null, array_unique($storeIds));
+        } else {
+            // phpcs:ignore
+            echo 'No catalog data to process.' . PHP_EOL;
+        }
     }
 }

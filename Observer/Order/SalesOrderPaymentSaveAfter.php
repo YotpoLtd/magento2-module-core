@@ -1,7 +1,8 @@
 <?php
 
-namespace Yotpo\Core\Observer;
+namespace Yotpo\Core\Observer\Order;
 
+use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Exception\LocalizedException;
@@ -14,22 +15,8 @@ use Magento\Checkout\Model\Session as CheckoutSession;
  * Class SalesOrderPaymentSaveAfter
  * Observer is called when order is created/updated
  */
-class SalesOrderPaymentSaveAfter implements ObserverInterface
+class SalesOrderPaymentSaveAfter extends OrderMain implements ObserverInterface
 {
-    /**
-     * Custom attribute name
-     */
-    const SYNCED_TO_YOTPO_ORDER = 'synced_to_yotpo_order';
-
-    /**
-     * @var OrdersProcessor
-     */
-    protected $ordersProcessor;
-
-    /**
-     * @var Config
-     */
-    protected $yotpoConfig;
 
     /**
      * @var CheckoutSession
@@ -40,16 +27,17 @@ class SalesOrderPaymentSaveAfter implements ObserverInterface
      * SalesOrderSaveAfter constructor.
      * @param OrdersProcessor $ordersProcessor
      * @param Config $yotpoConfig
+     * @param ResourceConnection $resourceConnection
      * @param CheckoutSession $checkoutSession
      */
     public function __construct(
         OrdersProcessor $ordersProcessor,
         Config $yotpoConfig,
+        ResourceConnection $resourceConnection,
         CheckoutSession $checkoutSession
     ) {
-        $this->ordersProcessor = $ordersProcessor;
-        $this->yotpoConfig = $yotpoConfig;
         $this->checkoutSession = $checkoutSession;
+        parent::__construct($ordersProcessor, $yotpoConfig, $resourceConnection);
     }
 
     /**
@@ -69,15 +57,8 @@ class SalesOrderPaymentSaveAfter implements ObserverInterface
             );
             $this->checkoutSession->setYotpoSmsMarketing(0);
         }
-        if ($order) {
-            $this->ordersProcessor->updateOrderAttribute(
-                [$order->getEntityId()],
-                self::SYNCED_TO_YOTPO_ORDER,
-                0
-            );
-            if ($this->yotpoConfig->isOrdersSyncActive($order->getStoreId())) {
-                $this->ordersProcessor->processOrder($order);
-            }
+        if ($order->getEntityId()) {
+            $this->processOrderSync($order);
         }
     }
 }

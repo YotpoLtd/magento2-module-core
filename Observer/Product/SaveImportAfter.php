@@ -103,5 +103,25 @@ class SaveImportAfter implements ObserverInterface
             ['value' => 0],
             $condition
         );
+        $this->updateSyncTable($productIds);
+    }
+
+    /**
+     * @param array<mixed> $productIds
+     * @return void
+     */
+    private function updateSyncTable($productIds = [])
+    {
+        if (!$productIds) {
+            return;
+        }
+        $cond = [];
+        $cond['product_id IN (?) '] = $productIds;
+        $connection = $this->resourceConnection->getConnection();
+        $connection->update(
+            $this->resourceConnection->getTableName('yotpo_product_sync'),
+            ['response_code' => YotpoCoreConfig::CUSTOM_RESPONSE_DATA],
+            $cond
+        );
     }
 }

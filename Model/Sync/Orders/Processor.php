@@ -4,6 +4,7 @@ namespace Yotpo\Core\Model\Sync\Orders;
 
 use Magento\Framework\DataObject;
 use Magento\Sales\Model\Order;
+use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderFactory;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\LocalizedException;
@@ -15,7 +16,7 @@ use Yotpo\Core\Model\Sync\Orders\Logger as YotpoOrdersLogger;
 use Yotpo\Core\Model\Api\Sync as YotpoCoreSync;
 use Yotpo\Core\Helper\Data as CoreHelperData;
 use Yotpo\Core\Model\Sync\Catalog\Processor as CatalogProcessor;
-use Magento\Framework\App\State as AppState;
+use Yotpo\Core\Api\OrdersSyncRepositoryInterface;
 
 /**
  * Class Processor - Process orders sync
@@ -53,14 +54,19 @@ class Processor extends Main
     protected $catalogProcessor;
 
     /**
-     * @var AppState
-     */
-    protected $appState;
-
-    /**
      * @var int
      */
     protected $currentStoreId;
+
+    /**
+     * @var OrdersSyncRepositoryInterface
+     */
+    protected $ordersSyncRepositoryInterface;
+
+    /**
+     * @var bool
+     */
+    protected $isCommandLineSync = false;
 
     /**
      * Processor constructor.
@@ -73,7 +79,7 @@ class Processor extends Main
      * @param Logger $yotpoOrdersLogger
      * @param CoreHelperData $helperData
      * @param CatalogProcessor $catalogProcessor
-     * @param AppState $appState
+     * @param OrdersSyncRepositoryInterface $ordersSyncRepositoryInterface
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -85,28 +91,49 @@ class Processor extends Main
         YotpoOrdersLogger $yotpoOrdersLogger,
         CoreHelperData $helperData,
         CatalogProcessor $catalogProcessor,
-        AppState $appState
+        OrdersSyncRepositoryInterface $ordersSyncRepositoryInterface
     ) {
         $this->yotpoCoreSync = $yotpoCoreSync;
         $this->orderFactory = $orderFactory;
         $this->yotpoOrdersLogger = $yotpoOrdersLogger;
         $this->helperData = $helperData;
         $this->catalogProcessor = $catalogProcessor;
-        $this->appState = $appState;
+        $this->ordersSyncRepositoryInterface = $ordersSyncRepositoryInterface;
         parent::__construct($appEmulation, $resourceConnection, $yotpoCoreConfig, $data);
     }
 
     /**
      * Process orders
      *
+     * @param array<mixed> $retryOrderIds
      * @return void
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function process()
+    public function process($retryOrderIds = [])
     {
+        $orderCollection = null;
+        $storeIds = [];
+
+        if ($retryOrderIds) {
+            $orderCollection = $this->getOrderCollection($retryOrderIds);
+        }
+
+        $orderByStore = [];
+        if ($orderCollection) {
+            foreach ($orderCollection->getItems() as $order) {
+                $storeIds[] = $order->getStoreId();
+                $orderByStore[$order->getStoreId()][] = $order;
+            }
+        }
+        $storeIds = array_unique($storeIds) ?: $this->config->getAllStoreIds(false);
         /** @phpstan-ignore-next-line */
-        foreach ($this->config->getAllStoreIds(false) as $storeId) {
+        foreach ($storeIds as $storeId) {
+            if ($this->isCommandLineSync) {
+                // phpcs:ignore
+                echo 'Orders process started for store - ' .
+                    $this->config->getStoreName($storeId) . PHP_EOL;
+            }
             $this->emulateFrontendArea((int)$storeId);
             $this->currentStoreId = $this->config->getStoreId();
             if (!$this->config->isOrdersSyncActive()) {
@@ -114,7 +141,8 @@ class Processor extends Main
                 continue;
             }
             $this->yotpoOrdersLogger->info('Process orders for store : ' . $storeId, []);
-            $this->processOrders();
+            $orders = isset($orderByStore[$storeId]) ? $orderByStore[$storeId] : [];
+            $this->processOrders($orders);
             $this->stopEnvironmentEmulation();
         }
     }
@@ -149,13 +177,14 @@ class Processor extends Main
     }
 
     /**
-     * Process orders
+     * Process Orders
      *
-     * @return void
+     * @param array<mixed> $orderItems
      * @throws LocalizedException
      * @throws NoSuchEntityException
+     * @return void
      */
-    public function processOrders()
+    public function processOrders($orderItems = [])
     {
         $orders = [];
         $magentoOrders = [];
@@ -163,27 +192,15 @@ class Processor extends Main
         $customerIds = [];
         $couponCodes = [];
         $guestOrderIds = [];
-        $storeId = $this->config->getStoreId();
         $currentTime = date('Y-m-d H:i:s');
-        $batchSize = $this->config->getConfig('orders_sync_limit');
-        $timeLimit = $this->config->getConfig('orders_sync_time_limit');
-        $formattedDate = $this->helperData->formatOrderItemDate($timeLimit);
 
-        $mappedOrderStatuses = $this->data->getMappedOrderStatuses();
-
-        $orderCollection = $this->orderFactory->create();
-        $orderCollection
-            ->addFieldToFilter('store_id', ['eq' => $storeId])
-            ->addFieldToFilter(self::SYNCED_TO_YOTPO_ORDER, ['eq' => 0])
-            ->addFieldToFilter('created_at', ['from' => $formattedDate]);
-        if ($mappedOrderStatuses) {
-            $orderCollection->addFieldToFilter('status', ['in' => array_keys($mappedOrderStatuses)]);
+        if (!$orderItems) {
+            $orderCollection = $this->getOrderCollection();
+            $orderItems = $orderCollection->getitems();
         }
 
-        $orderCollection->getSelect()->limit($batchSize);
         $ordersWithMissedProducts = [];
-        foreach ($orderCollection->getItems() as $order) {
-            /** @phpstan-ignore-next-line */
+        foreach ($orderItems as $order) {
             $productsMissing = $this->checkMissingProducts($order);
             if ($productsMissing) {
                 $this->yotpoOrdersLogger->info('Products not exist for order  : ' . $order->getId(), []);
@@ -222,7 +239,11 @@ class Processor extends Main
                 $isYotpoSyncedOrder = false;
                 if ($yotpoSyncedOrders && array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
                     $responseCode = $yotpoSyncedOrders[$magentoOrderId]['response_code'];
-                    if (!$this->config->canResync($responseCode, $yotpoSyncedOrders[$magentoOrderId]['yotpo_id'])) {
+                    if (!$this->config->canResync(
+                        $responseCode,
+                        $yotpoSyncedOrders[$magentoOrderId]['yotpo_id'],
+                        $this->isCommandLineSync
+                    )) {
                         $this->updateOrderAttribute([$magentoOrderId], self::SYNCED_TO_YOTPO_ORDER, 1);
                         $this->yotpoOrdersLogger->info('Order sync cannot be done for orderId: '
                             . $magentoOrderId . ', due to response code: ' . $responseCode, []);
@@ -356,6 +377,41 @@ class Processor extends Main
     }
 
     /**
+     * Get Order collection
+     *
+     * @param array <mixed> $retryOrderIds
+     * @return OrderCollection<mixed>
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function getOrderCollection($retryOrderIds = [])
+    {
+        $storeId = $this->config->getStoreId();
+        $batchSize = $this->config->getConfig('orders_sync_limit');
+        $timeLimit = $this->config->getConfig('orders_sync_time_limit');
+        $formattedDate = $this->helperData->formatOrderItemDate($timeLimit);
+        $mappedOrderStatuses = $this->data->getMappedOrderStatuses();
+
+        $orderCollection = $this->orderFactory->create();
+        $orderCollection
+            ->addFieldToFilter('store_id', ['eq' => $storeId])
+            ->addFieldToFilter('created_at', ['from' => $formattedDate]);
+        if (!$retryOrderIds) {
+            $orderCollection
+                ->addFieldToFilter(self::SYNCED_TO_YOTPO_ORDER, ['eq' => 0]);
+        } else {
+            $orderCollection->addFieldToFilter('entity_id', ['in' => $retryOrderIds]);
+        }
+        if ($mappedOrderStatuses) {
+            $orderCollection->addFieldToFilter('status', ['in' => array_keys($mappedOrderStatuses)]);
+        }
+
+        $orderCollection->getSelect()->limit($batchSize);
+
+        return $orderCollection;
+    }
+
+    /**
      * Calls order sync api
      *
      * @param Order $order
@@ -369,6 +425,7 @@ class Processor extends Main
     public function syncOrder($order, $isYotpoSyncedOrder, $yotpoSyncedOrders, $realTImeSync = false)
     {
         $orderIds = [];
+        $syncCompleted = false;
         $incrementId = $order->getIncrementId();
         $orderId = $order->getEntityId();
         $dataType = $isYotpoSyncedOrder ? 'update' : 'create';
@@ -408,6 +465,7 @@ class Processor extends Main
         }
         $orderData['entityLog'] = 'orders';
         $response = $this->yotpoCoreSync->sync($method, $url, $orderData);
+        $immediateRetry = false;
         if ($response->getData('is_success')) {
             if ($yotpoOrderId) {
                 $response->setData('yotpo_id', $yotpoOrderId);
@@ -417,14 +475,29 @@ class Processor extends Main
                 $this->updateOrderAttribute($orderIds, self::SYNCED_TO_YOTPO_ORDER, 1);
             }
             $this->yotpoOrdersLogger->info('Orders sync - success - ' . $orderId, []);
+            $syncCompleted = true;
         } elseif ($response->getData('status') == 409) {//order already exists in Yotpo and not in custom table
             $response = $this->yotpoCoreSync->sync(
                 'GET',
                 $this->config->getEndpoint('orders'),
                 ['external_ids' => $incrementId, 'entityLog' => 'orders']
             );
+            $syncCompleted = true;
+        } elseif ($this->isImmediateRetry($response, $this->entity, $orderId, $order->getStoreId())) {
+            $immediateRetry = true;
+            $this->setImmediateRetryAlreadyDone($this->entity, $orderId, $order->getStoreId());
+            if (array_key_exists($orderId, $yotpoSyncedOrders)) {
+                unset($yotpoSyncedOrders[$orderId]);
+            }
+            $response = $this->syncOrder($order, false, $yotpoSyncedOrders, $realTImeSync);
+            $syncCompleted = true;
         }
-
+        if ($syncCompleted) {
+            if ($this->isCommandLineSync && !$immediateRetry) {
+                // phpcs:ignore
+                echo 'Order process completed for orderId - ' . $orderId . PHP_EOL;
+            }
+        }
         return $response;
     }
 
@@ -504,5 +577,26 @@ class Processor extends Main
             }
         }
         return count($missingProducts) == count($totalItems);
+    }
+
+    /**
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     * @return void
+     */
+    public function retryOrdersSync()
+    {
+        $this->isCommandLineSync = true;
+        $orderIds = [];
+        $items = $this->ordersSyncRepositoryInterface->getByResponseCodes();
+        foreach ($items as $item) {
+            $orderIds[] = $item['order_id'];
+        }
+        if ($orderIds) {
+            $this->process($orderIds);
+        } else {
+            // phpcs:ignore
+            echo 'No order data to process.' . PHP_EOL;
+        }
     }
 }

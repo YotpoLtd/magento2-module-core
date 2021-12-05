@@ -54,6 +54,11 @@ class Main extends AbstractJobs
     protected $entityIdFieldValue;
 
     /**
+     * @var string
+     */
+    protected $entity = 'products';
+
+    /**
      * AbstractJobs constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -118,7 +123,7 @@ class Main extends AbstractJobs
 
     /**
      * Handle response
-     * @param array<string, int|string> $apiParam
+     * @param array<mixed> $apiParam
      * @param mixed $response
      * @param array<string, string|int> $tempSqlArray
      * @param mixed $data
@@ -136,15 +141,12 @@ class Main extends AbstractJobs
         $visibleVariants = false
     ) {
         $storeId = $this->coreConfig->getStoreId();
+        $fourNotFourData = [];
         switch ($apiParam['method']) {
             case $this->coreConfig->getProductSyncMethod('createProduct'):
             case $this->coreConfig->getProductSyncMethod('createProductVariant'):
             default:
-                if ($visibleVariants) {
-                    $yotpoIdkey = 'visible_variant_yotpo_id';
-                } else {
-                    $yotpoIdkey = 'yotpo_id';
-                }
+                $yotpoIdkey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
                 if ($response->getData('is_success')) {
                     $tempSqlArray[$yotpoIdkey] = $this->getYotpoIdFromResponse($response, $apiParam['method']);
                     $this->writeSuccessLog($apiParam['method'], $storeId);
@@ -164,15 +166,23 @@ class Main extends AbstractJobs
             case $this->coreConfig->getProductSyncMethod('unassignProductVariant'):
                 if ($response->getData('is_success')) {
                     $this->writeSuccessLog($apiParam['method'], $storeId);
-                    if ($apiParam['method'] === $this->coreConfig->getProductSyncMethod('deleteProduct')
-                        || $apiParam['method'] === $this->coreConfig->getProductSyncMethod('deleteProductVariant')) {
-                        $tempSqlArray['is_deleted_at_yotpo'] = 1;
-                    }
-                    if ($apiParam['method'] === $this->coreConfig->getProductSyncMethod('unassignProduct')
-                        || $apiParam['method'] === $this->coreConfig->getProductSyncMethod('unassignProductVariant')) {
-                        $tempSqlArray['yotpo_id_unassign'] = 0;
+                    $delOrUnAssignParams = $this->prepareTempSqlForUnAssignOrDel($apiParam['method']);
+                    if ($delOrUnAssignParams) {
+                        $tempSqlArray = array_merge($tempSqlArray, $delOrUnAssignParams);
                     }
                 } else {
+                    if ($this->isImmediateRetryResponse($response->getData('status'))) {
+                        $fnfParentIdFromYotpoTbl = '';
+                        if ($apiParam['method'] === $this->coreConfig->getProductSyncMethod('updateProductVariant')) {
+                            $fnfParentIdFromYotpoTbl = $this->getFourNotFourParentId($apiParam);
+                        }
+                        if ($fnfParentIdFromYotpoTbl) {
+                            $fourNotFourData[] = $fnfParentIdFromYotpoTbl;
+                        }
+                        if (array_key_exists('external_id', $data)) {
+                            $fourNotFourData[] = $data['external_id'];
+                        }
+                    }
                     $this->writeFailedLog($apiParam['method'], $storeId);
                 }
                 break;
@@ -180,8 +190,27 @@ class Main extends AbstractJobs
 
         return [
             'temp_sql' => $tempSqlArray,
-            'external_id' => array_filter($externalIds)
+            'external_id' => array_filter($externalIds),
+            'four_not_four_data' => $fourNotFourData
         ];
+    }
+
+    /**
+     * @param string $apiMethod
+     * @return array|mixed|string
+     */
+    public function prepareTempSqlForUnAssignOrDel($apiMethod)
+    {
+        $return = [];
+        if ($apiMethod === $this->coreConfig->getProductSyncMethod('deleteProduct')
+            || $apiMethod === $this->coreConfig->getProductSyncMethod('deleteProductVariant')) {
+            $return['is_deleted_at_yotpo'] = 1;
+        }
+        if ($apiMethod === $this->coreConfig->getProductSyncMethod('unassignProduct')
+            || $apiMethod === $this->coreConfig->getProductSyncMethod('unassignProductVariant')) {
+            $return['yotpo_id_unassign'] = 0;
+        }
+        return $return;
     }
 
     /**
@@ -367,32 +396,47 @@ class Main extends AbstractJobs
         if (!$yotpoId) {
             if ($method == 'createProduct') {
                 $url = $this->coreConfig->getEndpoint('products');
-                $existingProduct = $this->getExistingProductsFromAPI($url, $productId, 'products');
-                if (is_array($existingProduct) && count($existingProduct)) {
-                    $yotpoId = $existingProduct[0]['yotpo_id'];
-                    $apiUrl = $this->coreConfig->getEndpoint(
-                        'updateProduct',
-                        ['{yotpo_product_id}'],
-                        [$yotpoId]
-                    );
-                    $method = $this->coreConfig->getProductSyncMethod('updateProduct');
+
+                if (!$this->getImmediateRetryAlreadyDone(
+                    $this->entity,
+                    (int)$productId,
+                    $this->coreConfig->getStoreId()
+                )) {
+                    $existingProduct = $this->getExistingProductsFromAPI($url, $productId, 'products');
+                    if (is_array($existingProduct) && count($existingProduct)) {
+                        $yotpoId = $existingProduct[0]['yotpo_id'];
+                        $apiUrl = $this->coreConfig->getEndpoint(
+                            'updateProduct',
+                            ['{yotpo_product_id}'],
+                            [$yotpoId]
+                        );
+                        $method = $this->coreConfig->getProductSyncMethod('updateProduct');
+                    }
                 }
             }
+
             if ($method == 'createProductVariant' && $yotpoIdParent) {
                 $url = $this->coreConfig->getEndpoint(
                     'variant',
                     ['{yotpo_product_id}'],
                     [$yotpoIdParent]
                 );
-                $existingVariant = $this->getExistingProductsFromAPI($url, $productId, 'variants');
-                if (is_array($existingVariant) && count($existingVariant)) {
-                    $yotpoId = $existingVariant[0]['yotpo_id'];
-                    $apiUrl = $this->coreConfig->getEndpoint(
-                        'updateVariant',
-                        ['{yotpo_product_id}','{yotpo_variant_id}'],
-                        [$yotpoIdParent, $yotpoId]
-                    );
-                    $method = $this->coreConfig->getProductSyncMethod('updateProductVariant');
+
+                if (!$this->getImmediateRetryAlreadyDone(
+                    $this->entity,
+                    (int)$productId,
+                    $this->coreConfig->getStoreId()
+                )) {
+                    $existingVariant = $this->getExistingProductsFromAPI($url, $productId, 'variants');
+                    if (is_array($existingVariant) && count($existingVariant)) {
+                        $yotpoId = $existingVariant[0]['yotpo_id'];
+                        $apiUrl = $this->coreConfig->getEndpoint(
+                            'updateVariant',
+                            ['{yotpo_product_id}','{yotpo_variant_id}'],
+                            [$yotpoIdParent, $yotpoId]
+                        );
+                        $method = $this->coreConfig->getProductSyncMethod('updateProductVariant');
+                    }
                 }
             }
         }
@@ -475,5 +519,85 @@ class Main extends AbstractJobs
             }
         }
         return $products;
+    }
+
+    /**
+     * @param array<mixed> $apiParam
+     * @return int|string
+     * @throws NoSuchEntityException
+     */
+    protected function getFourNotFourParentId($apiParam)
+    {
+        $return = 0;
+        $connection = $this->resourceConnection->getConnection();
+        $tableName = $this->resourceConnection->getTableName('yotpo_product_sync');
+        $yotpoId = isset($apiParam['yotpo_id_parent']) ? $apiParam['yotpo_id_parent'] : 0;
+        if ($yotpoId) {
+            $select = $connection->select()
+                ->from($tableName, 'product_id')
+                ->where('yotpo_id = ?', $yotpoId)
+                ->where('store_id = ?', $this->coreConfig->getStoreId());
+            $return = $connection->fetchOne($select);
+        }
+        return $return;
+    }
+
+    /**
+     * @param array<string, string> $params
+     * @param array<string, int|string> $apiParam
+     * @param array<mixed> $itemData
+     * @param int $itemId
+     * @return mixed
+     * @throws NoSuchEntityException
+     */
+    protected function processDeleteRetry($params, $apiParam, $itemData, $itemId)
+    {
+        $parentYotpoId = '';
+        $childYotpoId = '';
+
+        $parentId = $this->getFourNotFourParentId($apiParam);
+
+        if ($params['method'] === $this->coreConfig->getProductSyncMethod('deleteProduct') || $parentId) {
+            $requestId = $parentId ?: $itemId;
+            $url = $this->coreConfig->getEndpoint('products');
+            $existingProduct = $this->getExistingProductsFromAPI($url, $requestId, 'products');
+
+            if (is_array($existingProduct)) {
+                if (count($existingProduct)) {
+                    $parentYotpoId = $existingProduct[0]['yotpo_id'];
+                }
+            }
+
+            $itemData = [
+                'product_id' => $itemId,
+                'yotpo_id' => $parentYotpoId,
+                'yotpo_id_parent' => ''
+            ];
+        }
+
+        if ($params['method'] === $this->coreConfig->getProductSyncMethod('deleteProductVariant')) {
+            if ($parentYotpoId) {
+                $url = $this->coreConfig->getEndpoint(
+                    'variant',
+                    ['{yotpo_product_id}'],
+                    [$parentYotpoId]
+                );
+                $existingVariant = $this->getExistingProductsFromAPI($url, $itemId, 'variants');
+                if (is_array($existingVariant)) {
+                    if (count($existingVariant)) {
+                        $childYotpoId = $existingVariant[0]['yotpo_id'];
+                    }
+                }
+                $itemData = [
+                    'product_id' => $itemId,
+                    'yotpo_id' => $childYotpoId,
+                    'yotpo_id_parent' => $parentYotpoId
+                ];
+            }
+        }
+
+        $params = $this->getDeleteApiParams($itemData, 'yotpo_id');
+        $itemData = ['is_discontinued' => true];
+        return $this->processRequest($params, $itemData);
     }
 }

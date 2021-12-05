@@ -22,11 +22,11 @@
     </event>
     <event name="sales_order_payment_save_after">
         <observer name="yotpo_core_sales_order_payment_save_after"
-                  instance="Yotpo\Core\Observer\SalesOrderPaymentSaveAfter" />
+                  instance="Yotpo\Core\Observer\Order\SalesOrderPaymentSaveAfter" />
     </event>
     <event name="admin_sales_order_address_update">
         <observer name="yotpo_core_admin_sales_order_address_update"
-                  instance="Yotpo\Core\Observer\AdminSalesOrderAddressUpdate" />
+                  instance="Yotpo\Core\Observer\Order\AdminSalesOrderAddressUpdate" />
     </event>
     <event name="catalog_category_save_after">
         <observer name="yotpo_core_category_save"

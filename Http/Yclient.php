@@ -32,6 +32,11 @@ class Yclient
     protected $yotpoApiLogger;
 
     /**
+     * @var array <mixed>
+     */
+    protected $handlers = [];
+
+    /**
      * Yclient constructor.
      * @param ClientFactory $clientFactory
      * @param ResponseFactory $responseFactory
@@ -91,7 +96,6 @@ class Yclient
             $responseBody->rewind();
             $logData[] = 'response = ' . $responseContent;
             $this->yotpoApiLogger->info($logMessage, $logData);
-
         } catch (GuzzleException $exception) {
             /** @var Response $response */
             $response = $this->responseFactory->create([
@@ -152,10 +156,13 @@ class Yclient
             if (get_class($handler) == $customHandlerClass) {
                 $handlerInstance = $handler;
             }
-            $this->yotpoApiLogger->popHandler();
+            $this->handlers[get_class($handler)] = $handler;
+        }
+        if (!$handlerInstance && isset($this->handlers[$customHandlerClass])) {
+            $handlerInstance = $this->handlers[$customHandlerClass];
         }
         if ($handlerInstance) {
-            $this->yotpoApiLogger->pushHandler($handlerInstance);
+            $this->yotpoApiLogger->setHandlers([$handlerInstance]);
         }
     }
 }

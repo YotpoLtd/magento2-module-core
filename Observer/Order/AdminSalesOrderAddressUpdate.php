@@ -1,7 +1,8 @@
 <?php
 
-namespace Yotpo\Core\Observer;
+namespace Yotpo\Core\Observer\Order;
 
+use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer;
 use Magento\Framework\Exception\InputException;
@@ -16,12 +17,8 @@ use Magento\Sales\Model\OrderRepository;
  * Class SalesOrderSaveAfter
  * Observer is called when order is created/updated
  */
-class AdminSalesOrderAddressUpdate implements ObserverInterface
+class AdminSalesOrderAddressUpdate extends OrderMain implements ObserverInterface
 {
-    /**
-     * Custom attribute name
-     */
-    const SYNCED_TO_YOTPO_ORDER = 'synced_to_yotpo_order';
 
     /**
      * @var OrderRepository
@@ -29,29 +26,20 @@ class AdminSalesOrderAddressUpdate implements ObserverInterface
     protected $orderRepository;
 
     /**
-     * @var OrdersProcessor
-     */
-    protected $ordersProcessor;
-
-    /**
-     * @var Config
-     */
-    protected $yotpoConfig;
-
-    /**
      * AdminSalesOrderAddressUpdate constructor.
-     * @param OrderRepository $orderRepository
      * @param OrdersProcessor $ordersProcessor
      * @param Config $yotpoConfig
+     * @param ResourceConnection $resourceConnection
+     * @param OrderRepository $orderRepository
      */
     public function __construct(
-        OrderRepository $orderRepository,
         OrdersProcessor $ordersProcessor,
-        Config $yotpoConfig
+        Config $yotpoConfig,
+        ResourceConnection $resourceConnection,
+        OrderRepository $orderRepository
     ) {
         $this->orderRepository = $orderRepository;
-        $this->ordersProcessor = $ordersProcessor;
-        $this->yotpoConfig = $yotpoConfig;
+        parent::__construct($ordersProcessor, $yotpoConfig, $resourceConnection);
     }
 
     /**
@@ -59,18 +47,18 @@ class AdminSalesOrderAddressUpdate implements ObserverInterface
      * @throws InputException
      * @throws LocalizedException
      * @throws NoSuchEntityException
+     * @return void
      */
     public function execute(Observer $observer)
     {
-        /** @var  Order $order */
-        $order = $this->orderRepository->get($observer->getOrderId());
-        $this->ordersProcessor->updateOrderAttribute(
-            [$order->getEntityId()],
-            self::SYNCED_TO_YOTPO_ORDER,
-            0
-        );
-        if ($this->yotpoConfig->isOrdersSyncActive($order->getStoreId())) {
-            $this->ordersProcessor->processOrder($order);
+        try {
+            $order = $this->orderRepository->get($observer->getOrderId());
+        } catch (NoSuchEntityException $e) {
+            $order = null;
+        }
+        if ($order && $order->getEntityId()) {
+            /** @phpstan-ignore-next-line */
+            $this->processOrderSync($order);
         }
     }
 }

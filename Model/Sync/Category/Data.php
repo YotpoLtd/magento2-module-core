@@ -2,6 +2,8 @@
 
 namespace Yotpo\Core\Model\Sync\Category;
 
+use Magento\Catalog\Model\Category;
+use Magento\Catalog\Model\Product;
 use Yotpo\Core\Helper\Data as CoreHelper;
 use Yotpo\Core\Model\Sync\Data\Main;
 use Magento\Framework\App\ResourceConnection;
@@ -30,15 +32,15 @@ class Data extends Main
     }
 
     /**
-     * @param \Magento\Catalog\Model\Category $category
+     * @param Category|Product $entity
      * @return array[]
      */
-    public function prepareData(\Magento\Catalog\Model\Category $category)
+    public function prepareData($entity)
     {
         return [
             'collection' => [
-                'external_id' => $category->getId(),
-                'name' => $category->getData('nameWithPath') ?: $category->getName()
+                'external_id' => $entity->getId(),
+                'name' => $entity->getData('nameWithPath') ?: $entity->getName()
             ]
         ];
     }

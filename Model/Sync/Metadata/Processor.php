@@ -74,7 +74,7 @@ class Processor extends AbstractJobs
                     if (!$this->yotpoConfig->isEnabled()) {
                         $this->logger->info(
                             __(
-                                'Skipping Magento Store ID: %1, Name: %2 [Disabled]', 
+                                'Skipping Magento Store ID: %1, Name: %2 [Disabled]',
                                 $storeId,
                                 $this->yotpoConfig->getStoreName($storeId)
                             )

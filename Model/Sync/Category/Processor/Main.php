@@ -46,6 +46,11 @@ class Main extends AbstractJobs
     protected $yotpoCoreCatalogLogger;
 
     /**
+     * @var string
+     */
+    protected $entity = 'category';
+
+    /**
      * Main constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -119,10 +124,15 @@ class Main extends AbstractJobs
             if (!$response) {
                 continue;
             }
-            $collections    =   $response['collections'];
+            $collections    =   is_array($response) && isset($response['collections']) ? $response['collections'] : [];
             $count = count($collections);
             for ($i=0; $i<$count; $i++) {
-                $yotpoCollections[$collections[$i]['external_id']]  =   $collections[$i]['yotpo_id'];
+                if (is_array($collections[$i])
+                    && isset($collections[$i]['external_id'])
+                    && isset($collections[$i]['yotpo_id'])
+                ) {
+                    $yotpoCollections[$collections[$i]['external_id']]  =   $collections[$i]['yotpo_id'];
+                }
             }
         }
         return $yotpoCollections;
@@ -170,13 +180,14 @@ class Main extends AbstractJobs
     }
 
     /**
-     * @param array<mixed> $category
-     * @param array <mixed>|int|string $yotpoId
+     * @param array <mixed> $category
+     * @param array <mixed> $yotpoId
+     * @param bool $isCommandLineSync
      * @return bool
      */
-    public function canResync(array $category = [], $yotpoId = []): bool
+    public function canResync(array $category = [], $yotpoId = [], $isCommandLineSync = false): bool
     {
-        return $this->config->canResync($category['response_code'], $yotpoId);
+        return $this->config->canResync($category['response_code'], $yotpoId, $isCommandLineSync);
     }
 
     /**
@@ -190,7 +201,8 @@ class Main extends AbstractJobs
         $data               =   $this->data->prepareProductData($productId);
         $data['entityLog']  =   'catalog';
         $response           =   $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_DELETE, $url, $data);
-        return $response && $response->getData('is_success');
+        $responseCode = $response && $response->getData('status') ? $response->getData('status') : null;
+        return ($response && $response->getData('is_success')) || $responseCode == '404';
     }
 
     /**
@@ -251,5 +263,38 @@ class Main extends AbstractJobs
         }
 
         return implode('/', $singleCatNames);
+    }
+
+    /**
+     * @param Category $category
+     * @return mixed
+     * @throws NoSuchEntityException
+     */
+    public function syncAsNewCollection(Category $category)
+    {
+        $collectionData                 =   $this->data->prepareData($category);
+        $collectionData['entityLog']    = 'catalog';
+        $url                            =   $this->config->getEndpoint('collections');
+        return $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $url, $collectionData);
+    }
+
+    /**
+     * @param DataObject|null $response
+     * @return int|string|null
+     */
+    public function getYotpoIdFromResponse($response)
+    {
+        if (!$response) {
+            return 0;
+        }
+        $responseData   =   $response->getData('response');
+        $yotpoId = null;
+        if ($response->getData('yotpo_id')) {
+            $yotpoId   =   $response->getData('yotpo_id');
+        } elseif ($responseData && is_array($responseData) && isset($responseData['collection'])) {
+            $yotpoId   =   is_array($responseData['collection']) && isset($responseData['collection']['yotpo_id']) ?
+                $responseData['collection']['yotpo_id'] : 0;
+        }
+        return $yotpoId;
     }
 }

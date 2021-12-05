@@ -34,11 +34,14 @@ class Config
     const METHOD_GET = 'GET';
     const METHOD_POST = 'POST';
     const METHOD_PATCH = 'PATCH';
+    const CUSTOM_RESPONSE_DATA = '000';
+    const SUCCESS_RESPONSE_CODE = '200';
+    const RETRY_RESPONSE_CODE_FROM = 400;
 
     /**
-     * @var int[]
+     * @var mixed[]
      */
-    protected $successfulResponseCodes = [200,201,204,222];
+    protected $successfulResponseCodes = [200,201,204,222,'000'];
 
     /**
      * @var array<int, string>
@@ -433,11 +436,15 @@ class Config
 
     /**
      * @param string $responseCode
-     * @param array <mixed>|int|string $yotpoId
+     * @param array <mixed> $yotpoId
+     * @param bool $isRetrySync
      * @return bool
      */
-    public function canResync($responseCode = '', $yotpoId = []): bool
+    public function canResync($responseCode = '', $yotpoId = [], $isRetrySync = false): bool
     {
+        if ($isRetrySync) {
+            return true;
+        }
         if (!$yotpoId) {
             $yotpoId = ['yotpo_id' => ''];
         } elseif (!is_array($yotpoId)) {
@@ -448,7 +455,12 @@ class Config
         ) {
             return false;
         }
-        return true;
+        if (!$responseCode || $responseCode <= 400 || $responseCode == 429 ||
+            ($responseCode >= 500 && $responseCode <= 599)
+        ) {
+            return true;
+        }
+        return false;
     }
 
     /**
