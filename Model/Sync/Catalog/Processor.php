@@ -447,12 +447,12 @@ class Processor extends Main
                 }
 
                 $params = $this->getDeleteApiParams($itemData, 'yotpo_id');
-                $itemData = ['is_discontinued' => true];
-                $response = $this->processRequest($params, $itemData);
+                $itemDataRequest = ['is_discontinued' => true];
+                $response = $this->processRequest($params, $itemDataRequest);
                 $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
 
                 if ($this->isImmediateRetryResponse($response->getData('status'))) {
-                    $this->processDeleteRetry($params, $apiParam, $itemData, $itemId);
+                    $response = $this->processDeleteRetry($params, $apiParam, $itemData, $itemId);
                     $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
                 }
 
@@ -493,11 +493,11 @@ class Processor extends Main
                 $params = $this->getDeleteApiParams($itemData, 'yotpo_id_unassign');
                 $itemDataRequest = ['is_discontinued' => true];
                 $response = $this->processRequest($params, $itemDataRequest);
-                $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemDataRequest);
+                $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
 
                 if ($this->isImmediateRetryResponse($response->getData('status'))) {
-                    $this->processDeleteRetry($params, $apiParam, $itemData, $itemId);
-                    $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemDataRequest);
+                    $response = $this->processDeleteRetry($params, $apiParam, $itemData, $itemId);
+                    $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
                 }
 
                 $sqlData = [];
