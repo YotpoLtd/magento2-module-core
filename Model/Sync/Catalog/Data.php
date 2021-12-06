@@ -372,7 +372,7 @@ class Data extends Main
             }
 
             $itemArray[$key] = $value;
-            if ($key == 'custom_properties' && !$value) {
+            if (($key == 'custom_properties' || $key == 'gtins' ) && !$value) {
                 unset($itemArray[$key]);
             }
         }
@@ -456,7 +456,6 @@ class Data extends Main
         foreach ($array as $key => $value) {
             $configKey = isset($value['attr_code']) && $value['attr_code'] ?
                 $value['attr_code'] : '';
-
             $method = $value['method'];
             $value = $this->$method($item, $configKey);
 
@@ -466,7 +465,6 @@ class Data extends Main
                     'value' => $value
                 ];
             }
-
         }
         return $resultArray;
     }
