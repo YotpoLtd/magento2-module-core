@@ -137,6 +137,11 @@ class Processor extends Main
             $this->emulateFrontendArea((int)$storeId);
             $this->currentStoreId = $this->config->getStoreId();
             if (!$this->config->isOrdersSyncActive()) {
+                if ($this->isCommandLineSync) {
+                    // phpcs:ignore
+                    echo 'Orders sync is disabled for store - ' .
+                        $this->config->getStoreName($storeId) . PHP_EOL;
+                }
                 $this->stopEnvironmentEmulation();
                 continue;
             }
@@ -425,7 +430,6 @@ class Processor extends Main
     public function syncOrder($order, $isYotpoSyncedOrder, $yotpoSyncedOrders, $realTImeSync = false)
     {
         $orderIds = [];
-        $syncCompleted = false;
         $incrementId = $order->getIncrementId();
         $orderId = $order->getEntityId();
         $dataType = $isYotpoSyncedOrder ? 'update' : 'create';
@@ -475,14 +479,12 @@ class Processor extends Main
                 $this->updateOrderAttribute($orderIds, self::SYNCED_TO_YOTPO_ORDER, 1);
             }
             $this->yotpoOrdersLogger->info('Orders sync - success - ' . $orderId, []);
-            $syncCompleted = true;
         } elseif ($response->getData('status') == 409) {//order already exists in Yotpo and not in custom table
             $response = $this->yotpoCoreSync->sync(
                 'GET',
                 $this->config->getEndpoint('orders'),
                 ['external_ids' => $incrementId, 'entityLog' => 'orders']
             );
-            $syncCompleted = true;
         } elseif ($this->isImmediateRetry($response, $this->entity, $orderId, $order->getStoreId())) {
             $immediateRetry = true;
             $this->setImmediateRetryAlreadyDone($this->entity, $orderId, $order->getStoreId());
@@ -490,13 +492,10 @@ class Processor extends Main
                 unset($yotpoSyncedOrders[$orderId]);
             }
             $response = $this->syncOrder($order, false, $yotpoSyncedOrders, $realTImeSync);
-            $syncCompleted = true;
         }
-        if ($syncCompleted) {
-            if ($this->isCommandLineSync && !$immediateRetry) {
-                // phpcs:ignore
-                echo 'Order process completed for orderId - ' . $orderId . PHP_EOL;
-            }
+        if ($this->isCommandLineSync && !$immediateRetry) {
+            // phpcs:ignore
+            echo 'Order process completed for orderId - ' . $orderId . PHP_EOL;
         }
         return $response;
     }

@@ -159,6 +159,11 @@ class Processor extends Main
                                 $this->coreConfig->getStoreName($storeId)
                             )
                         );
+                        if ($this->isCommandLineSync) {
+                            // phpcs:ignore
+                            echo 'Catalog sync is disabled for store - ' .
+                                $this->coreConfig->getStoreName($storeId) . PHP_EOL;
+                        }
                         $this->stopEnvironmentEmulation();
                         continue;
                     }

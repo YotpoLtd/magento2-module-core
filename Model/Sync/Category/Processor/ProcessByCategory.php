@@ -147,7 +147,6 @@ class ProcessByCategory extends Main
         $currentTime = date('Y-m-d H:i:s');
         $batchSize = $this->config->getConfig('product_sync_limit');
         $existColls = [];
-        $categoriesToUpdate = [];
         $attributeId = $this->data->getAttributeId(Config::CATEGORY_SYNC_ATTR_CODE);
         $collection = $this->categoryCollectionFactory->create();
         $collection->addAttributeToSelect('*');
@@ -178,7 +177,6 @@ class ProcessByCategory extends Main
         $existingCollections = $this->getExistingCollectionIds(array_keys($magentoCategories));
         $categoriesByPath = $this->getCategoriesFromPathNames(array_values($magentoCategories));
         $yotpoSyncedCategories = $this->getYotpoSyncedCategories(array_keys($magentoCategories));
-        $yotpoTableFinalData = [];
         if (!$magentoCategories) {
             $this->yotpoCoreCatalogLogger->info(
                 'Category Sync - There are no items left to sync'
