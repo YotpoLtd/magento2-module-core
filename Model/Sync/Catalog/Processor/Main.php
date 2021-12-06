@@ -556,7 +556,6 @@ class Main extends AbstractJobs
         $childYotpoId = '';
 
         $parentId = $this->getFourNotFourParentId($apiParam);
-
         if ($params['method'] === $this->coreConfig->getProductSyncMethod('deleteProduct') || $parentId) {
             $requestId = $parentId ?: $itemId;
             $url = $this->coreConfig->getEndpoint('products');
