@@ -146,7 +146,7 @@ class Processor extends Main
                 continue;
             }
             $this->yotpoOrdersLogger->info('Process orders for store : ' . $storeId, []);
-            $orders = isset($orderByStore[$storeId]) ? $orderByStore[$storeId] : [];
+            $orders = $orderByStore[$storeId] ?? [];
             $this->processOrders($orders);
             $this->stopEnvironmentEmulation();
         }
