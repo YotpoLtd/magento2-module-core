@@ -302,10 +302,10 @@ class Main extends AbstractJobs
 
     /**
      * Prepare collection query to fetch data
-     * @param array<mixed> $unSyncedProductIds
+     * @param array<mixed>|null $unSyncedProductIds
      * @return Collection<mixed>
      */
-    protected function getCollectionForSync($unSyncedProductIds = null): Collection
+    protected function getCollectionForSync($unSyncedProductIds = []): Collection
     {
         $collection = $this->collectionFactory->create();
         $collection->addAttributeToSelect('*');
@@ -317,7 +317,7 @@ class Main extends AbstractJobs
                 ]
             );
         }
-        if ($unSyncedProductIds) {
+        if ($unSyncedProductIds && is_array($unSyncedProductIds)) {
             $collection->addFieldToFilter('entity_id', ['in' => $unSyncedProductIds]);
         }
         $collection->addUrlRewrite();

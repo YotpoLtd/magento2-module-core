@@ -110,7 +110,7 @@ class ProcessByCategory extends Main
                         $this->config->getStoreName($storeId)
                     )
                 );
-                $retryCategoryIds = isset($retryCategories[$storeId]) ? $retryCategories[$storeId] : [];
+                $retryCategoryIds = $retryCategories[$storeId] ?? $retryCategories;
                 $this->processEntity($retryCategoryIds);
                 $this->stopEnvironmentEmulation();
                 $this->yotpoCoreCatalogLogger->info(

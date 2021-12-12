@@ -179,7 +179,7 @@ class Processor extends Main
                     $this->processUnAssignData();
                     $this->retryItems[$storeId] = [];
                     if ($this->productSyncLimit > 0) {
-                        $forceSyncProductIds = isset($forceSyncProducts[$storeId]) ? $forceSyncProducts[$storeId] : [];
+                        $forceSyncProductIds = $forceSyncProducts[$storeId] ?? $forceSyncProducts;
                         $collection = $this->getCollectionForSync($forceSyncProductIds);
                         $this->isImmediateRetry = false;
                         $this->syncItems($collection->getItems(), $storeId);
