@@ -59,6 +59,11 @@ class Main extends AbstractJobs
     protected $entity = 'products';
 
     /**
+     * @var bool
+     */
+    private $syncByOrderFlag = false;
+
+    /**
      * AbstractJobs constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -598,5 +603,21 @@ class Main extends AbstractJobs
         $params = $this->getDeleteApiParams($itemData, 'yotpo_id');
         $itemData = ['is_discontinued' => true];
         return $this->processRequest($params, $itemData);
+    }
+
+    /**
+     * @return void
+     */
+    public function setSyncByOrderFlag()
+    {
+        $this->syncByOrderFlag = true;
+    }
+
+    /**
+     * @return bool
+     */
+    public function getSyncByOrderFlag()
+    {
+        return $this->syncByOrderFlag;
     }
 }

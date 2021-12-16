@@ -166,6 +166,7 @@ class YotpoResource
      */
     public function getGroupProductIds(array $simpleIds): array
     {
+        $parentIds = [];
         $connection = $this->resourceConnection->getConnection();
         $select = $connection->select()->from(
             $this->resourceConnection->getTableName('catalog_product_link'),
@@ -180,6 +181,23 @@ class YotpoResource
         $groupIds = [];
         foreach ($items as $item) {
             $groupIds[$item['product_id']] = $item['parent_id'];
+            $parentIds[$item['parent_id']] = $item['parent_id'];
+        }
+        $realParentIds = [];
+        if ($this->coreConfig->isRowIdAvailable() && $parentIds) {
+            $select = $connection->select()->from(
+                $this->resourceConnection->getTableName('catalog_product_entity'),
+                ['entity_id','row_id']
+            )->where(
+                $connection->quoteInto('row_id IN (?)', array_values($parentIds))
+            );
+            $groupedParentItems = $connection->fetchAssoc($select);
+            foreach ($groupedParentItems as $parentItem) {
+                $realParentIds[$parentItem['row_id']] = $parentItem['entity_id'];
+            }
+            foreach ($items as $item) {
+                $groupIds[$item['product_id']] = $realParentIds[$item['parent_id']];
+            }
         }
         return $groupIds;
     }
