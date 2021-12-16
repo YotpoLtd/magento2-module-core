@@ -1,4 +1,5 @@
 <?php
+
 namespace Yotpo\Core\Model\Sync\Catalog;
 
 use Magento\CatalogInventory\Model\StockRegistry;
@@ -197,9 +198,9 @@ class Data extends Main
     public function manageSyncItems($items, $visibleVariants = false)
     {
         $return = [
-          'sync_data' => [],
-          'parent_ids' => [],
-          'parent_data' => []
+            'sync_data' => [],
+            'parent_ids' => [],
+            'parent_data' => []
         ];
         $syncItems = $productsId = $productsObject = [];
         foreach ($items as $item) {
@@ -278,7 +279,7 @@ class Data extends Main
     /**
      * Group configurable attribute options for product
      *
-     * @param array<int, array>$options
+     * @param array<int, array> $options
      * @return array<int|string, array<int|string, mixed>>
      */
     protected function arrangeConfigOptions($options)
@@ -286,9 +287,8 @@ class Data extends Main
         $attributeOptions = [];
         foreach ($options as $productAttribute) {
             foreach ($productAttribute['values'] as $attribute) {
-                $attributeOptions[
-                    $productAttribute['attribute_code']][$attribute['value_index']
-                ] = $attribute['store_label'];
+                $attributeOptions[$productAttribute['attribute_code']][$attribute['value_index']]
+                    = $attribute['store_label'];
             }
             $attributeOptions[$productAttribute['attribute_code']]['label'] = $productAttribute['store_label'];
         }
@@ -351,7 +351,7 @@ class Data extends Main
 
                     if (isset($attr['type']) && $attr['type'] === 'image') {
                         $baseUrl = $this->yotpoCoreConfig->getBaseUrl(UrlInterface::URL_TYPE_MEDIA);
-                        $data = $data ? $baseUrl.'catalog/product'.$data : "";
+                        $data = $data ? $baseUrl . 'catalog/product' . $data : "";
                     }
                     $value = $data;
                 } elseif (isset($attr['method']) && $attr['method']) {
@@ -372,7 +372,7 @@ class Data extends Main
             }
 
             $itemArray[$key] = $value;
-            if (($key == 'custom_properties' || $key == 'gtins' ) && !$value) {
+            if (($key == 'custom_properties' || $key == 'gtins') && !$value) {
                 unset($itemArray[$key]);
             }
         }
@@ -431,7 +431,7 @@ class Data extends Main
      */
     public function getDataFromConfig($item, $configKey = '')
     {
-        $configValue =  $this->yotpoCoreConfig->getConfig($configKey) ?: '';
+        $configValue = $this->yotpoCoreConfig->getConfig($configKey) ?: '';
         if ($configValue) {
             $value = $item->getAttributeText($configValue) ?: '';
             if (!$value) {
@@ -487,7 +487,7 @@ class Data extends Main
             $itemValue = $this->$method($item, $configKey);
 
             if ($key === 'is_blocklisted' || $key === 'review_form_tag') {
-                $configValue =  $this->yotpoCoreConfig->getConfig($configKey) ?: '';
+                $configValue = $this->yotpoCoreConfig->getConfig($configKey) ?: '';
                 if ($configValue) {
                     if ($key === 'is_blocklisted') {
                         $resultArray[$key] = $itemValue === 1 || $itemValue == 'Yes' || $itemValue === true;

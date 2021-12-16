@@ -557,8 +557,12 @@ class AbstractData extends Main
             $orders = $this->orderRepository->getList($searchCriteria);
             $ordersData = $orders->getItems();
             foreach ($ordersData as $order) {
+                $attributeCode = $this->config->getConfig(
+                    'sms_marketing_custom_attribute',
+                    $order->getStoreId()
+                );
                 $this->guestUsersAttributeCollection[$order->getEntityId()] =
-                    $order->getData(self::YOTPO_CUSTOM_ATTRIBUTE_SMS_MARKETING);/** @phpstan-ignore-line */
+                    $order->getData($attributeCode) ?: false; /** @phpstan-ignore-line */
             }
         }
     }

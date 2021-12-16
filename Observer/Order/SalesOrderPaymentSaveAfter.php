@@ -10,6 +10,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Yotpo\Core\Model\Sync\Orders\Processor as OrdersProcessor;
 use Yotpo\Core\Model\Config;
 use Magento\Checkout\Model\Session as CheckoutSession;
+use Magento\Framework\App\State as AppState;
 
 /**
  * Class SalesOrderPaymentSaveAfter
@@ -24,19 +25,27 @@ class SalesOrderPaymentSaveAfter extends OrderMain implements ObserverInterface
     protected $checkoutSession;
 
     /**
+     * @var AppState
+     */
+    protected $appState;
+
+    /**
      * SalesOrderSaveAfter constructor.
      * @param OrdersProcessor $ordersProcessor
      * @param Config $yotpoConfig
      * @param ResourceConnection $resourceConnection
      * @param CheckoutSession $checkoutSession
+     * @param AppState $appState
      */
     public function __construct(
         OrdersProcessor $ordersProcessor,
         Config $yotpoConfig,
         ResourceConnection $resourceConnection,
-        CheckoutSession $checkoutSession
+        CheckoutSession $checkoutSession,
+        AppState $appState
     ) {
         $this->checkoutSession = $checkoutSession;
+        $this->appState = $appState;
         parent::__construct($ordersProcessor, $yotpoConfig, $resourceConnection);
     }
 
@@ -47,9 +56,10 @@ class SalesOrderPaymentSaveAfter extends OrderMain implements ObserverInterface
      */
     public function execute(Observer $observer)
     {
-        $acceptsSmsMarketing = $this->checkoutSession->getYotpoSmsMarketing();
+        $areaCode = $this->appState->getAreaCode();
         $order = $observer->getEvent()->getPayment()->getOrder();
-        if ($order->getCustomerIsGuest()) {
+        if ($areaCode !== \Magento\Framework\App\Area::AREA_ADMINHTML && $order->getCustomerIsGuest()) {
+            $acceptsSmsMarketing = $this->checkoutSession->getYotpoSmsMarketing();
             $this->ordersProcessor->updateOrderAttribute(
                 [$order->getEntityId()],
                 'yotpo_accepts_sms_marketing',

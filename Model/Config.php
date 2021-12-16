@@ -618,6 +618,14 @@ class Config
     }
 
     /**
+     * @return bool
+     */
+    public function isRowIdAvailable()
+    {
+        return $this->getEavRowIdFieldName() == 'row_id';
+    }
+
+    /**
      * @param string $key
      * @return mixed
      */
