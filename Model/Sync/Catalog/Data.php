@@ -103,8 +103,7 @@ class Data extends Main
         'group_name' => [
             'default' => 0,
             'attr_code' => 'attr_product_group',
-            'method' => 'getDataFromConfig',
-            'validation' => 'lowercase, /[^A-Za-z0-9_-]/'
+            'method' => 'getDataFromConfig'
         ],
         'brand' => [
             'default' => 0,
@@ -365,9 +364,11 @@ class Data extends Main
                 } else {
                     $value = '';
                 }
-
-                if (isset($attr['validation']) && $attr['validation'] && $value) {
-                    $value = $this->dataValidation($attr['validation'], $value);
+                if ($key == 'group_name' && $value) {
+                    $value = strtolower($value);
+                    $value = str_replace(' ', '_', $value);
+                    $value = preg_replace('/[^A-Za-z0-9_-]/', '-', $value);
+                    $value = substr((string)$value, 0, 100);
                 }
             }
 
@@ -378,25 +379,6 @@ class Data extends Main
         }
 
         return $itemArray;
-    }
-
-    /**
-     * Check validation
-     * @param string $validationType
-     * @param string $value
-     * @return string|null
-     */
-    private function dataValidation($validationType, string $value)
-    {
-        $validationArray = explode(',', $validationType);
-        foreach ($validationArray as $valid) {
-            if ($valid === 'lowercase') {
-                $value = strtolower((string)$value);
-            } else {
-                $value = preg_replace($valid, "", (string)$value);
-            }
-        }
-        return $value;
     }
 
     /**
@@ -485,13 +467,14 @@ class Data extends Main
 
             $method = $value['method'];
             $itemValue = $this->$method($item, $configKey);
-
             if ($key === 'is_blocklisted' || $key === 'review_form_tag') {
                 $configValue = $this->yotpoCoreConfig->getConfig($configKey) ?: '';
                 if ($configValue) {
                     if ($key === 'is_blocklisted') {
                         $resultArray[$key] = $itemValue === 1 || $itemValue == 'Yes' || $itemValue === true;
                     } elseif ($key === 'review_form_tag') {
+                        $itemValue = str_replace(',', '_', $itemValue);
+                        $itemValue = substr($itemValue, 0, 255);
                         $resultArray[$key] = $itemValue ?: '';
                     }
                 }
