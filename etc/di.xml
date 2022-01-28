@@ -96,4 +96,10 @@
             </argument>
         </arguments>
     </type>
+    <type name="Yotpo\Core\Model\System\Message\CustomSystemMessage">
+        <arguments>
+            <argument name="createCategoryAttribute" xsi:type="object">Yotpo\Core\Setup\Patch\Data\CreateCategoryAttribute\Proxy</argument>
+            <argument name="createProductAttribute" xsi:type="object">Yotpo\Core\Setup\Patch\Data\CreateProductAttribute\Proxy</argument>
+        </arguments>
+    </type>
 </config>
