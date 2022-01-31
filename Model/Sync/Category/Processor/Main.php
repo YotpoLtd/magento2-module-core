@@ -297,4 +297,20 @@ class Main extends AbstractJobs
         }
         return $yotpoId;
     }
+
+    /**
+     * @param array<mixed> $yotpoCollections
+     * @param int|null $catId
+     * @return mixed|string
+     */
+    public function getYotpoIdFromCollectionArray($yotpoCollections, $catId)
+    {
+        $return = '';
+        if (is_array($yotpoCollections)
+            && $catId && isset($yotpoCollections[$catId])
+        ) {
+            $return = $yotpoCollections[$catId];
+        }
+        return $return;
+    }
 }
