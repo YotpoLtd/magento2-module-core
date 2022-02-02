@@ -51,6 +51,11 @@ class Main extends AbstractJobs
     protected $entity = 'category';
 
     /**
+     * @var string|null
+     */
+    protected $entityIdFieldValue;
+
+    /**
      * Main constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -74,6 +79,7 @@ class Main extends AbstractJobs
         $this->yotpoCoreApiSync             =   $yotpoCoreApiSync;
         $this->categoryCollectionFactory    =   $categoryCollectionFactory;
         $this->yotpoCoreCatalogLogger       =   $yotpoCoreCatalogLogger;
+        $this->entityIdFieldValue           =   $this->config->getEavRowIdFieldName();
         parent::__construct($appEmulation, $resourceConnection);
     }
 
@@ -312,5 +318,32 @@ class Main extends AbstractJobs
             $return = $yotpoCollections[$catId];
         }
         return $return;
+    }
+
+    /**
+     * @param int $categoryRowId
+     * @return void
+     * @throws NoSuchEntityException
+     */
+    public function updateCategoryAttribute($categoryRowId)
+    {
+        $dataToInsertOrUpdate = [];
+        $data   =   [
+            'attribute_id'  =>  $this->data->getAttributeId('synced_to_yotpo_collection'),
+            'store_id'      =>  $this->config->getStoreid(),
+            $this->entityIdFieldValue => $categoryRowId,
+            'value'         =>  1
+        ];
+        $dataToInsertOrUpdate[] =   $data;
+        $this->insertOnDuplicate('catalog_category_entity_int', $dataToInsertOrUpdate);
+    }
+
+    /**
+     * @param DataObject $response
+     * @return bool
+     */
+    public function checkForCollectionExistsError(DataObject $response): bool
+    {
+        return '409' == $response->getData('status');
     }
 }

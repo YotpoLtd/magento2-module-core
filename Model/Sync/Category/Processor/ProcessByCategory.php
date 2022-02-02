@@ -28,11 +28,6 @@ class ProcessByCategory extends Main
     protected $categoryHelper;
 
     /**
-     * @var string|null
-     */
-    protected $entityIdFieldValue;
-
-    /**
      * @var CategorySyncRepositoryInterface
      */
     protected $categorySyncRepositoryInterface;
@@ -75,7 +70,6 @@ class ProcessByCategory extends Main
             $yotpoCoreCatalogLogger
         );
         $this->categoryHelper = $categoryHelper;
-        $this->entityIdFieldValue = $this->config->getEavRowIdFieldName();
         $this->categorySyncRepositoryInterface = $categorySyncRepositoryInterface;
     }
 
@@ -276,15 +270,6 @@ class ProcessByCategory extends Main
     }
 
     /**
-     * @param DataObject $response
-     * @return bool
-     */
-    public function checkForCollectionExistsError(DataObject $response): bool
-    {
-        return '409' == $response->getData('status');
-    }
-
-    /**
      * @return void
      * @throws NoSuchEntityException
      * @throws LocalizedException
@@ -395,24 +380,6 @@ class ProcessByCategory extends Main
             }
         }
         return $response;
-    }
-
-    /**
-     * @param int $categoryRowId
-     * @return void
-     * @throws NoSuchEntityException
-     */
-    public function updateCategoryAttribute($categoryRowId)
-    {
-        $dataToInsertOrUpdate = [];
-        $data   =   [
-            'attribute_id'  =>  $this->data->getAttributeId('synced_to_yotpo_collection'),
-            'store_id'      =>  $this->config->getStoreid(),
-            $this->entityIdFieldValue => $categoryRowId,
-            'value'         =>  1
-        ];
-        $dataToInsertOrUpdate[] =   $data;
-        $this->insertOnDuplicate('catalog_category_entity_int', $dataToInsertOrUpdate);
     }
 
     /**
