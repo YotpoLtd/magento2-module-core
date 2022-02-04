@@ -427,7 +427,7 @@ class Main extends AbstractJobs
 
                 if (!$this->getImmediateRetryAlreadyDone(
                     $this->entity,
-                    (int)$productId,
+                    $visibleVariants.(int)$productId,
                     $this->coreConfig->getStoreId()
                 )) {
                     $existingProduct = $this->getExistingProductsFromAPI($url, $productId, 'products');
@@ -440,6 +440,11 @@ class Main extends AbstractJobs
                         );
                         $method = $this->coreConfig->getProductSyncMethod('updateProduct');
                     }
+                    $this->setImmediateRetryAlreadyDone(
+                        $this->entity,
+                        $visibleVariants.(int)$productId,
+                        $this->coreConfig->getStoreId()
+                    );
                 }
             }
 
@@ -452,7 +457,7 @@ class Main extends AbstractJobs
 
                 if (!$this->getImmediateRetryAlreadyDone(
                     $this->entity,
-                    (int)$productId,
+                    $visibleVariants.(int)$productId,
                     $this->coreConfig->getStoreId()
                 )) {
                     $existingVariant = $this->getExistingProductsFromAPI($url, $productId, 'variants');
@@ -465,6 +470,11 @@ class Main extends AbstractJobs
                         );
                         $method = $this->coreConfig->getProductSyncMethod('updateProductVariant');
                     }
+                    $this->setImmediateRetryAlreadyDone(
+                        $this->entity,
+                        $visibleVariants.(int)$productId,
+                        $this->coreConfig->getStoreId()
+                    );
                 }
             }
         }
@@ -557,8 +567,8 @@ class Main extends AbstractJobs
     protected function getFourNotFourParentId($apiParam)
     {
         $return = 0;
-        $connection = $this->resourceConnection->getConnection();
-        $tableName = $this->resourceConnection->getTableName('yotpo_product_sync');
+        $connection = $this->getConnection();
+        $tableName = $this->getTableName('yotpo_product_sync');
         $yotpoId = isset($apiParam['yotpo_id_parent']) ? $apiParam['yotpo_id_parent'] : 0;
         if ($yotpoId) {
             $select = $connection->select()
@@ -635,5 +645,26 @@ class Main extends AbstractJobs
     public function setNormalSyncFlag($flag)
     {
         $this->normalSync = $flag;
+    }
+
+    /**
+     * @param array <int> $productIds
+     * @param array <int | null> $storeId
+     * @return void
+     */
+    public function removeProductFromSyncTable($productIds, $storeId)
+    {
+        if (!$productIds) {
+            return;
+        }
+        $connection = $this->getConnection();
+        $tableName = $this->getTableName('yotpo_product_sync');
+        $whereConditions = [
+            $connection->quoteInto('product_id IN (?)', $productIds)
+        ];
+        if ($storeId) {
+            $whereConditions[] = $connection->quoteInto('store_id IN (?)', $storeId);
+        }
+        $connection->delete($tableName, $whereConditions);
     }
 }
