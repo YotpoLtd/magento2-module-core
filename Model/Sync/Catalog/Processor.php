@@ -250,7 +250,7 @@ class Processor extends Main
                         $yotpoData[$itemId]['response_code'],
                         $yotpoData[$itemId],
                         $this->isCommandLineSync
-                    )
+                    ) && !$this->getSyncByOrderFlag()
                 ) {
                     $tempSqlDataIntTable = [
                         'attribute_id' => $attributeId,

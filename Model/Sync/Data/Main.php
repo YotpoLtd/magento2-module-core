@@ -114,7 +114,9 @@ class Main
 
             if ($product[$yotpoIdKey]) {
                 $position = array_search($product['product_id'], $productIds);
-                array_splice($productIds, (int)$position, 1);
+                if ($position !== false) {
+                    array_splice($productIds, (int)$position, 1);
+                }
             }
         }
         return $productIds;
