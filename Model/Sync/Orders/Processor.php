@@ -512,7 +512,8 @@ class Processor extends Main
         $unSyncedProductIds = $this->data->getUnSyncedProductIds($productIds, $order);
         if ($unSyncedProductIds) {
             $this->catalogProcessor->setSyncByOrderFlag();
-            $sync = $this->catalogProcessor->process($unSyncedProductIds, $order);
+            $orderStoreId = $order->getStoreId();
+            $sync = $this->catalogProcessor->process($unSyncedProductIds, $order, [$orderStoreId]);
             $this->emulateFrontendArea($this->currentStoreId);
             return $sync;
         }
