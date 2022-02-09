@@ -360,7 +360,6 @@ class Processor extends Main
                 if (count($returnResponse['four_not_four_data'])) {
                     foreach ($returnResponse['four_not_four_data'] as $retryId) {
                         if ($this->isImmediateRetry($response, $this->entity, $visibleVariants.$retryId, $storeId)) {
-                            $this->setImmediateRetryAlreadyDone($this->entity, $visibleVariants.$retryId, $storeId);
                             $this->retryItems[$storeId][$retryId] = $retryId;
                         }
                     }
@@ -707,9 +706,16 @@ class Processor extends Main
      */
     protected function getProductsForCategorySync($data, $collectionItems, array $dataForCategorySync): array
     {
+        $storeId = $this->coreConfig->getStoreId();
+        $retryItems = [];
+        if ($this->retryItems && isset($this->retryItems[$storeId])) {
+            $retryItems = $this->retryItems[$storeId];
+        }
         foreach ($data as $dataItem) {
             foreach ($collectionItems as $item) {
-                if ($item->getId() == $dataItem['product_id']) {
+                if ($item->getId() == $dataItem['product_id'] &&
+                    !isset($retryItems[$item->getId()])
+                ) {
                     $dataForCategorySync[$dataItem['yotpo_id']] = $item;
                     break;
                 }
