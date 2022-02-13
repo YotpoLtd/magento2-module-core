@@ -27,11 +27,6 @@ class Processor extends Main
     protected $catalogData;
 
     /**
-     * @var array<int, int>
-     */
-    protected $runStoreIds = [];
-
-    /**
      * @var DateTime
      */
     protected $dateTime;
@@ -136,7 +131,6 @@ class Processor extends Main
      */
     public function process($forceSyncProducts = [], $order = null, $storeIds = [])
     {
-        $this->runStoreIds = [];
         try {
             if ($order) {
                 $allStores = [$order->getStoreId()];
@@ -150,10 +144,6 @@ class Processor extends Main
                     echo 'Catalog process started for store - ' .
                         $this->coreConfig->getStoreName($storeId) . PHP_EOL;
                 }
-                if (in_array($storeId, $this->runStoreIds)) {
-                    continue;
-                }
-                $this->runStoreIds[] = $storeId;
                 $this->emulateFrontendArea($storeId);
                 try {
                     $disabled = false;
