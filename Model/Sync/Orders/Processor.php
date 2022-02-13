@@ -165,10 +165,6 @@ class Processor extends Main
         $storeId = $order->getStoreId();
         $this->emulateFrontendArea((int)$storeId);
         $this->currentStoreId = $this->config->getStoreId();
-        if (!$this->config->isOrdersSyncActive()) {
-            $this->stopEnvironmentEmulation();
-            return;
-        }
         $this->yotpoOrdersLogger->info(
             __(
                 'Process order for Magento Store ID: %1, Name: %2',
