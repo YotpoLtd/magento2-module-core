@@ -4,7 +4,6 @@ namespace Yotpo\Core\Model\Sync\Orders;
 
 use Magento\Framework\DataObject;
 use Magento\Sales\Model\Order;
-use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderFactory;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\LocalizedException;
