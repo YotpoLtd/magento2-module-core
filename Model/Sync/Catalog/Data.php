@@ -203,9 +203,10 @@ class Data extends Main
         ];
         $syncItems = $productsId = $productsObject = [];
         foreach ($items as $item) {
-            $productsId[] = $item->getData('entity_id');
-            $productsObject[$item->getData('entity_id')] = $item;
-            $syncItems[$item->getData('entity_id')] = $this->attributeMapping($item);
+            $entityId = $item->getData('entity_id');
+            $productsId[] = $entityId;
+            $productsObject[$entityId] = $item;
+            $syncItems[$entityId] = $this->attributeMapping($item);
         }
         $visibleVariantsData = [];
         $parentIds = [];
