@@ -8,6 +8,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\ResponseFactory;
 use Magento\Framework\Webapi\Rest\Request;
+use Yotpo\Core\Model\Api\Response as YotpoResponse;
 use Yotpo\Core\Model\Api\Logger as YotpoApiLogger;
 
 /**
@@ -27,9 +28,19 @@ class Yclient
     protected $clientFactory;
 
     /**
+     * @var YotpoResponse
+     */
+    protected $yotpoResponse;
+
+    /**
      * @var YotpoApiLogger
      */
     protected $yotpoApiLogger;
+
+    /**
+     * @var YotpoRetry
+     */
+    protected $yotpoRetry;
 
     /**
      * @var array <mixed>
@@ -41,15 +52,20 @@ class Yclient
      * @param ClientFactory $clientFactory
      * @param ResponseFactory $responseFactory
      * @param YotpoApiLogger $yotpoApiLogger
+     * @param YotpoRetry $yotpoRetry
      */
     public function __construct(
         ClientFactory $clientFactory,
         ResponseFactory $responseFactory,
-        YotpoApiLogger $yotpoApiLogger
+        YotpoResponse $yotpoResponse,
+        YotpoApiLogger $yotpoApiLogger,
+        YotpoRetry $yotpoRetry
     ) {
         $this->clientFactory = $clientFactory;
         $this->responseFactory = $responseFactory;
+        $this->yotpoResponse = $yotpoResponse;
         $this->yotpoApiLogger = $yotpoApiLogger;
+        $this->yotpoRetry = $yotpoRetry;
     }
 
     /**
@@ -118,26 +134,22 @@ class Yclient
      * @param string $baseUrl
      * @param string $uriEndpoint
      * @param array<mixed> $options
+     * @param bool $shouldRetry
      * @return mixed
      */
     public function send(
         string $method,
         string $baseUrl,
         string $uriEndpoint,
-        Array $options = []
+        Array $options = [],
+        $shouldRetry = false
     ) {
-        $response = $this->doRequest($baseUrl, $uriEndpoint, $options, $method);
-        $status = $response->getStatusCode();
-        $responseBody = $response->getBody();
-        $responseReason = $response->getReasonPhrase();
-        $responseContent = $responseBody->getContents();
-        $this->yotpoApiLogger->info($responseContent, []);
-        $responseBody->rewind();
-        $responseObject = new \Magento\Framework\DataObject();
-        $responseObject->setData('status', $status);
-        $responseObject->setData('reason', $responseReason);
-        $responseObject->setData('response', json_decode($responseContent, true));
-        return $responseObject;
+        $requestClosure = $this->buildRequestClosure($baseUrl, $uriEndpoint, $options, $method);
+        if ($shouldRetry) {
+            return $this->yotpoRetry->retryRequest($requestClosure);
+        }
+
+        return $requestClosure();
     }
 
     /**
@@ -164,5 +176,31 @@ class Yclient
         if ($handlerInstance) {
             $this->yotpoApiLogger->setHandlers([$handlerInstance]);
         }
+    }
+
+    /**
+     * @param string $baseUrl
+     * @param string $uriEndpoint
+     * @param array $options
+     * @param string $method
+     * @return \Closure
+     */
+    private function buildRequestClosure(string $baseUrl, string $uriEndpoint, array $options, string $method)
+    {
+        return function () use ($baseUrl, $uriEndpoint, $options, $method) {
+            $response = $this->doRequest($baseUrl, $uriEndpoint, $options, $method);
+            $status = $response->getStatusCode();
+            $responseBody = $response->getBody();
+            $responseReason = $response->getReasonPhrase();
+            $responseContent = $responseBody->getContents();
+            $this->yotpoApiLogger->info($responseContent, []);
+            $responseBody->rewind();
+            $responseObject = new \Magento\Framework\DataObject();
+            $responseObject->setData('status', $status);
+            $responseObject->setData('reason', $responseReason);
+            $responseObject->setData('response', json_decode($responseContent, true));
+            $responseObject->setData('is_success', $this->yotpoResponse->validateResponse($response));
+            return $responseObject;
+        };
     }
 }

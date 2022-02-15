@@ -63,6 +63,7 @@ class Request
      * @param string $endPoint
      * @param array<mixed> $data
      * @param string $baseUrlKey
+     * @param bool $shouldRetry
      * @return DataObject
      * @throws NoSuchEntityException|LocalizedException
      */
@@ -70,7 +71,8 @@ class Request
         string $method,
         string $endPoint,
         array $data = [],
-        string $baseUrlKey = 'api'
+        string $baseUrlKey = 'api',
+        $shouldRetry = false
     ): DataObject {
         $appKey = $this->config->getConfig('app_key');
         $baseUrl = str_ireplace('{store_id}', $appKey, $this->config->getConfig($baseUrlKey));
@@ -86,14 +88,13 @@ class Request
             $options['json']    =   $data;
         }
         $options['headers'] = $this->prepareHeaders();
-        $response = $this->yotpoHttpclient->send($method, $baseUrl, $endPoint, $options);
-        $successFullResponse = $this->yotpoResponse->validateResponse($response);
+        $response = $this->yotpoHttpclient->send($method, $baseUrl, $endPoint, $options, $shouldRetry);
+        $successFullResponse = $response->getData('is_success');
         if (!$successFullResponse && $this->yotpoResponse->invalidToken($response) && $this->retryRequestInvalidToken) {
             $this->getAuthToken(true); //generate new token
             $this->retryRequestInvalidToken--;
             $this->send($method, $endPoint, $data);
         }
-        $response->setData('is_success', $successFullResponse);
         return $response;
     }
 
@@ -156,7 +157,7 @@ class Request
         $options['json']    =   $data;
         $options['headers'] = $this->prepareHeaders();
 
-        $response = $this->yotpoHttpclient->send($method, $baseUrl, $endPoint, $options);
+        $response = $this->yotpoHttpclient->send($method, $baseUrl, $endPoint, $options, $shouldRetry);
         $successFullResponse = $this->yotpoResponse->validateResponse($response);
         if (!$successFullResponse && $this->yotpoResponse->invalidToken($response) && $this->retryRequestInvalidToken) {
             $this->getAuthToken(true); //generate new token

@@ -26,6 +26,8 @@ class Config
 
     const UPDATE_SQL_LIMIT = 50000;
 
+    const YOTPO_RETRY_ATTEMPTS_AMOUNT = 3;
+
     const MODULE_NAME = 'Yotpo_Core';
 
     /**
@@ -460,6 +462,9 @@ class Config
         if ($responseCode === '000') {
             return true;
         }
+        if ($responseCode < 400) {
+            return true;
+        }
         if ($this->isNetworkRetriableResponse($responseCode)) {
             return true;
         }
@@ -472,7 +477,7 @@ class Config
      */
     public function isNetworkRetriableResponse(string $responseCode): bool
     {
-        return $responseCode < 400 || $responseCode == 429 || ($responseCode >= 500 && $responseCode <= 599);
+        return $responseCode == 429 || ($responseCode >= 500 && $responseCode <= 599);
     }
 
     /**
@@ -660,5 +665,13 @@ class Config
     public function getUpdateSqlLimit(): int
     {
         return self::UPDATE_SQL_LIMIT;
+    }
+
+    /**
+     * @return int
+     */
+    public function getYotpoRetryAttemptsAmount(): int
+    {
+        return self::YOTPO_RETRY_ATTEMPTS_AMOUNT;
     }
 }
