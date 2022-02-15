@@ -11,7 +11,7 @@ class Main
     /**
      * retrieve scope details
      * @param Observer $observer
-     * @return string[]
+     * @return array <mixed>
      */
     public function getScopes(Observer $observer): array
     {
@@ -32,7 +32,7 @@ class Main
         }
         $return['scope'] = $scope;
         $return['scopes'] = $scopes;
-        $return['scope_id'] = $scopeId;
+        $return['scope_id'] = (int) $scopeId;
         return $return;
     }
 }

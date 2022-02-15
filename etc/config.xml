@@ -57,13 +57,17 @@
             </mode>
         </csp>
         <crontab>
-            <yotpo>
+            <yotpo_core_orders_sync>
                 <jobs>
                     <yotpo_cron_core_orders_sync>
                         <schedule>
                             <cron_expr>*/2 * * * *</cron_expr>
                         </schedule>
                     </yotpo_cron_core_orders_sync>
+                </jobs>
+            </yotpo_core_orders_sync>
+            <yotpo_core_catalog_sync>
+                <jobs>
                     <yotpo_cron_core_products_sync>
                         <schedule>
                             <cron_expr>*/2 * * * *</cron_expr>
@@ -75,7 +79,7 @@
                         </schedule>
                     </yotpo_cron_core_category_sync>
                 </jobs>
-            </yotpo>
+            </yotpo_core_catalog_sync>
         </crontab>
     </default>
 </config>
