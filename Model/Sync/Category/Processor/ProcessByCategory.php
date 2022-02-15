@@ -157,6 +157,7 @@ class ProcessByCategory extends Main
 
         $currentTime = date('Y-m-d H:i:s');
         $batchSize = $this->config->getConfig('product_sync_limit');
+        $storeId = $this->config->getStoreId();
         $existColls = [];
         $collection = $this->getStoreCategoryCollection();
         if (!$retryCategoryIds) {
@@ -172,6 +173,17 @@ class ProcessByCategory extends Main
         $collection->getSelect()->limit($batchSize);
         $magentoCategories = [];
         foreach ($collection->getItems() as $category) {
+            if ($this->config->syncResetInProgress($storeId, 'catalog')) {
+                $this->yotpoCoreCatalogLogger->info(
+                    __(
+                        'Category sync is skipped because catalog sync
+                            reset is in progress - Magento Store ID: %1, Name: %2',
+                        $storeId,
+                        $storeId
+                    )
+                );
+                continue;
+            }
             $magentoCategories[$category->getId()] = $category;
         }
         $existingCollections = $this->getExistingCollectionIds(array_keys($magentoCategories));

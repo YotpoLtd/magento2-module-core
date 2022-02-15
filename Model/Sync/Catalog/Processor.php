@@ -267,6 +267,17 @@ class Processor extends Main
 
         $itemsToBeSyncedToYotpo = $items['sync_data'];
         foreach ($itemsToBeSyncedToYotpo as $itemEntityId => $yotpoFormatItemData) {
+            if ($this->coreConfig->syncResetInProgress($storeId, 'catalog')) {
+                $this->yotpoCatalogLogger->info(
+                    __(
+                        'Product sync is skipped because catalog sync reset is in progress
+                        - Magento Store ID: %1, Name: %2',
+                        $storeId,
+                        $this->coreConfig->getStoreName($storeId)
+                    )
+                );
+                continue;
+            }
             $itemRowId = $yotpoFormatItemData['row_id'];
             try {
                 unset($yotpoFormatItemData['row_id']);
