@@ -188,14 +188,13 @@ class Config
     protected $entity;
 
     /**
+     * Config constructor.
      * @param StoreManagerInterface $storeManager
      * @param ScopeConfigInterface $scopeConfig
      * @param ModuleListInterface $moduleList
      * @param EncryptorInterface $encryptor
      * @param WriterInterface $configWriter
      * @param ConfigResource $configResource
-     * @param ProductMetadataInterface $productMetadata
-     * @param Entity $entity
      */
     public function __construct(
         StoreManagerInterface $storeManager,
