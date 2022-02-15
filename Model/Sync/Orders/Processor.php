@@ -165,6 +165,10 @@ class Processor extends Main
         $storeId = $order->getStoreId();
         $this->emulateFrontendArea((int)$storeId);
         $this->currentStoreId = $this->config->getStoreId();
+        if (!$this->config->isOrdersSyncActive()) {
+            $this->stopEnvironmentEmulation();
+            return;
+        }
         $this->yotpoOrdersLogger->info(
             __(
                 'Process order for Magento Store ID: %1, Name: %2',
@@ -418,12 +422,14 @@ class Processor extends Main
      * @param Order $order
      * @param bool $isYotpoSyncedOrder
      * @param array<mixed> $yotpoSyncedOrders
+     * @param bool $realTImeSync
      * @return array<mixed>|DataObject
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function syncOrder($order, $isYotpoSyncedOrder, $yotpoSyncedOrders)
+    public function syncOrder($order, $isYotpoSyncedOrder, $yotpoSyncedOrders, $realTImeSync = false)
     {
+        $orderIds = [];
         $incrementId = $order->getIncrementId();
         $orderId = $order->getEntityId();
         $dataType = $isYotpoSyncedOrder ? 'update' : 'create';
@@ -468,7 +474,10 @@ class Processor extends Main
             if ($yotpoOrderId) {
                 $response->setData('yotpo_id', $yotpoOrderId);
             }
-
+            if ($realTImeSync) {
+                $orderIds[] = $orderId;
+                $this->updateOrderAttribute($orderIds, self::SYNCED_TO_YOTPO_ORDER, 1);
+            }
             $this->yotpoOrdersLogger->info('Orders sync - success - ' . $orderId, []);
         } elseif ($response->getData('status') == 409) {//order already exists in Yotpo and not in custom table
             $response = $this->yotpoCoreSync->sync(
@@ -482,7 +491,7 @@ class Processor extends Main
             if (array_key_exists($orderId, $yotpoSyncedOrders)) {
                 unset($yotpoSyncedOrders[$orderId]);
             }
-            $response = $this->syncOrder($order, false, $yotpoSyncedOrders);
+            $response = $this->syncOrder($order, false, $yotpoSyncedOrders, $realTImeSync);
         }
         if ($this->isCommandLineSync && !$immediateRetry) {
             // phpcs:ignore
@@ -502,7 +511,7 @@ class Processor extends Main
     {
         $unSyncedProductIds = $this->data->getUnSyncedProductIds($productIds, $order);
         if ($unSyncedProductIds) {
-            $this->catalogProcessor->setSyncByOrderFlag();
+            $this->catalogProcessor->setNormalSyncFlag(false);
             $sync = $this->catalogProcessor->process($unSyncedProductIds, $order);
             $this->emulateFrontendArea($this->currentStoreId);
             return $sync;

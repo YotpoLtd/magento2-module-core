@@ -28,11 +28,6 @@ class ProcessByCategory extends Main
     protected $categoryHelper;
 
     /**
-     * @var string|null
-     */
-    protected $entityIdFieldValue;
-
-    /**
      * @var CategorySyncRepositoryInterface
      */
     protected $categorySyncRepositoryInterface;
@@ -75,7 +70,6 @@ class ProcessByCategory extends Main
             $yotpoCoreCatalogLogger
         );
         $this->categoryHelper = $categoryHelper;
-        $this->entityIdFieldValue = $this->config->getEavRowIdFieldName();
         $this->categorySyncRepositoryInterface = $categorySyncRepositoryInterface;
     }
 
@@ -276,15 +270,6 @@ class ProcessByCategory extends Main
     }
 
     /**
-     * @param DataObject $response
-     * @return bool
-     */
-    public function checkForCollectionExistsError(DataObject $response): bool
-    {
-        return '409' == $response->getData('status');
-    }
-
-    /**
      * @return void
      * @throws NoSuchEntityException
      * @throws LocalizedException
@@ -361,58 +346,6 @@ class ProcessByCategory extends Main
         $collectionData['entityLog'] = 'catalog';
         $url = $this->config->getEndpoint('collections');
         return $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $url, $collectionData);
-    }
-
-    /**
-     * @param Category $category
-     * @param int $yotpoId
-     * @return mixed|void
-     * @throws NoSuchEntityException
-     */
-    public function syncExistingCollection(Category $category, int $yotpoId)
-    {
-        if (!$yotpoId) {
-            return ;
-        }
-        $collectionData                 =   $this->data->prepareData($category);
-        $collectionData['entityLog']    = 'catalog';
-        $url    =   $this->config->getEndpoint('collections_update', ['{yotpo_collection_id}'], [$yotpoId]);
-        $response =  $this->yotpoCoreApiSync->sync(\Zend_Http_Client::PATCH, $url, $collectionData);
-        $categoryId = $category->getId();
-        $storeId = $category->getStoreId();
-        if ($this->isImmediateRetry($response, $this->entity, $categoryId, $storeId)) {
-            $this->setImmediateRetryAlreadyDone($this->entity, $categoryId, $storeId);
-            $existingCollection = $this->getExistingCollectionIds([$categoryId]);
-            if (!$existingCollection) {
-                $response = $this->syncAsNewCollection($category);
-            } else {
-                $yotpoId = array_key_exists($categoryId, $existingCollection) ?
-                    $existingCollection[$categoryId]  : 0;
-                if ($yotpoId) {
-                    $response = $this->syncExistingCollection($category, $yotpoId);
-                    $response->setData('yotpo_id', $yotpoId);
-                }
-            }
-        }
-        return $response;
-    }
-
-    /**
-     * @param int $categoryRowId
-     * @return void
-     * @throws NoSuchEntityException
-     */
-    public function updateCategoryAttribute($categoryRowId)
-    {
-        $dataToInsertOrUpdate = [];
-        $data   =   [
-            'attribute_id'  =>  $this->data->getAttributeId('synced_to_yotpo_collection'),
-            'store_id'      =>  $this->config->getStoreid(),
-            $this->entityIdFieldValue => $categoryRowId,
-            'value'         =>  1
-        ];
-        $dataToInsertOrUpdate[] =   $data;
-        $this->insertOnDuplicate('catalog_category_entity_int', $dataToInsertOrUpdate);
     }
 
     /**
