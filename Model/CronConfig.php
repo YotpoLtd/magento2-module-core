@@ -19,22 +19,23 @@ class CronConfig extends Value
     /**
      * Cron expression configuration path
      */
-    const CRON_STRING_PATH = 'crontab/yotpo/jobs/yotpo_cron_core_products_sync/schedule/cron_expr';
+    const CRON_STRING_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync/schedule/cron_expr';
 
     /**
      * Cron expression model path
      */
-    const CRON_MODEL_PATH = 'crontab/yotpo/jobs/yotpo_cron_core_products_sync/run/model';
+    const CRON_MODEL_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync/run/model';
 
     /**
      * Cron expression configuration path
      */
-    const CRON_STRING_PATH_CATEGORY = 'crontab/yotpo/jobs/yotpo_cron_core_category_sync/schedule/cron_expr';
+    // phpcs:ignore
+    const CRON_STRING_PATH_CATEGORY = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_category_sync/schedule/cron_expr';
 
     /**
      * Cron expression model path
      */
-    const CRON_MODEL_PATH_CATEGORY = 'crontab/yotpo/jobs/yotpo_cron_core_category_sync/run/model';
+    const CRON_MODEL_PATH_CATEGORY = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_category_sync/run/model';
 
     /**
      * @var ValueFactory
