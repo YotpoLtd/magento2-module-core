@@ -59,11 +59,6 @@ class Main extends AbstractJobs
     protected $entity = 'products';
 
     /**
-     * @var bool
-     */
-    private $syncByOrderFlag = false;
-
-    /**
      * @var boolean
      */
     protected $normalSync = true;
