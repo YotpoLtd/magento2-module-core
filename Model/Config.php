@@ -26,6 +26,8 @@ class Config
 
     const UPDATE_SQL_LIMIT = 50000;
 
+    const YOTPO_RETRY_ATTEMPTS = 3;
+
     const MODULE_NAME = 'Yotpo_Core';
 
     /**
@@ -648,5 +650,13 @@ class Config
     public function getUpdateSqlLimit(): int
     {
         return self::UPDATE_SQL_LIMIT;
+    }
+
+    /**
+     * @return int
+     */
+    public function getYotpoRetryAttempts(): int
+    {
+        return self::YOTPO_RETRY_ATTEMPTS;
     }
 }
