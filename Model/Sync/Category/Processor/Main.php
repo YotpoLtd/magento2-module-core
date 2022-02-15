@@ -4,6 +4,7 @@ namespace Yotpo\Core\Model\Sync\Category\Processor;
 
 use Magento\Catalog\Model\Category;
 use Magento\Framework\DataObject;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Webapi\Rest\Request;
 use Yotpo\Core\Model\AbstractJobs;
@@ -51,6 +52,11 @@ class Main extends AbstractJobs
     protected $entity = 'category';
 
     /**
+     * @var string|null
+     */
+    protected $entityIdFieldValue;
+
+    /**
      * Main constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -74,6 +80,7 @@ class Main extends AbstractJobs
         $this->yotpoCoreApiSync             =   $yotpoCoreApiSync;
         $this->categoryCollectionFactory    =   $categoryCollectionFactory;
         $this->yotpoCoreCatalogLogger       =   $yotpoCoreCatalogLogger;
+        $this->entityIdFieldValue           =   $this->config->getEavRowIdFieldName();
         parent::__construct($appEmulation, $resourceConnection);
     }
 
@@ -107,6 +114,8 @@ class Main extends AbstractJobs
     /**
      * @param array<mixed> $categoryIds
      * @return array<mixed>
+     * @throws NoSuchEntityException
+     * @throws LocalizedException
      */
     public function getExistingCollectionIds(array $categoryIds): array
     {
@@ -136,6 +145,82 @@ class Main extends AbstractJobs
             }
         }
         return $yotpoCollections;
+    }
+
+    /**
+     * @param array<mixed> $categoryIds
+     * @return array<mixed>
+     * @throws NoSuchEntityException
+     * @throws LocalizedException
+     */
+    public function getExistingCollection(array $categoryIds): array
+    {
+        if (!$categoryIds) {
+            return [];
+        }
+        $yotpoCollections = [];
+        $categoryIds    =   array_chunk($categoryIds, 100);
+        foreach ($categoryIds as $chunk) {
+            $url                =   $this->config->getEndpoint('collections');
+            $data               =   ['external_ids' => implode(',', $chunk)];
+            $data['entityLog']  =   'catalog';
+            $response           =   $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
+            $response           =   $response->getData('response');
+            if (!$response) {
+                continue;
+            }
+            $collections    =   is_array($response) && isset($response['collections']) ? $response['collections'] : [];
+            $count = count($collections);
+            for ($i=0; $i<$count; $i++) {
+                if (is_array($collections[$i])
+                    && isset($collections[$i]['external_id'])
+                    && isset($collections[$i]['yotpo_id'])
+                ) {
+                    $yotpoCollections[$collections[$i]['external_id']]  =   [
+                        'yotpo_id' => $collections[$i]['yotpo_id'],
+                        'name' => $collections[$i]['name']
+                    ];
+                }
+            }
+        }
+        return $yotpoCollections;
+    }
+
+    /**
+     * @param Category $category
+     * @param int $yotpoId
+     * @return mixed|void
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function syncExistingCollection(Category $category, int $yotpoId)
+    {
+        if (!$yotpoId) {
+            return ;
+        }
+        $collectionData                 =   $this->data->prepareData($category);
+        $collectionData['entityLog']    = 'catalog';
+        $url    =   $this->config->getEndpoint('collections_update', ['{yotpo_collection_id}'], [$yotpoId]);
+        $response =  $this->yotpoCoreApiSync->sync(\Zend_Http_Client::PATCH, $url, $collectionData);
+        $categoryId = $category->getId();
+        $storeId = $category->getStoreId();
+        if ($this->isImmediateRetry($response, $this->entity, $categoryId, $storeId)) {
+            $this->setImmediateRetryAlreadyDone($this->entity, $categoryId, $storeId);
+            $existingCollection = $this->getExistingCollectionIds([$categoryId]);
+            if (!$existingCollection) {
+                $response = $this->syncAsNewCollection($category);
+            } else {
+                $yotpoId = array_key_exists($categoryId, $existingCollection) ?
+                    $existingCollection[$categoryId]  : 0;
+                if ($yotpoId) {
+                    $response = $this->syncExistingCollection($category, $yotpoId);
+                }
+            }
+        }
+        if ($yotpoId) {
+            $response->setData('yotpo_id', $yotpoId);
+        }
+        return $response;
     }
 
     /**
@@ -296,5 +381,48 @@ class Main extends AbstractJobs
                 $responseData['collection']['yotpo_id'] : 0;
         }
         return $yotpoId;
+    }
+
+    /**
+     * @param array<mixed> $yotpoCollections
+     * @param int|null $catId
+     * @return mixed|string
+     */
+    public function getYotpoIdFromCollectionArray($yotpoCollections, $catId)
+    {
+        $return = '';
+        if (is_array($yotpoCollections)
+            && $catId && isset($yotpoCollections[$catId])
+        ) {
+            $return = $yotpoCollections[$catId];
+        }
+        return $return;
+    }
+
+    /**
+     * @param int $categoryRowId
+     * @return void
+     * @throws NoSuchEntityException
+     */
+    public function updateCategoryAttribute($categoryRowId)
+    {
+        $dataToInsertOrUpdate = [];
+        $data   =   [
+            'attribute_id'  =>  $this->data->getAttributeId('synced_to_yotpo_collection'),
+            'store_id'      =>  $this->config->getStoreid(),
+            $this->entityIdFieldValue => $categoryRowId,
+            'value'         =>  1
+        ];
+        $dataToInsertOrUpdate[] =   $data;
+        $this->insertOnDuplicate('catalog_category_entity_int', $dataToInsertOrUpdate);
+    }
+
+    /**
+     * @param DataObject $response
+     * @return bool
+     */
+    public function checkForCollectionExistsError(DataObject $response): bool
+    {
+        return '409' == $response->getData('status');
     }
 }
