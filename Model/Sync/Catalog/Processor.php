@@ -42,6 +42,11 @@ class Processor extends Main
     protected $productSyncRepositoryInterface;
 
     /**
+     * @var boolean
+     */
+    protected $normalSync = true;
+
+    /**
      * @var array<mixed>
      */
     protected $retryItems = [];
@@ -109,6 +114,7 @@ class Processor extends Main
         try {
             $storeId = $this->coreConfig->getStoreId();
             $collection = $this->getCollectionForSync($unSyncedProductIds);
+            $this->setSyncByOrderFlag();
             $this->syncItems($collection->getItems(), $storeId);
             return true;
         } catch (NoSuchEntityException $e) {
@@ -183,7 +189,7 @@ class Processor extends Main
                             $this->coreConfig->getStoreName($storeId)
                         )
                     );
-                    if ($this->normalSync) {
+                    if (!$this->getSyncByOrderFlag()) {
                         $this->processDeleteData();
                         $this->processUnAssignData();
                     }
