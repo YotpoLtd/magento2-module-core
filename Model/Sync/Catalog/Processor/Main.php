@@ -64,6 +64,11 @@ class Main extends AbstractJobs
     private $syncByOrderFlag = false;
 
     /**
+     * @var boolean
+     */
+    protected $normalSync = true;
+
+    /**
      * AbstractJobs constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -606,18 +611,11 @@ class Main extends AbstractJobs
     }
 
     /**
+     * @param bool $flag
      * @return void
      */
-    public function setSyncByOrderFlag()
+    public function setNormalSyncFlag($flag)
     {
-        $this->syncByOrderFlag = true;
-    }
-
-    /**
-     * @return bool
-     */
-    public function getSyncByOrderFlag()
-    {
-        return $this->syncByOrderFlag;
+        $this->normalSync = $flag;
     }
 }
