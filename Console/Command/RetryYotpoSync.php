@@ -127,6 +127,9 @@ class RetryYotpoSync extends Command
             $this->resyncAllEntities($output);
         } else {
             $yotpoEntity = $input->getOption(self::YOTPO_ENTITY);
+            if (is_array($yotpoEntity)) {
+                $yotpoEntity = implode('', $yotpoEntity);
+            }
             switch ($yotpoEntity) {
                 case self::YOTPO_ENTITY_CATEGORY:
                     $this->categoryProcessor->retryCategorySync();
