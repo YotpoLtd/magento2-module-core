@@ -384,22 +384,6 @@ class Main extends AbstractJobs
     }
 
     /**
-     * @param array<mixed> $yotpoCollections
-     * @param int|null $catId
-     * @return mixed|string
-     */
-    public function getYotpoIdFromCollectionArray($yotpoCollections, $catId)
-    {
-        $return = '';
-        if (is_array($yotpoCollections)
-            && $catId && isset($yotpoCollections[$catId])
-        ) {
-            $return = $yotpoCollections[$catId];
-        }
-        return $return;
-    }
-
-    /**
      * @param int $categoryRowId
      * @return void
      * @throws NoSuchEntityException
