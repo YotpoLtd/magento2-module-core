@@ -451,9 +451,7 @@ class Config
         } elseif (!is_array($yotpoId)) {
             $yotpoId = ['yotpo_id' => $yotpoId];
         }
-        if ($yotpoId['yotpo_id']
-            && $responseCode == '404'
-        ) {
+        if ($yotpoId['yotpo_id'] && $responseCode == '404') {
             return false;
         }
         if (!$responseCode) {
