@@ -427,7 +427,7 @@ class Main extends AbstractJobs
 
                 if (!$this->getImmediateRetryAlreadyDone(
                     $this->entity,
-                    (int)$productId,
+                    $visibleVariants.(int)$productId,
                     $this->coreConfig->getStoreId()
                 )) {
                     $existingProduct = $this->getExistingProductsFromAPI($url, $productId, 'products');
@@ -440,6 +440,11 @@ class Main extends AbstractJobs
                         );
                         $method = $this->coreConfig->getProductSyncMethod('updateProduct');
                     }
+                    $this->setImmediateRetryAlreadyDone(
+                        $this->entity,
+                        $visibleVariants.(int)$productId,
+                        $this->coreConfig->getStoreId()
+                    );
                 }
             }
 
@@ -452,7 +457,7 @@ class Main extends AbstractJobs
 
                 if (!$this->getImmediateRetryAlreadyDone(
                     $this->entity,
-                    (int)$productId,
+                    $visibleVariants.(int)$productId,
                     $this->coreConfig->getStoreId()
                 )) {
                     $existingVariant = $this->getExistingProductsFromAPI($url, $productId, 'variants');
@@ -465,6 +470,11 @@ class Main extends AbstractJobs
                         );
                         $method = $this->coreConfig->getProductSyncMethod('updateProductVariant');
                     }
+                    $this->setImmediateRetryAlreadyDone(
+                        $this->entity,
+                        $visibleVariants.(int)$productId,
+                        $this->coreConfig->getStoreId()
+                    );
                 }
             }
         }
