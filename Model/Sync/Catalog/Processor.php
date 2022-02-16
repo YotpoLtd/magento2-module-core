@@ -157,6 +157,7 @@ class Processor extends Main
                                 $this->coreConfig->getStoreName($storeId) . PHP_EOL;
                         }
                     }
+
                     if ($disabled) {
                         $this->stopEnvironmentEmulation();
                         continue;
@@ -178,7 +179,11 @@ class Processor extends Main
                         $forceSyncProductIds = $forceSyncProducts[$storeId] ?? $forceSyncProducts;
                         $collection = $this->getCollectionForSync($forceSyncProductIds);
                         $this->isImmediateRetry = false;
-                        $this->syncItems($collection->getItems(), $storeId);
+
+                        $isSuccessfulSyncAttempt = $this->syncItems($collection->getItems(), $storeId);
+                        if (!$isSuccessfulSyncAttempt && !$this->normalSync) {
+                            $unSyncedStoreIds[] = $storeId;
+                        }
                     } else {
                         $this->yotpoCatalogLogger->info(
                             __('Product Sync - Stopped - Magento Store ID: %1', $storeId)
@@ -215,7 +220,7 @@ class Processor extends Main
      * @param array <mixed> $collectionItems
      * @param int $storeId
      * @param boolean $visibleVariants
-     * @return void
+     * @return boolean|void
      * @throws NoSuchEntityException
      */
     public function syncItems($collectionItems, $storeId, $visibleVariants = false)
@@ -237,29 +242,24 @@ class Processor extends Main
                 $rowId = $itemData['row_id'];
                 unset($itemData['row_id']);
 
-                if ($yotpoData
-                    && array_key_exists($itemId, $yotpoData)
-                    && !$this->coreConfig->canResync(
-                        $yotpoData[$itemId]['response_code'],
+                if ($yotpoData && array_key_exists($itemId, $yotpoData) && $this->normalSync) {
+                    if (!$this->coreConfig->canResync($yotpoData[$itemId]['response_code'],
                         $yotpoData[$itemId],
-                        $this->isCommandLineSync
-                    )
-                ) {
-                    $tempSqlDataIntTable = [
-                        'attribute_id' => $attributeId,
-                        'store_id' => $storeId,
-                        'value' => 1,
-                        $this->entityIdFieldValue => $rowId
-                    ];
-                    $sqlDataIntTable = [];
-                    $sqlDataIntTable[] = $tempSqlDataIntTable;
-                    if ($this->normalSync) {
+                        $this->isCommandLineSync)) {
+                        $tempSqlDataIntTable = [
+                            'attribute_id' => $attributeId,
+                            'store_id' => $storeId,
+                            'value' => 1,
+                            $this->entityIdFieldValue => $rowId
+                        ];
+                        $sqlDataIntTable = [];
+                        $sqlDataIntTable[] = $tempSqlDataIntTable;
                         $this->insertOnDuplicate(
                             'catalog_product_entity_int',
                             $sqlDataIntTable
                         );
+                        continue;
                     }
-                    continue;
                 }
 
                 $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData, $visibleVariants);
@@ -271,15 +271,35 @@ class Processor extends Main
                     }
                 }
 
+                $apiProductAction = $apiParam['method'];
+                $storeName = $this->coreConfig->getStoreName($storeId);
                 $this->yotpoCatalogLogger->info(
                     __(
                         'Data ready to sync - Method: %1 - Magento Store ID: %2, Name: %3',
-                        $apiParam['method'],
+                        $apiProductAction,
                         $storeId,
-                        $this->coreConfig->getStoreName($storeId)
+                        $storeName
                     )
                 );
                 $response = $this->processRequest($apiParam, $itemData);
+
+                $productResponseStatusCode = $response->getData('status');
+                if ($productResponseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE) {
+                    $this->yotpoCatalogLogger->info(
+                        __(
+                            'Got HTTP 400 on Product request - Store ID: %1, Store Name: %2, API Product Action: %3, Product Row ID: %4',
+                            $storeId,
+                            $storeName,
+                            $apiProductAction,
+                            $rowId
+                        )
+                    );
+
+                    if ($apiProductAction == 'createProduct') {
+                        $minimalProductRequestData = $this->catalogData->getMinimalProductRequestData($itemData);
+                        $response = $this->processRequest($apiParam, $minimalProductRequestData);
+                    }
+                }
 
                 $lastSyncTime = $this->getCurrentTime();
                 $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
@@ -397,11 +417,19 @@ class Processor extends Main
                 );
                 $collection = $this->getCollectionForSync($this->retryItems[$storeId]);
                 $this->isImmediateRetry = true;
-                $this->syncItems($collection->getItems(), $storeId, $visibleVariants);
+                $isRetryAttemptSuccessful = $this->syncItems($collection->getItems(), $storeId, $visibleVariants);
+
+                if (!$this->normalSync && !$isRetryAttemptSuccessful) {
+                    return false;
+                }
             }
 
             if ($visibleVariantsDataValues && !$visibleVariants) {
                 $this->syncItems($visibleVariantsDataValues, $storeId, true);
+            }
+
+            if (!$this->normalSync) {
+                return true;
             }
         } else {
             $this->yotpoCatalogLogger->info(
