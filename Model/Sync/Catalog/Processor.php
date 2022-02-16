@@ -350,7 +350,6 @@ class Processor extends Main
                 if (count($returnResponse['four_not_four_data'])) {
                     foreach ($returnResponse['four_not_four_data'] as $retryId) {
                         if ($this->isImmediateRetry($response, $this->entity, $visibleVariants.$retryId, $storeId)) {
-                            $this->setImmediateRetryAlreadyDone($this->entity, $visibleVariants.$retryId, $storeId);
                             $this->retryItems[$storeId][$retryId] = $retryId;
                         }
                     }
