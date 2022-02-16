@@ -27,11 +27,6 @@ class Processor extends Main
     protected $catalogData;
 
     /**
-     * @var array<int, int>
-     */
-    protected $runStoreIds = [];
-
-    /**
      * @var DateTime
      */
     protected $dateTime;
@@ -45,11 +40,6 @@ class Processor extends Main
      * @var ProductSyncRepositoryInterface
      */
     protected $productSyncRepositoryInterface;
-
-    /**
-     * @var boolean
-     */
-    protected $normalSync = true;
 
     /**
      * @var array<mixed>
@@ -119,7 +109,6 @@ class Processor extends Main
         try {
             $storeId = $this->coreConfig->getStoreId();
             $collection = $this->getCollectionForSync($unSyncedProductIds);
-            $this->setSyncByOrderFlag();
             $this->syncItems($collection->getItems(), $storeId);
             return true;
         } catch (NoSuchEntityException $e) {
@@ -136,7 +125,6 @@ class Processor extends Main
      */
     public function process($forceSyncProducts = [], $order = null, $storeIds = [])
     {
-        $this->runStoreIds = [];
         try {
             if ($order) {
                 $allStores = [$order->getStoreId()];
@@ -150,10 +138,6 @@ class Processor extends Main
                     echo 'Catalog process started for store - ' .
                         $this->coreConfig->getStoreName($storeId) . PHP_EOL;
                 }
-                if (in_array($storeId, $this->runStoreIds)) {
-                    continue;
-                }
-                $this->runStoreIds[] = $storeId;
                 $this->emulateFrontendArea($storeId);
                 try {
                     $disabled = false;
@@ -199,7 +183,7 @@ class Processor extends Main
                             $this->coreConfig->getStoreName($storeId)
                         )
                     );
-                    if (!$this->getSyncByOrderFlag()) {
+                    if ($this->normalSync) {
                         $this->processDeleteData();
                         $this->processUnAssignData();
                     }
