@@ -75,6 +75,7 @@ class Processor extends Main
      * @param YotpoResource $yotpoResource ,
      * @param CategorySyncProcessor $categorySyncProcessor
      * @param ProductSyncRepositoryInterface $productSyncRepositoryInterface
+     * @param SyncDataMain $syncDataMain
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -87,7 +88,8 @@ class Processor extends Main
         DateTime $dateTime,
         YotpoResource $yotpoResource,
         CategorySyncProcessor $categorySyncProcessor,
-        ProductSyncRepositoryInterface $productSyncRepositoryInterface
+        ProductSyncRepositoryInterface $productSyncRepositoryInterface,
+        SyncDataMain $syncDataMain
     ) {
         parent::__construct(
             $appEmulation,
@@ -96,12 +98,14 @@ class Processor extends Main
             $yotpoCatalogLogger,
             $yotpoResource,
             $collectionFactory,
-            $coreSync
+            $coreSync,
+            $syncDataMain
         );
         $this->catalogData = $catalogData;
         $this->dateTime = $dateTime;
         $this->categorySyncProcessor = $categorySyncProcessor;
         $this->productSyncRepositoryInterface = $productSyncRepositoryInterface;
+        $this->syncDataMain = $syncDataMain;
     }
 
     /**
@@ -749,5 +753,4 @@ class Processor extends Main
         }
         return $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
     }
-
 }
