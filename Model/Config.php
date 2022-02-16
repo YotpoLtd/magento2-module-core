@@ -456,6 +456,9 @@ class Config
         ) {
             return false;
         }
+        if ($responseCode === '000') {
+            return true;
+        }
         if (!$responseCode || $responseCode < 400 || $responseCode == 429 ||
             ($responseCode >= 500 && $responseCode <= 599)
         ) {
