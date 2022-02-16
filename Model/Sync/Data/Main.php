@@ -71,33 +71,37 @@ class Main
      * @param array <mixed> $items
      * @return mixed
      */
-    public function getProductIds($productIds, $storeId, $items)
+    public function getMissingItemIdsInProductsSyncTable($itemIdsInCartToYotpo, $storeId, $visibleItemIdToProductMap)
     {
-        $productIds = array_unique($productIds);
+        $itemIdsInCartToYotpo = array_unique($itemIdsInCartToYotpo);
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('yotpo_product_sync');
-        $products = $connection->select()
+        $productSyncTableRecords = $connection->select()
             ->from($table, ['product_id', 'yotpo_id', 'yotpo_id_parent', 'visible_variant_yotpo_id'])
-            ->where('product_id IN(?) ', $productIds)
+            ->where('product_id IN(?) ', $itemIdsInCartToYotpo)
             ->where('store_id=(?)', $storeId);
-        $products = $connection->fetchAssoc($products, []);
-        foreach ($products as $product) {
-            $orderItemProduct = $items[$product['product_id']] ?? null;
+        $productSyncTableRecords = $connection->fetchAssoc($productSyncTableRecords, []);
+        foreach ($productSyncTableRecords as $productSyncTableRecord) {
+            $orderItemProduct = $visibleItemIdToProductMap[$productSyncTableRecord['product_id']] ?? null;
             $yotpoIdKey = 'yotpo_id';
             if ($orderItemProduct
                 && $orderItemProduct->isVisibleInSiteVisibility()
                 && $orderItemProduct->getTypeId() == 'simple'
-                && $product['yotpo_id_parent']
+                && $productSyncTableRecord['yotpo_id_parent']
             ) {
                 $yotpoIdKey = 'visible_variant_yotpo_id';
             }
 
-            if ($product[$yotpoIdKey]) {
-                $position = array_search($product['product_id'], $productIds);
-                array_splice($productIds, (int)$position, 1);
+
+            if ($productSyncTableRecord[$yotpoIdKey]) {
+                $position = array_search($productSyncTableRecord['product_id'], $itemIdsInCartToYotpo);
+
+                if ($position !== false) {
+                    array_splice($itemIdsInCartToYotpo, (int)$position, 1);
+                }
             }
         }
-        return $productIds;
+        return $itemIdsInCartToYotpo;
     }
 
     /**

@@ -771,23 +771,23 @@ class Processor extends Main
     }
 
     /**
-     * Get the productIds od the products that are not synced
+     * Get the productIds of the items in the cart that are not synced
      *
      * @param array <mixed> $productIds
-     * @param array $visibleItems
+     * @param array $visibleItemsInCart
      * @param string $storeId
      * @return mixed
      */
-    public function getUnSyncedProductIds($productIds, $visibleItems, $storeId)
+    public function getUnSyncedProductIds($cartItemIdsToYotpo, $visibleItemsInCart, $storeId)
     {
-        $itemsMap = [];
-        foreach ($visibleItems as $visibleItem) {
+        $visibleItemIdToProductMap = [];
+        foreach ($visibleItemsInCart as $visibleItem) {
             $product = $visibleItem->getProduct();
             if (!$product) {
                 continue;
             }
-            $itemsMap[$product->getId()] = $product;
+            $visibleItemIdToProductMap[$product->getId()] = $product;
         }
-        return $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
+        return $this->syncDataMain->getMissingItemIdsInProductsSyncTable($cartItemIdsToYotpo, $storeId, $visibleItemIdToProductMap);
     }
 }
