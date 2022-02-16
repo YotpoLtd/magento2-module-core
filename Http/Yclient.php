@@ -9,6 +9,7 @@ use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\ResponseFactory;
 use Magento\Framework\Webapi\Rest\Request;
 use Yotpo\Core\Model\Api\Logger as YotpoApiLogger;
+use Yotpo\Core\Model\Api\Response as YotpoResponse;
 
 /**
  * Class Yclient to manage API client communication
@@ -27,6 +28,11 @@ class Yclient
     protected $clientFactory;
 
     /**
+     * @var YotpoResponse
+     */
+    protected $yotpoResponse;
+
+    /**
      * @var YotpoApiLogger
      */
     protected $yotpoApiLogger;
@@ -40,15 +46,18 @@ class Yclient
      * Yclient constructor.
      * @param ClientFactory $clientFactory
      * @param ResponseFactory $responseFactory
+     * @param YotpoResponse $yotpoResponse
      * @param YotpoApiLogger $yotpoApiLogger
      */
     public function __construct(
         ClientFactory $clientFactory,
         ResponseFactory $responseFactory,
+        YotpoResponse $yotpoResponse,
         YotpoApiLogger $yotpoApiLogger
     ) {
         $this->clientFactory = $clientFactory;
         $this->responseFactory = $responseFactory;
+        $this->yotpoResponse = $yotpoResponse;
         $this->yotpoApiLogger = $yotpoApiLogger;
     }
 
@@ -135,6 +144,7 @@ class Yclient
         $responseBody->rewind();
         $responseObject = new \Magento\Framework\DataObject();
         $responseObject->setData('status', $status);
+        $responseObject->setData('is_success', $this->yotpoResponse->validateResponse($response));
         $responseObject->setData('reason', $responseReason);
         $responseObject->setData('response', json_decode($responseContent, true));
         return $responseObject;
