@@ -462,12 +462,19 @@ class Config
         if ($responseCode === '000') {
             return true;
         }
-        if ($responseCode < 400 || $responseCode == 429 ||
-            ($responseCode >= 500 && $responseCode <= 599)
-        ) {
+        if ($this->isNetworkRetriableResponse($responseCode)) {
             return true;
         }
         return false;
+    }
+
+    /**
+     * @param string $responseCode
+     * @return bool
+     */
+    public function isNetworkRetriableResponse(string $responseCode): bool
+    {
+        return $responseCode < 400 || $responseCode == 429 || ($responseCode >= 500 && $responseCode <= 599);
     }
 
     /**
