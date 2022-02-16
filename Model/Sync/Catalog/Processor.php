@@ -698,21 +698,31 @@ class Processor extends Main
 
     /**
      * Prepare products to sync their category data
-     * @param array<mixed> $data
-     * @param array<mixed> $collectionItems
+     * @param array<mixed> $productsSyncAttempt
+     * @param array<mixed> $collectionItemsToSync
      * @param array<mixed> $dataForCategorySync
      * @return array<mixed>
      */
-    protected function getProductsForCategorySync($data, $collectionItems, array $dataForCategorySync): array
+    protected function getProductsForCategorySync($productsSyncAttempt, $collectionItemsToSync, array $dataForCategorySync): array
     {
-        foreach ($data as $dataItem) {
-            foreach ($collectionItems as $item) {
-                if ($item->getId() == $dataItem['product_id']) {
-                    $dataForCategorySync[$dataItem['yotpo_id']] = $item;
-                    break;
-                }
+        $storeId = $this->coreConfig->getStoreId();
+        $retryItems = [];
+        if ($this->retryItems && isset($this->retryItems[$storeId])) {
+            $retryItems = $this->retryItems[$storeId];
+        }
+
+        $collectionItemIdToCollectionItemMap = [];
+        foreach ($collectionItemsToSync as $itemToSync) {
+            $collectionItemIdToCollectionItemMap[$itemToSync->getId()] = $itemToSync;
+        }
+
+        foreach ($productsSyncAttempt as $productSyncAttempt) {
+            $magentoProductId = $productSyncAttempt['product_id'];
+            if (!isset($retryItems[$magentoProductId])) {
+                $dataForCategorySync[$magentoProductId] = $collectionItemIdToCollectionItemMap[$magentoProductId];
             }
         }
+
         return $dataForCategorySync;
     }
 
