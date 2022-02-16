@@ -105,24 +105,6 @@ class Processor extends Main
     }
 
     /**
-     * Sync products during checkout
-     * @param null|array <mixed> $unSyncedProductIds
-     * @return bool
-     */
-    public function processCheckoutProducts($unSyncedProductIds)
-    {
-        $this->normalSync = false;
-        try {
-            $storeId = $this->coreConfig->getStoreId();
-            $collection = $this->getCollectionForSync($unSyncedProductIds);
-            $this->syncItems($collection->getItems(), $storeId);
-            return true;
-        } catch (NoSuchEntityException $e) {
-            return false;
-        }
-    }
-
-    /**
      * Process the Catalog Api
      * @param array <mixed> $forceSyncProducts
      * @param array $storeIds
