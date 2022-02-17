@@ -52,7 +52,7 @@ class OrdersSyncRepository implements OrdersSyncRepositoryInterface
     {
         $orders = $this->yotpoOrdersSyncCollectionFactory->create();
         $orders
-            ->addFieldToFilter('response_code', ['gteq' => \Yotpo\Core\Model\Config::RETRY_RESPONSE_CODE_FROM])
+            ->addFieldToFilter('response_code', ['gteq' => \Yotpo\Core\Model\Config::BAD_REQUEST_RESPONSE_CODE])
             ->addFieldToSelect(['order_id']);
         return $orders->getItems();
     }

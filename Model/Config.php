@@ -36,7 +36,7 @@ class Config
     const METHOD_PATCH = 'PATCH';
     const CUSTOM_RESPONSE_DATA = '000';
     const SUCCESS_RESPONSE_CODE = '200';
-    const RETRY_RESPONSE_CODE_FROM = 400;
+    const BAD_REQUEST_RESPONSE_CODE = 400;
 
     /**
      * @var mixed[]
@@ -451,17 +451,28 @@ class Config
         } elseif (!is_array($yotpoId)) {
             $yotpoId = ['yotpo_id' => $yotpoId];
         }
-        if ($yotpoId['yotpo_id']
-            && $responseCode == '404'
-        ) {
+        if ($yotpoId['yotpo_id'] && $responseCode == '404') {
             return false;
         }
-        if (!$responseCode || $responseCode < 400 || $responseCode == 429 ||
-            ($responseCode >= 500 && $responseCode <= 599)
-        ) {
+        if (!$responseCode) {
+            return true;
+        }
+        if ($responseCode === '000') {
+            return true;
+        }
+        if ($this->isNetworkRetriableResponse($responseCode)) {
             return true;
         }
         return false;
+    }
+
+    /**
+     * @param string $responseCode
+     * @return bool
+     */
+    public function isNetworkRetriableResponse(string $responseCode): bool
+    {
+        return $responseCode < 400 || $responseCode == 429 || ($responseCode >= 500 && $responseCode <= 599);
     }
 
     /**
