@@ -52,7 +52,7 @@ class CategorySyncRepository implements CategorySyncRepositoryInterface
     {
         $categories = $this->categorySyncCollectionFactory->create();
         $categories
-            ->addFieldToFilter('response_code', ['gteq' => \Yotpo\Core\Model\Config::RETRY_RESPONSE_CODE_FROM])
+            ->addFieldToFilter('response_code', ['gteq' => \Yotpo\Core\Model\Config::BAD_REQUEST_RESPONSE_CODE])
             ->addFieldToSelect(['category_id', 'store_id']);
         return $categories->getItems();
     }

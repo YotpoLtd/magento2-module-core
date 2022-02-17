@@ -4,7 +4,6 @@ namespace Yotpo\Core\Model\Sync\Orders;
 
 use Magento\Framework\DataObject;
 use Magento\Sales\Model\Order;
-use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderFactory;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\LocalizedException;
@@ -511,7 +510,7 @@ class Processor extends Main
     {
         $unSyncedProductIds = $this->data->getUnSyncedProductIds($productIds, $order);
         if ($unSyncedProductIds) {
-            $this->catalogProcessor->setSyncByOrderFlag();
+            $this->catalogProcessor->setNormalSyncFlag(false);
             $sync = $this->catalogProcessor->process($unSyncedProductIds, $order);
             $this->emulateFrontendArea($this->currentStoreId);
             return $sync;

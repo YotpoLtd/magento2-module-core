@@ -59,9 +59,9 @@ class Main extends AbstractJobs
     protected $entity = 'products';
 
     /**
-     * @var bool
+     * @var boolean
      */
-    private $syncByOrderFlag = false;
+    protected $normalSync = true;
 
     /**
      * AbstractJobs constructor.
@@ -606,18 +606,11 @@ class Main extends AbstractJobs
     }
 
     /**
+     * @param bool $flag
      * @return void
      */
-    public function setSyncByOrderFlag()
+    public function setNormalSyncFlag($flag)
     {
-        $this->syncByOrderFlag = true;
-    }
-
-    /**
-     * @return bool
-     */
-    public function getSyncByOrderFlag()
-    {
-        return $this->syncByOrderFlag;
+        $this->normalSync = $flag;
     }
 }

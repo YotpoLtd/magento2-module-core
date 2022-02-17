@@ -52,7 +52,7 @@ class ProductSyncRepository implements ProductSyncRepositoryInterface
     {
         $products = $this->productSyncCollectionFactory->create();
         $products
-            ->addFieldToFilter('response_code', ['gteq' => \Yotpo\Core\Model\Config::RETRY_RESPONSE_CODE_FROM])
+            ->addFieldToFilter('response_code', ['gteq' => \Yotpo\Core\Model\Config::BAD_REQUEST_RESPONSE_CODE])
             ->addFieldToFilter('is_deleted', ['neq' => 1])
             ->addFieldToSelect(['product_id', 'store_id']);
         return $products->getItems();
