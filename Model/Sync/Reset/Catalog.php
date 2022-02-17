@@ -41,6 +41,7 @@ class Catalog extends Main
     /**
      * @param int $storeId
      * @return void
+     * @throws \Zend_Db_Statement_Exception
      */
     public function resetSync($storeId)
     {
@@ -50,8 +51,7 @@ class Catalog extends Main
         $catalogTables = [self::PRODUCT_SYNC_TABLE, self::CATEGORY_SYNC_TABLE];
         foreach ($catalogTables as $table) {
             $tableName = $this->resourceConnection->getTableName($table);
-            $totalCount = $this->getTotalCount($tableName, $storeId);
-            $this->deleteFromTable($tableName, $totalCount, $storeId);
+            $this->deleteAllFromTable($tableName, $storeId);
         }
         $this->resetCatalogSyncAttributes();
     }

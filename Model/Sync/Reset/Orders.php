@@ -18,14 +18,14 @@ class Orders extends Main
         $this->setStoreId($storeId);
         $this->setCronJobCodes(self::CRONJOB_CODES);
         parent::resetSync($storeId);
-        $this->processResetSync();
+        $this->clearSyncTracks();
     }
 
     /**
      * @param int $offset
      * @return void
      */
-    public function processResetSync($offset = 0)
+    public function clearSyncTracks($offset = 0)
     {
         $connection  = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName(self::ORDERS_TABLE);
@@ -33,12 +33,12 @@ class Orders extends Main
             ->from($table, 'entity_id')
             ->where('store_id', $this->getStoreId())
             ->limit(self::ORDERS_DATA_LIMIT, $offset);
-        $rows = $connection->fetchCol($select);
-        if ($rows) {
-            $this->resetOrderSyncFlag($rows);
-            $this->cleanUpSyncTable($rows);
+        $entityIds = $connection->fetchCol($select);
+        if ($entityIds) {
+            $this->resetOrderSyncFlag($entityIds);
+            $this->cleanUpSyncTable($entityIds);
             $offset += self::ORDERS_DATA_LIMIT;
-            $this->processResetSync($offset);
+            $this->clearSyncTracks($offset);
         }
     }
 

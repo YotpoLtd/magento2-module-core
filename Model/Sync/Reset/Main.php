@@ -56,17 +56,18 @@ class Main
      */
     public function resetSync($storeId)
     {
-        $this->removeCronJobs();
+        $this->deleteCronSchedules();
     }
 
     /**
      * @param string $tableName
-     * @param int $totalCount
      * @param int $storeId
      * @return void
+     * @throws \Zend_Db_Statement_Exception
      */
-    protected function deleteFromTable($tableName, $totalCount, $storeId)
+    protected function deleteAllFromTable($tableName, $storeId)
     {
+        $totalCount = $this->getTotalCount($tableName, $storeId);
         if (!$totalCount) {
             return;
         }
@@ -141,7 +142,7 @@ class Main
     /**
      * @return void
      */
-    protected function removeCronJobs()
+    protected function deleteCronSchedules()
     {
         $jobCodes = $this->getCronJobCodes();
         if (!$jobCodes) {

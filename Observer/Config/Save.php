@@ -12,7 +12,7 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\ScopeInterface;
 use Yotpo\Core\Model\Api\Token as YotpoApi;
-use Yotpo\Core\Model\Sync\Reset;
+use Yotpo\Core\Model\Sync\Reset as SyncReset;
 use Yotpo\Reviews\Model\Config as YotpoConfig;
 
 /**
@@ -52,7 +52,7 @@ class Save extends Main implements ObserverInterface
     protected $cronFrequency;
 
     /**
-     * @var Reset
+     * @var SyncReset
      */
     protected $syncReset;
 
@@ -64,7 +64,7 @@ class Save extends Main implements ObserverInterface
      * @param YotpoApi $yotpoApi
      * @param CatalogMapping $catalogMapping
      * @param CronFrequency $cronFrequency
-     * @param Reset $syncReset
+     * @param SyncReset $syncReset
      */
     public function __construct(
         TypeListInterface $cacheTypeList,
@@ -73,7 +73,7 @@ class Save extends Main implements ObserverInterface
         YotpoApi $yotpoApi,
         CatalogMapping $catalogMapping,
         CronFrequency $cronFrequency,
-        Reset $syncReset
+        SyncReset $syncReset
     ) {
         $this->cacheTypeList = $cacheTypeList;
         $this->appConfig = $config;
@@ -143,7 +143,7 @@ class Save extends Main implements ObserverInterface
                     ));
                 }
             }
-            if ($scopeId && $this->isYotpoKeysChanged($changedPaths)) {
+            if ($scopeId && $this->isYotpoAppKeyChanged($changedPaths)) {
                 $this->syncReset->resetSync($scopeId);
             }
         }
@@ -179,7 +179,7 @@ class Save extends Main implements ObserverInterface
      * @param array <string> $changedPaths
      * @return bool
      */
-    public function isYotpoKeysChanged($changedPaths = [])
+    public function isYotpoAppKeyChanged($changedPaths = [])
     {
         $yotpoKeyPaths = ['app_key'];
         $commonPaths = $this->getChangedYotpoPaths($changedPaths, $yotpoKeyPaths);
