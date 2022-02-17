@@ -109,7 +109,7 @@ class Save extends Main implements ObserverInterface
         $changedPaths = (array)$observer->getEvent()->getChangedPaths();
         if ($changedPaths) {
             $scopeDetails = $this->getScopes($observer);
-            $scopeId = (int) $scopeDetails['scope_id'];
+            $scopeId = $scopeDetails['scope_id'];
             if ($this->isYotpoSettingsChanged($changedPaths)) {
                 $this->cacheTypeList->cleanType(Config::TYPE_IDENTIFIER);
                 $this->appConfig->reinit();
@@ -123,9 +123,9 @@ class Save extends Main implements ObserverInterface
                 }
 
                 //Check if appKey is unique:
-                if ($appKey) {
-                    foreach ((array) $this->yotpoConfig->getAllStoreIds() as $key => $storeId) {
-                        if (($scopeId && $storeId != $scopeId) && $this->yotpoConfig->getAppKey($storeId) === $appKey) {
+                if ($scopeId && $appKey) {
+                    foreach ((array) $this->yotpoConfig->getAllStoreIds() as $storeId) {
+                        if (($storeId != $scopeId) && $this->yotpoConfig->getAppKey($storeId) === $appKey) {
                             $this->resetStoreCredentials($scopeId, $scopes);
                             throw new AlreadyExistsException(__(
                                 "The APP KEY you've entered is already in use by another store on this system.
@@ -188,13 +188,13 @@ class Save extends Main implements ObserverInterface
 
     /**
      * @param array <string> $changedPaths
-     * @param array <string> $pathsToCompare
+     * @param array <string> $keyPathsToCompare
      * @return array <mixed>
      */
-    public function getChangedYotpoPaths($changedPaths, $pathsToCompare)
+    public function getChangedYotpoPaths($changedPaths, $keyPathsToCompare)
     {
         $pathsToCheck = [];
-        foreach ($pathsToCompare as $path) {
+        foreach ($keyPathsToCompare as $path) {
             $pathsToCheck[] = $this->yotpoConfig->getConfigPath($path);
         }
         return array_intersect($pathsToCheck, $changedPaths);

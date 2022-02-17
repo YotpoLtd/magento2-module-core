@@ -33,7 +33,7 @@ class Main
     /**
      * @var array <string>
      */
-    protected $cronJobCodes = [''];
+    protected $cronJobCodes = [];
 
     /**
      * @param ResourceConnection $resourceConnection

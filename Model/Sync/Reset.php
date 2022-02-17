@@ -44,11 +44,9 @@ class Reset
      */
     public function resetSync($storeId)
     {
-        $this->catalogReset->resetSync($storeId);
-        if (method_exists($this->customersReset, 'resetSync')) {
-            $this->customersReset->resetSync($storeId);
-        }
-        $this->ordersReset->resetSync($storeId);
+        $this->resetCatalogSync($storeId);
+        $this->resetCustomersSync($storeId);
+        $this->resetOrdersSync($storeId);
     }
 
     /**
