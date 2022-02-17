@@ -3,8 +3,6 @@
 namespace Yotpo\Core\Model\Sync\Reset;
 
 use Magento\Framework\App\ResourceConnection;
-use Yotpo\Core\Model\AbstractJobs;
-use Yotpo\Core\Model\Config as CoreConfig;
 use Yotpo\Core\Model\Sync\Data\Main as SyncDataMain;
 
 class Catalog extends Main
@@ -20,20 +18,14 @@ class Catalog extends Main
 
     /**
      * @param ResourceConnection $resourceConnection
-     * @param CoreConfig $coreConfig
      * @param SyncDataMain $syncDataMain
-     * @param AbstractJobs $abstractJobs
      */
     public function __construct(
         ResourceConnection $resourceConnection,
-        CoreConfig $coreConfig,
-        SyncDataMain $syncDataMain,
-        AbstractJobs $abstractJobs
+        SyncDataMain $syncDataMain
     ) {
         parent::__construct(
-            $resourceConnection,
-            $coreConfig,
-            $abstractJobs
+            $resourceConnection
         );
         $this->syncDataMain = $syncDataMain;
     }
@@ -45,21 +37,31 @@ class Catalog extends Main
      */
     public function resetSync($storeId)
     {
-        $this->setStoreId($storeId);
-        $this->setCronJobCodes(self::CRONJOB_CODES);
         parent::resetSync($storeId);
-        $catalogTables = [self::PRODUCT_SYNC_TABLE, self::CATEGORY_SYNC_TABLE];
-        foreach ($catalogTables as $table) {
-            $tableName = $this->resourceConnection->getTableName($table);
-            $this->deleteAllFromTable($tableName, $storeId);
-        }
-        $this->resetCatalogSyncAttributes();
+        $this->resetCatalogSyncAttributes($storeId);
     }
 
     /**
+     * @return array <string>
+     */
+    protected function getTableResourceNames()
+    {
+        return [self::PRODUCT_SYNC_TABLE, self::CATEGORY_SYNC_TABLE];
+    }
+
+    /**
+     * @return array <string>
+     */
+    protected function getCronJobCodes()
+    {
+        return self::CRONJOB_CODES;
+    }
+
+    /**
+     * @param int $storeId
      * @return void
      */
-    public function resetCatalogSyncAttributes()
+    private function resetCatalogSyncAttributes($storeId)
     {
         $dataSet = [
             [
@@ -78,7 +80,7 @@ class Catalog extends Main
                 ['value' => '0'],
                 [
                     'attribute_id' => $this->syncDataMain->getAttributeId($data['attribute_code']),
-                    'store_id' => $this->getStoreId()
+                    'store_id' => $storeId
                 ]
             );
         }
