@@ -442,6 +442,7 @@ class Processor extends Main
             $visibleItems = $order->getAllVisibleItems();
             $storeId = $order->getStoreId();
             $isProductSyncSuccess = $this->catalogProcessor->syncProducts($productIds, $visibleItems, $storeId);
+            $this->emulateFrontendArea($storeId);
             if (!$isProductSyncSuccess) {
                 $this->yotpoOrdersLogger->info('Products sync failed - Order ID - ' . $order->getId(), []);
                 return [];
