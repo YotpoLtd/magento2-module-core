@@ -4,6 +4,7 @@ namespace Yotpo\Core\Model\Sync\Orders;
 
 use Magento\Framework\DataObject;
 use Magento\Sales\Model\Order;
+use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderFactory;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\LocalizedException;
@@ -384,7 +385,7 @@ class Processor extends Main
      * Get Order collection
      *
      * @param array <mixed> $retryOrderIds
-     * @return OrderCollection<mixed>
+     * @return OrderCollection <mixed>
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
