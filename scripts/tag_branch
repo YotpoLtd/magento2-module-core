@@ -1,0 +1,51 @@
+#!/usr/bin/env python3
+import os
+import subprocess
+import argparse
+import json
+from tabnanny import verbose
+
+RUN_DIR = os.getcwd()
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+ROOT_DIR = subprocess.Popen(['git', 'rev-parse', '--show-toplevel'], stdout=subprocess.PIPE, cwd=SCRIPT_DIR).communicate()[0].rstrip().decode('utf-8')
+
+COMPOSER_JSON = "composer.json"
+COMPOSER_JSON_PATH = os.path.join(ROOT_DIR, COMPOSER_JSON)
+
+args = None
+def parse_args():
+    parser = argparse.ArgumentParser(description="Update git tag from composer.json version")
+    parser.add_argument("--delete-and-create", action='store_true', help="Delete the tag first to force packagist to create tag")
+    global args
+    args = parser.parse_args()
+
+def main():
+    print("RUN_DIR", RUN_DIR)
+    print("SCRIPT_DIR", SCRIPT_DIR)
+    print("ROOT_DIR", ROOT_DIR)
+    print("COMPOSER_JSON_PATH", COMPOSER_JSON_PATH)
+    print(args)
+
+    # get version from composer.json
+    version = ""
+    with open(COMPOSER_JSON_PATH) as f:
+        composer_json = json.load(f)
+        version = composer_json["version"]
+    
+    if version.startswith('4.0.'):
+        raise RuntimeError("Can't update 4.0.x tags")
+
+    # tag version
+    subprocess.Popen(['git', 'tag', '--force', version], stdout=subprocess.PIPE, cwd=SCRIPT_DIR).communicate()[0].rstrip().decode('utf-8')
+
+    # delete remove tag if needed
+    if args.delete_and_create:
+        subprocess.Popen(['git', 'push', '--delete', 'origin', 'tag', version], stdout=subprocess.PIPE, cwd=SCRIPT_DIR).communicate()[0].rstrip().decode('utf-8')
+
+    # push tag
+    subprocess.Popen(['git', 'push', '--force', 'origin', 'tag', version], stdout=subprocess.PIPE, cwd=SCRIPT_DIR).communicate()[0].rstrip().decode('utf-8')
+
+
+if __name__ == "__main__":
+    parse_args()
+    main()
