@@ -73,8 +73,6 @@ class Reset
      */
     public function resetCustomersSync($storeId)
     {
-        if (method_exists($this->customersReset, 'resetSync')) {
-            $this->customersReset->resetSync($storeId);
-        }
+        $this->customersReset->resetSync($storeId);
     }
 }

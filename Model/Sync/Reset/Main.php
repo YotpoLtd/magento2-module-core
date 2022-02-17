@@ -3,22 +3,10 @@
 namespace Yotpo\Core\Model\Sync\Reset;
 
 use Magento\Framework\App\ResourceConnection;
-use Yotpo\Core\Model\Config as CoreConfig;
-use Yotpo\Core\Model\AbstractJobs;
 
 class Main
 {
     const DELETE_LIMIT = 10000;
-
-    /**
-     * @var int
-     */
-    protected $storeId = 0;
-
-    /**
-     * @var CoreConfig
-     */
-    protected $coreConfig;
 
     /**
      * @var ResourceConnection
@@ -26,47 +14,63 @@ class Main
     protected $resourceConnection;
 
     /**
-     * @var AbstractJobs
-     */
-    protected $abstractJobs;
-
-    /**
-     * @var array <string>
-     */
-    protected $cronJobCodes = [];
-
-    /**
      * @param ResourceConnection $resourceConnection
-     * @param CoreConfig $coreConfig
-     * @param AbstractJobs $abstractJobs
      */
     public function __construct(
-        ResourceConnection $resourceConnection,
-        CoreConfig $coreConfig,
-        AbstractJobs $abstractJobs
+        ResourceConnection $resourceConnection
     ) {
         $this->resourceConnection = $resourceConnection;
-        $this->coreConfig = $coreConfig;
-        $this->abstractJobs = $abstractJobs;
     }
 
     /**
-     * @param int $storeId
-     * @return void
-     */
-    public function resetSync($storeId)
-    {
-        $this->deleteCronSchedules();
-    }
-
-    /**
-     * @param string $tableName
      * @param int $storeId
      * @return void
      * @throws \Zend_Db_Statement_Exception
      */
-    protected function deleteAllFromTable($tableName, $storeId)
+    public function resetSync($storeId)
     {
+        $this->deleteRunningCronSchedules();
+        $this->deleteAllFromTables($storeId);
+    }
+
+    /**
+     * @return array <string>
+     */
+    protected function getTableResourceNames()
+    {
+        return [];
+    }
+
+    /**
+     * @return array <string>
+     */
+    protected function getCronJobCodes()
+    {
+        return [];
+    }
+
+    /**
+     * @param int $storeId
+     * @return void
+     * @throws \Zend_Db_Statement_Exception
+     */
+    private function deleteAllFromTables($storeId)
+    {
+        $tableResourceNames = $this->getTableResourceNames();
+        foreach ($tableResourceNames as $tableResourceName) {
+            $this->deleteAllFromTable($storeId, $tableResourceName);
+        }
+    }
+
+    /**
+     * @param int $storeId
+     * @param string $tableResourceName
+     * @return void
+     * @throws \Zend_Db_Statement_Exception
+     */
+    private function deleteAllFromTable($storeId, $tableResourceName)
+    {
+        $tableName = $this->resourceConnection->getTableName($tableResourceName);
         $totalCount = $this->getTotalCount($tableName, $storeId);
         if (!$totalCount) {
             return;
@@ -91,58 +95,19 @@ class Main
      * @return int
      * @throws \Zend_Db_Statement_Exception
      */
-    protected function getTotalCount($tableName, $storeId)
+    private function getTotalCount($tableName, $storeId)
     {
         $connection  = $this->resourceConnection->getConnection();
-        $select = $connection->select();
-        $query = $select->reset()
-            ->from(
-                ['p' => $tableName]
-            );
-        if ($storeId) {
-            $query->where('store_id = ?', $storeId);
-        }
+        $query = $connection->select()
+            ->from($tableName)
+            ->where('store_id = ?', $storeId);
         return $connection->query($query)->rowCount();
     }
 
     /**
-     * @param int $storeId
      * @return void
      */
-    protected function setStoreId($storeId)
-    {
-        $this->storeId = $storeId;
-    }
-
-    /**
-     * @return int
-     */
-    protected function getStoreId()
-    {
-        return $this->storeId;
-    }
-
-    /**
-     * @param array <string> $jobCodes
-     * @return void
-     */
-    protected function setCronJobCodes($jobCodes)
-    {
-        $this->cronJobCodes = $jobCodes;
-    }
-
-    /**
-     * @return array <string>
-     */
-    protected function getCronJobCodes()
-    {
-        return $this->cronJobCodes;
-    }
-
-    /**
-     * @return void
-     */
-    protected function deleteCronSchedules()
+    private function deleteRunningCronSchedules()
     {
         $jobCodes = $this->getCronJobCodes();
         if (!$jobCodes) {
