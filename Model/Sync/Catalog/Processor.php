@@ -257,7 +257,7 @@ class Processor extends Main
                         $yotpoData[$itemId]['response_code'],
                         $yotpoData[$itemId],
                         $this->isCommandLineSync
-                    ) && !$this->getSyncByOrderFlag()
+                    ) && $this->normalSync
                 ) {
                     $tempSqlDataIntTable = [
                         'attribute_id' => $attributeId,
@@ -267,12 +267,10 @@ class Processor extends Main
                     ];
                     $sqlDataIntTable = [];
                     $sqlDataIntTable[] = $tempSqlDataIntTable;
-                    if ($this->normalSync) {
-                        $this->insertOnDuplicate(
-                            'catalog_product_entity_int',
-                            $sqlDataIntTable
-                        );
-                    }
+                    $this->insertOnDuplicate(
+                        'catalog_product_entity_int',
+                        $sqlDataIntTable
+                    );
                     continue;
                 }
 
