@@ -385,7 +385,7 @@ class Processor extends Main
      * Get Order collection
      *
      * @param array <mixed> $retryOrderIds
-     * @return OrderCollection<mixed>
+     * @return OrderCollection <mixed>
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
