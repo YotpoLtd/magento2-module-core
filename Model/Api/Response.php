@@ -35,6 +35,15 @@ class Response
 
     /**
      * @param mixed $response
+     * @return bool|string
+     */
+    public function validateStatus($status)
+    {
+        return in_array($status, $this->getResponseCode('success'));
+    }
+
+    /**
+     * @param mixed $response
      * @return bool
      */
     public function invalidToken($response): bool

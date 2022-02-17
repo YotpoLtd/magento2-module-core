@@ -199,7 +199,7 @@ class Yclient
             $responseObject->setData('status', $status);
             $responseObject->setData('reason', $responseReason);
             $responseObject->setData('response', json_decode($responseContent, true));
-            $responseObject->setData('is_success', $this->yotpoResponse->validateResponse($response));
+            $responseObject->setData('is_success', $this->yotpoResponse->validateStatus(strval($status)));
             return $responseObject;
         };
     }
