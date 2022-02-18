@@ -23,11 +23,6 @@ use Yotpo\Core\Api\ProductSyncRepositoryInterface;
 class Processor extends Main
 {
     /**
-     * @var CatalogData
-     */
-    protected $catalogData;
-
-    /**
      * @var SyncDataMain
      */
     protected $syncDataMain;
@@ -98,9 +93,9 @@ class Processor extends Main
             $yotpoCatalogLogger,
             $yotpoResource,
             $collectionFactory,
-            $coreSync
+            $coreSync,
+            $catalogData
         );
-        $this->catalogData = $catalogData;
         $this->dateTime = $dateTime;
         $this->categorySyncProcessor = $categorySyncProcessor;
         $this->productSyncRepositoryInterface = $productSyncRepositoryInterface;
@@ -203,7 +198,7 @@ class Processor extends Main
                 $this->stopEnvironmentEmulation();
             }
             $this->stopEnvironmentEmulation();
-            if (!$this->normalSync && count($unSyncedStoreIds) > 0) {
+            if (!$this->isSyncingAsMainEntity() && count($unSyncedStoreIds) > 0) {
                 return false;
             } else {
                 return true;
@@ -242,7 +237,7 @@ class Processor extends Main
                 $rowId = $itemData['row_id'];
                 unset($itemData['row_id']);
 
-                if ($yotpoData && array_key_exists($itemId, $yotpoData) && $this->normalSync) {
+                if ($this->isSyncingAsMainEntity() && $yotpoData && array_key_exists($itemId, $yotpoData)) {
                     if (!$this->coreConfig->canResync($yotpoData[$itemId]['response_code'],
                         $yotpoData[$itemId],
                         $this->isCommandLineSync)) {
@@ -262,6 +257,7 @@ class Processor extends Main
                     }
                 }
 
+                $yotpoData[$itemId]['yotpo_id'];
                 $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData, $visibleVariants);
 
                 if (!$apiParam) {
@@ -282,24 +278,6 @@ class Processor extends Main
                     )
                 );
                 $response = $this->processRequest($apiParam, $itemData);
-
-                $productResponseStatusCode = $response->getData('status');
-                if ($productResponseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE) {
-                    $this->yotpoCatalogLogger->info(
-                        __(
-                            'Got HTTP 400 on Product request - Store ID: %1, Store Name: %2, API Product Action: %3, Product Row ID: %4',
-                            $storeId,
-                            $storeName,
-                            $apiProductAction,
-                            $rowId
-                        )
-                    );
-
-                    if ($apiProductAction == 'createProduct') {
-                        $minimalProductRequestData = $this->catalogData->getMinimalProductRequestData($itemData);
-                        $response = $this->processRequest($apiParam, $minimalProductRequestData);
-                    }
-                }
 
                 $lastSyncTime = $this->getCurrentTime();
                 $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
@@ -323,7 +301,7 @@ class Processor extends Main
                     ];
                     $sqlDataIntTable = [];
                     $sqlDataIntTable[] = $tempSqlDataIntTable;
-                    if ($this->normalSync) {
+                    if ($this->isSyncingAsMainEntity()) {
                         $this->insertOnDuplicate(
                             'catalog_product_entity_int',
                             $sqlDataIntTable
@@ -368,10 +346,6 @@ class Processor extends Main
                     $syncDataSql
                 );
                 $sqlData[] = $tempSqlArray;
-                if ($this->isCommandLineSync && !$this->isImmediateRetry) {
-                    // phpcs:ignore
-                    echo 'Catalog process completed for productid - ' . $itemId . PHP_EOL;
-                }
             }
             $dataToSent = [];
             if (count($sqlData)) {
@@ -385,7 +359,7 @@ class Processor extends Main
                     $parentIds,
                     $visibleVariants
                 );
-                if ($yotpoExistingProducts && $this->normalSync) {
+                if ($yotpoExistingProducts && $this->isSyncingAsMainEntity()) {
                     $dataToSent = array_merge(
                         $dataToSent,
                         $this->catalogData->filterDataForCatSync($yotpoExistingProducts)
@@ -393,7 +367,7 @@ class Processor extends Main
                 }
             }
 
-            if ($this->normalSync) {
+            if ($this->isSyncingAsMainEntity()) {
                 $this->coreConfig->saveConfig('catalog_last_sync_time', $lastSyncTime);
                 $dataForCategorySync = [];
                 if ($dataToSent && !$visibleVariants) {
@@ -419,7 +393,7 @@ class Processor extends Main
                 $this->isImmediateRetry = true;
                 $isRetryAttemptSuccessful = $this->syncItems($collection->getItems(), $storeId, $visibleVariants);
 
-                if (!$this->normalSync && !$isRetryAttemptSuccessful) {
+                if (!$this->isSyncingAsMainEntity() && !$isRetryAttemptSuccessful) {
                     return false;
                 }
             }
@@ -428,7 +402,7 @@ class Processor extends Main
                 $this->syncItems($visibleVariantsDataValues, $storeId, true);
             }
 
-            if (!$this->normalSync) {
+            if (!$this->isSyncingAsMainEntity()) {
                 return true;
             }
         } else {
