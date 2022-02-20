@@ -359,7 +359,7 @@ class Main extends AbstractJobs
             $yotpoIdKey = 'visible_variant_yotpo_id';
         } elseif (isset($parentIds[$productId])) {
             $parentId = $parentIds[$productId];
-            if($this->createProductVariantRequest($parentData, $parentId, &$method, &$apiUrl) == []) {
+            if ($this->createProductVariantRequest($parentData, $parentId, &$method, &$apiUrl) == []) {
                 return [];
             }
         }
@@ -607,6 +607,16 @@ class Main extends AbstractJobs
     }
 
     /**
+     * @param $parentData
+     * @param $parentId
+     * @return bool
+     */
+    public function isProductParentYotpoIdFound($parentData, $parentId): bool
+    {
+        return isset($parentData[$parentId]) && isset($parentData[$parentId]['yotpo_id']);
+    }
+
+    /**
      * @param array $parentData
      * @param string $parentId
      * @param string &$method
@@ -615,9 +625,8 @@ class Main extends AbstractJobs
      */
     private function createProductVariantRequest($parentData, $parentId, &$method, &$apiUrl)
     {
-        if (isset($parentData[$parentId])
-            && isset($parentData[$parentId]['yotpo_id'])
-            && $yotpoIdParent = $parentData[$parentId]['yotpo_id']) {
+        if ($this->isProductParentYotpoIdFound($parentData, $parentId)) {
+            $yotpoIdParent = $parentData[$parentId]['yotpo_id'];
 
             $method = $this->coreConfig->getProductSyncMethod('createProductVariant');
             $apiUrl = $this->coreConfig->getEndpoint(
