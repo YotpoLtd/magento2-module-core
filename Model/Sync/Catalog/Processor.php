@@ -244,10 +244,7 @@ class Processor extends Main
             if ($this->isSyncingAsMainEntity() && $yotpoSyncTableItemsData && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)) {
                 if (!$this->shouldItemBeResynced($yotpoSyncTableItemsData[$itemEntityId])) {
                     $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId);
-                    $this->insertOnDuplicate(
-                        'catalog_product_entity_int',
-                        [$attributeDataToUpdate]
-                    );
+                    $this->updateAttributeData($attributeDataToUpdate);
                     continue;
                 }
             }
@@ -290,10 +287,7 @@ class Processor extends Main
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
                 $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId);
                 if ($this->isSyncingAsMainEntity()) {
-                    $this->insertOnDuplicate(
-                        'catalog_product_entity_int',
-                        [$attributeDataToUpdate]
-                    );
+                    $this->updateAttributeData($attributeDataToUpdate);
                 }
             }
 
@@ -754,5 +748,12 @@ class Processor extends Main
             'value' => 1,
             $this->entityIdFieldValue => $itemRowId
         ];
+    }
+
+    private function updateAttributeData($attributeDataToUpdate) {
+        $this->insertOnDuplicate(
+            'catalog_product_entity_int',
+            [$attributeDataToUpdate]
+        );
     }
 }
