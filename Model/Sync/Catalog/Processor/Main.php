@@ -346,7 +346,7 @@ class Main extends AbstractJobs
     protected function getApiParams(
         $productId,
         array $yotpoData,
-        array $parentIds,
+        array $parentIds = [],
         array $parentData,
         $visibleVariant = false
     ) {
@@ -354,7 +354,7 @@ class Main extends AbstractJobs
         $method = $this->coreConfig->getProductSyncMethod('createProduct');
         $yotpoIdParent = $yotpoId = '';
 
-        if (count($parentIds) && !$visibleVariant) {
+        if (!$visibleVariant) {
             if (isset($parentIds[$productId])
                 && isset($parentData[$parentIds[$productId]])
                 && isset($parentData[$parentIds[$productId]]['yotpo_id'])
