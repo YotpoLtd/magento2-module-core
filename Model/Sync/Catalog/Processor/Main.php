@@ -357,19 +357,9 @@ class Main extends AbstractJobs
 
         if ($isVisibleVariant) {
             $yotpoIdKey = 'visible_variant_yotpo_id';
-        } else {
-            if (count($parentIds) && isset($parentIds[$productId])
-                && isset($parentData[$parentIds[$productId]])
-                && isset($parentData[$parentIds[$productId]]['yotpo_id'])
-                && $yotpoIdParent = $parentData[$parentIds[$productId]]['yotpo_id']) {
-
-                $method = $this->coreConfig->getProductSyncMethod('createProductVariant');
-                $apiUrl = $this->coreConfig->getEndpoint(
-                    'variant',
-                    ['{yotpo_product_id}'],
-                    [$yotpoIdParent]
-                );
-            } elseif (isset($parentIds[$productId])) {
+        } elseif (count($parentIds) && isset($parentIds[$productId])) {
+            $parentId = $parentIds[$productId];
+            if (is_array($this->setProductVariantRequest($parentData, $parentId, $method, $apiUrl))) {
                 return [];
             }
         }
@@ -614,5 +604,29 @@ class Main extends AbstractJobs
     public function setNormalSyncFlag($flag)
     {
         $this->normalSync = $flag;
+    }
+
+    /**
+     * @param array $parentData
+     * @param string $parentId
+     * @param string &$method
+     * @param string &$apiUrl
+     * @return array|void
+     */
+    private function setProductVariantRequest($parentData, $parentId, &$method, &$apiUrl)
+    {
+        if (isset($parentData[$parentId])
+            && isset($parentData[$parentId]['yotpo_id'])
+            && $yotpoIdParent = $parentData[$parentId]['yotpo_id']) {
+
+            $method = $this->coreConfig->getProductSyncMethod('createProductVariant');
+            $apiUrl = $this->coreConfig->getEndpoint(
+                'variant',
+                ['{yotpo_product_id}'],
+                [$yotpoIdParent]
+            );
+        } else {
+            return [];
+        }
     }
 }
