@@ -242,9 +242,7 @@ class Processor extends Main
             unset($magentoItemData['row_id']);
 
             if ($this->isSyncingAsMainEntity() && $yotpoSyncTableItemsData && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)) {
-                if (!$this->coreConfig->canResync($yotpoSyncTableItemsData[$itemEntityId]['response_code'],
-                    $yotpoSyncTableItemsData[$itemEntityId],
-                    $this->isCommandLineSync)) {
+                if (!$this->shouldItemBeResynced($yotpoSyncTableItemsData[$itemEntityId])) {
                     $tempSqlDataIntTable = [
                         'attribute_id' => $syncedToYotpoProductAttributeId,
                         'store_id' => $storeId,
@@ -755,5 +753,10 @@ class Processor extends Main
             $itemsMap[$product->getId()] = $product;
         }
         return $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
+    }
+
+    private function shouldItemBeResynced($yotpoSyncTableItemData)
+    {
+        return $this->coreConfig->canResync($yotpoSyncTableItemData['response_code'], $yotpoSyncTableItemData, $this->isCommandLineSync);
     }
 }
