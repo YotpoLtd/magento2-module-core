@@ -224,7 +224,7 @@ class Processor extends Main
             return;
         }
 
-        $attributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
+        $syncedToYotpoProductAttributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
         $items = $this->manageSyncItems($collectionItems, $visibleVariants);
         $parentIds = $items['parent_ids'];
         $yotpoData = $items['yotpo_data'];
@@ -245,7 +245,7 @@ class Processor extends Main
                     $yotpoData[$itemId],
                     $this->isCommandLineSync)) {
                     $tempSqlDataIntTable = [
-                        'attribute_id' => $attributeId,
+                        'attribute_id' => $syncedToYotpoProductAttributeId,
                         'store_id' => $storeId,
                         'value' => 1,
                         $this->entityIdFieldValue => $rowId
@@ -297,7 +297,7 @@ class Processor extends Main
             }
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
                 $tempSqlDataIntTable = [
-                    'attribute_id' => $attributeId,
+                    'attribute_id' => $syncedToYotpoProductAttributeId,
                     'store_id' => $storeId,
                     'value' => 1,
                     $this->entityIdFieldValue => $rowId
