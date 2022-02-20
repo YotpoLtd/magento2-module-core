@@ -227,8 +227,8 @@ class Processor extends Main
         $syncedToYotpoProductAttributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
         $items = $this->manageSyncItems($collectionItems, $visibleVariants);
         $parentIds = $items['parent_ids'];
-        $yotpoData = $items['yotpo_data'];
         $parentData = $items['parent_data'];
+        $yotpoSyncTableItemsData = $items['yotpo_data'];
 
         $lastSyncTime = '';
         $sqlData = $sqlDataIntTable = [];
@@ -240,9 +240,9 @@ class Processor extends Main
             $rowId = $itemData['row_id'];
             unset($itemData['row_id']);
 
-            if ($this->isSyncingAsMainEntity() && $yotpoData && array_key_exists($itemId, $yotpoData)) {
-                if (!$this->coreConfig->canResync($yotpoData[$itemId]['response_code'],
-                    $yotpoData[$itemId],
+            if ($this->isSyncingAsMainEntity() && $yotpoSyncTableItemsData && array_key_exists($itemId, $yotpoSyncTableItemsData)) {
+                if (!$this->coreConfig->canResync($yotpoSyncTableItemsData[$itemId]['response_code'],
+                    $yotpoSyncTableItemsData[$itemId],
                     $this->isCommandLineSync)) {
                     $tempSqlDataIntTable = [
                         'attribute_id' => $syncedToYotpoProductAttributeId,
@@ -260,8 +260,8 @@ class Processor extends Main
                 }
             }
 
-            $yotpoData[$itemId]['yotpo_id'];
-            $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData, $visibleVariants);
+            $yotpoSyncTableItemsData[$itemId]['yotpo_id'];
+            $apiParam = $this->getApiParams($itemId, $yotpoSyncTableItemsData, $parentIds, $parentData, $visibleVariants);
 
             if (!$apiParam) {
                 $parentProductId = $parentIds[$itemId] ?? 0;
