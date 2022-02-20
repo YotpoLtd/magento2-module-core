@@ -339,7 +339,7 @@ class Main extends AbstractJobs
      * @param array<int, array> $yotpoData
      * @param array<int, int> $parentIds
      * @param array<int|string, mixed> $parentData
-     * @param boolean $visibleVariants
+     * @param boolean $visibleVariant
      * @return array<string, string>
      * @throws NoSuchEntityException
      */
@@ -348,13 +348,13 @@ class Main extends AbstractJobs
         array $yotpoData,
         array $parentIds,
         array $parentData,
-        $visibleVariants = false
+        $visibleVariant = false
     ) {
         $apiUrl = $this->coreConfig->getEndpoint('products');
         $method = $this->coreConfig->getProductSyncMethod('createProduct');
         $yotpoIdParent = $yotpoId = '';
 
-        if (count($parentIds) && !$visibleVariants) {
+        if (count($parentIds) && !$visibleVariant) {
             if (isset($parentIds[$productId])
                 && isset($parentData[$parentIds[$productId]])
                 && isset($parentData[$parentIds[$productId]]['yotpo_id'])
@@ -371,7 +371,7 @@ class Main extends AbstractJobs
             }
         }
 
-        $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
+        $yotpoIdKey = $visibleVariant ? 'visible_variant_yotpo_id' : 'yotpo_id';
         if (count($yotpoData)) {
             if (isset($yotpoData[$productId])
                 && isset($yotpoData[$productId][$yotpoIdKey])
