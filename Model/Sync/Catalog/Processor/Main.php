@@ -380,11 +380,10 @@ class Main extends AbstractJobs
 
         if ($isVisibleVariant) {
             $yotpoIdKey = 'visible_variant_yotpo_id';
-        } else {
-            if (count($parentIds) && isset($parentIds[$productId])
-                && isset($parentData[$parentIds[$productId]])
-                && isset($parentData[$parentIds[$productId]]['yotpo_id'])
-                && $yotpoIdParent = $parentData[$parentIds[$productId]]['yotpo_id']) {
+        } elseif (count($parentIds) && isset($parentIds[$productId])) {
+            $parentId = $parentIds[$productId];
+            if ($this->isProductParentYotpoIdFound($parentData, $parentId)) {
+                $yotpoIdParent = $parentData[$parentId]['yotpo_id'];
 
                 $method = $this->coreConfig->getProductSyncMethod('createProductVariant');
                 $apiUrl = $this->coreConfig->getEndpoint(
@@ -392,7 +391,7 @@ class Main extends AbstractJobs
                     ['{yotpo_product_id}'],
                     [$yotpoIdParent]
                 );
-            } elseif (isset($parentIds[$productId])) {
+            } else {
                 return [];
             }
         }
@@ -668,5 +667,15 @@ class Main extends AbstractJobs
             $whereConditions[] = $connection->quoteInto('store_id IN (?)', $storeId);
         }
         $connection->delete($tableName, $whereConditions);
+    }
+
+    /**
+     * @param $parentData
+     * @param $parentId
+     * @return bool
+     */
+    public function isProductParentYotpoIdFound($parentData, $parentId): bool
+    {
+        return isset($parentData[$parentId]) && isset($parentData[$parentId]['yotpo_id']);
     }
 }
