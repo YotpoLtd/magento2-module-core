@@ -269,19 +269,13 @@ class Processor extends Main
 
             $response = $this->processRequest($apiRequestParams, $magentoItemData);
 
-            $lastSyncTime = $this->getCurrentTime();
             $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
-            $syncDataRecordToUpdate = [
-                'product_id' => $itemEntityId,
-                $yotpoIdKey => $apiRequestParams['yotpo_id'] ?: 0,
-                'store_id' => $storeId,
-                'synced_to_yotpo' => $lastSyncTime,
-                'response_code' => $response->getData('status'),
-                'sync_status' => 1
-            ];
+            $yotpoIdValue = $apiRequestParams['yotpo_id'] ?: 0;
+            $syncDataRecordToUpdate = $this->prepareSyncTableDataToUpdate($itemEntityId, $yotpoIdKey, $yotpoIdValue, $storeId, $response->getData('status'));
             if (!$visibleVariants) {
                 $syncDataRecordToUpdate['yotpo_id_parent'] = $apiRequestParams['yotpo_id_parent'] ?: 0;
             }
+
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($syncDataRecordToUpdate['response_code'])) {
                 $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId);
                 if ($this->isSyncingAsMainEntity()) {
@@ -753,5 +747,18 @@ class Processor extends Main
             'catalog_product_entity_int',
             [$attributeDataToUpdate]
         );
+    }
+
+    private function prepareSyncTableDataToUpdate($itemEntityId, $yotpoIdKey, $yotpoIdValue, $storeId, $responseCode, $yotpoParentId = null)
+    {
+        $lastSyncTime = $this->getCurrentTime();
+        return [
+            'product_id' => $itemEntityId,
+            $yotpoIdKey => $yotpoIdValue,
+            'yotpo_id_parent' => $yotpoParentId,
+            'store_id' => $storeId,
+            'synced_to_yotpo' => $lastSyncTime,
+            'response_code' => $responseCode
+        ];
     }
 }
