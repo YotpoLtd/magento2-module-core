@@ -249,40 +249,38 @@ class Processor extends Main
                 }
             }
 
-            $yotpoSyncTableItemsData[$itemEntityId]['yotpo_id'];
-            $apiParam = $this->getApiParams($itemEntityId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $visibleVariants);
+            $apiRequestParams = $this->getApiParams($itemEntityId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $visibleVariants);
 
-            if (!$apiParam) {
+            if (!$apiRequestParams) {
                 $parentProductId = $parentItemsIds[$itemEntityId] ?? 0;
                 if ($parentProductId) {
                     continue;
                 }
             }
 
-            $apiProductAction = $apiParam['method'];
-            $storeName = $this->coreConfig->getStoreName($storeId);
             $this->yotpoCatalogLogger->info(
                 __(
                     'Data ready to sync - Method: %1 - Magento Store ID: %2, Name: %3',
-                    $apiProductAction,
+                    $apiRequestParams['method'],
                     $storeId,
-                    $storeName
+                    $this->coreConfig->getStoreName($storeId)
                 )
             );
-            $response = $this->processRequest($apiParam, $magentoItemData);
+
+            $response = $this->processRequest($apiRequestParams, $magentoItemData);
 
             $lastSyncTime = $this->getCurrentTime();
             $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $tempSqlArray = [
                 'product_id' => $itemEntityId,
-                $yotpoIdKey => $apiParam['yotpo_id'] ?: 0,
+                $yotpoIdKey => $apiRequestParams['yotpo_id'] ?: 0,
                 'store_id' => $storeId,
                 'synced_to_yotpo' => $lastSyncTime,
                 'response_code' => $response->getData('status'),
                 'sync_status' => 1
             ];
             if (!$visibleVariants) {
-                $tempSqlArray['yotpo_id_parent'] = $apiParam['yotpo_id_parent'] ?: 0;
+                $tempSqlArray['yotpo_id_parent'] = $apiRequestParams['yotpo_id_parent'] ?: 0;
             }
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
                 $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId);
@@ -292,7 +290,7 @@ class Processor extends Main
             }
 
             $returnResponse = $this->processResponse(
-                $apiParam,
+                $apiRequestParams,
                 $response,
                 $tempSqlArray,
                 $magentoItemData,
