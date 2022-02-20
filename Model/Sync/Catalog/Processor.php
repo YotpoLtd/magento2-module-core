@@ -226,7 +226,7 @@ class Processor extends Main
 
         $syncedToYotpoProductAttributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
         $items = $this->manageSyncItems($collectionItems, $visibleVariants);
-        $parentIds = $items['parent_ids'];
+        $parentItemsIds = $items['parent_ids'];
         $parentData = $items['parent_data'];
         $yotpoSyncTableItemsData = $items['yotpo_data'];
 
@@ -261,10 +261,10 @@ class Processor extends Main
             }
 
             $yotpoSyncTableItemsData[$itemId]['yotpo_id'];
-            $apiParam = $this->getApiParams($itemId, $yotpoSyncTableItemsData, $parentIds, $parentData, $visibleVariants);
+            $apiParam = $this->getApiParams($itemId, $yotpoSyncTableItemsData, $parentItemsIds, $parentData, $visibleVariants);
 
             if (!$apiParam) {
-                $parentProductId = $parentIds[$itemId] ?? 0;
+                $parentProductId = $parentItemsIds[$itemId] ?? 0;
                 if ($parentProductId) {
                     continue;
                 }
@@ -340,7 +340,7 @@ class Processor extends Main
             //push to parentData array if parent product is
             // being the part of current collection
             if (!$visibleVariants) {
-                $parentData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentData, $parentIds);
+                $parentData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentData, $parentItemsIds);
             }
             $syncDataSql = [];
             $syncDataSql[] = $tempSqlArray;
@@ -359,7 +359,7 @@ class Processor extends Main
             $yotpoExistingProducts = $this->processExistData(
                 $externalIds,
                 $parentData,
-                $parentIds,
+                $parentItemsIds,
                 $visibleVariants
             );
             if ($yotpoExistingProducts && $this->isSyncingAsMainEntity()) {
