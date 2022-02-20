@@ -238,7 +238,7 @@ class Processor extends Main
 
         $itemsToBeSyncedToYotpo = $items['sync_data'];
         foreach ($itemsToBeSyncedToYotpo as $itemEntityId => $magentoItemData) {
-            $rowId = $magentoItemData['row_id'];
+            $itemRowId = $magentoItemData['row_id'];
             unset($magentoItemData['row_id']);
 
             if ($this->isSyncingAsMainEntity() && $yotpoSyncTableItemsData && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)) {
@@ -249,7 +249,7 @@ class Processor extends Main
                         'attribute_id' => $syncedToYotpoProductAttributeId,
                         'store_id' => $storeId,
                         'value' => 1,
-                        $this->entityIdFieldValue => $rowId
+                        $this->entityIdFieldValue => $itemRowId
                     ];
                     $sqlDataIntTable = [];
                     $sqlDataIntTable[] = $tempSqlDataIntTable;
@@ -301,7 +301,7 @@ class Processor extends Main
                     'attribute_id' => $syncedToYotpoProductAttributeId,
                     'store_id' => $storeId,
                     'value' => 1,
-                    $this->entityIdFieldValue => $rowId
+                    $this->entityIdFieldValue => $itemRowId
                 ];
                 $sqlDataIntTable = [];
                 $sqlDataIntTable[] = $tempSqlDataIntTable;
