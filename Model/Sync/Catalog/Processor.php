@@ -236,13 +236,14 @@ class Processor extends Main
         $visibleVariantsData = $visibleVariants ? [] : $items['visible_variants'];
         $visibleVariantsDataValues = array_values($visibleVariantsData);
 
-        foreach ($items['sync_data'] as $itemId => $itemData) {
-            $rowId = $itemData['row_id'];
-            unset($itemData['row_id']);
+        $itemsToBeSyncedToYotpo = $items['sync_data'];
+        foreach ($itemsToBeSyncedToYotpo as $itemEntityId => $magentoItemData) {
+            $rowId = $magentoItemData['row_id'];
+            unset($magentoItemData['row_id']);
 
-            if ($this->isSyncingAsMainEntity() && $yotpoSyncTableItemsData && array_key_exists($itemId, $yotpoSyncTableItemsData)) {
-                if (!$this->coreConfig->canResync($yotpoSyncTableItemsData[$itemId]['response_code'],
-                    $yotpoSyncTableItemsData[$itemId],
+            if ($this->isSyncingAsMainEntity() && $yotpoSyncTableItemsData && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)) {
+                if (!$this->coreConfig->canResync($yotpoSyncTableItemsData[$itemEntityId]['response_code'],
+                    $yotpoSyncTableItemsData[$itemEntityId],
                     $this->isCommandLineSync)) {
                     $tempSqlDataIntTable = [
                         'attribute_id' => $syncedToYotpoProductAttributeId,
@@ -260,11 +261,11 @@ class Processor extends Main
                 }
             }
 
-            $yotpoSyncTableItemsData[$itemId]['yotpo_id'];
-            $apiParam = $this->getApiParams($itemId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $visibleVariants);
+            $yotpoSyncTableItemsData[$itemEntityId]['yotpo_id'];
+            $apiParam = $this->getApiParams($itemEntityId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $visibleVariants);
 
             if (!$apiParam) {
-                $parentProductId = $parentItemsIds[$itemId] ?? 0;
+                $parentProductId = $parentItemsIds[$itemEntityId] ?? 0;
                 if ($parentProductId) {
                     continue;
                 }
@@ -280,12 +281,12 @@ class Processor extends Main
                     $storeName
                 )
             );
-            $response = $this->processRequest($apiParam, $itemData);
+            $response = $this->processRequest($apiParam, $magentoItemData);
 
             $lastSyncTime = $this->getCurrentTime();
             $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $tempSqlArray = [
-                'product_id' => $itemId,
+                'product_id' => $itemEntityId,
                 $yotpoIdKey => $apiParam['yotpo_id'] ?: 0,
                 'store_id' => $storeId,
                 'synced_to_yotpo' => $lastSyncTime,
@@ -316,7 +317,7 @@ class Processor extends Main
                 $apiParam,
                 $response,
                 $tempSqlArray,
-                $itemData,
+                $magentoItemData,
                 $externalIds,
                 $visibleVariants
             );
@@ -324,8 +325,8 @@ class Processor extends Main
             $tempSqlArray = $returnResponse['temp_sql'];
             $externalIds = $returnResponse['external_id'];
 
-            if (isset($this->retryItems[$storeId][$itemId])) {
-                unset($this->retryItems[$storeId][$itemId]);
+            if (isset($this->retryItems[$storeId][$itemEntityId])) {
+                unset($this->retryItems[$storeId][$itemEntityId]);
             }
 
             if (count($returnResponse['four_not_four_data'])) {
@@ -340,7 +341,7 @@ class Processor extends Main
             //push to parentData array if parent product is
             // being the part of current collection
             if (!$visibleVariants) {
-                $parentItemsData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentItemsData, $parentItemsIds);
+                $parentItemsData = $this->pushParentData((int)$itemEntityId, $tempSqlArray, $parentItemsData, $parentItemsIds);
             }
             $syncDataSql = [];
             $syncDataSql[] = $tempSqlArray;
