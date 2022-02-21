@@ -725,8 +725,7 @@ class Processor extends Main
         if ($unSyncedProductIds) {
             $this->setNormalSyncFlag(false);
             $sync = $this->process($unSyncedProductIds, [$storeId]);
-            $coreConfigStoreId = $this->coreConfig->getStoreId();
-            $this->emulateFrontendArea($coreConfigStoreId);
+            $this->emulateFrontendArea($storeId);
             return $sync;
         }
         return true;
