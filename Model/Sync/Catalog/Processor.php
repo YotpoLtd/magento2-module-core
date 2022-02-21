@@ -222,7 +222,7 @@ class Processor extends Main
     {
         if (count($collectionItems)) {
             $attributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
-            $items = $this->manageSyncItems($collectionItems, $isVisibleVariantsSync);
+            $items = $this->getSyncItems($collectionItems, $isVisibleVariantsSync);
             $parentIds = $items['parent_ids'];
             $yotpoData = $items['yotpo_data'];
             $parentData = $items['parent_data'];
@@ -517,9 +517,9 @@ class Processor extends Main
      * @return array <mixed>
      * @throws NoSuchEntityException
      */
-    protected function manageSyncItems($items, $isVariantsDataIncluded = false): array
+    protected function getSyncItems($items, $isVariantsDataIncluded = false): array
     {
-        return $this->catalogData->manageSyncItems($items, $isVariantsDataIncluded);
+        return $this->catalogData->getSyncItems($items, $isVariantsDataIncluded);
     }
 
     /**
