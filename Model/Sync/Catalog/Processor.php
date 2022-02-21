@@ -110,7 +110,7 @@ class Processor extends Main
     /**
      * Process the Catalog Api
      * @param array <mixed> $forceSyncProducts
-     * @param array $storeIds
+     * @param array <mixed> $storeIds
      * @return bool
      */
     public function process($forceSyncProducts = [], $storeIds = [])
@@ -715,8 +715,8 @@ class Processor extends Main
      * Check and sync the products if not already synced
      *
      * @param array <mixed> $productIds
-     * @param array $visibleItems
-     * @param string $storeId
+     * @param array <mixed> $visibleItems
+     * @param int|null|string $storeId
      * @return bool
      */
     public function syncProducts($productIds, $visibleItems, $storeId)
@@ -735,8 +735,8 @@ class Processor extends Main
      * Get the productIds od the products that are not synced
      *
      * @param array <mixed> $productIds
-     * @param array $visibleItems
-     * @param string $storeId
+     * @param array <mixed> $visibleItems
+     * @param int|null|string $storeId
      * @return mixed
      */
     public function getUnSyncedProductIds($productIds, $visibleItems, $storeId)

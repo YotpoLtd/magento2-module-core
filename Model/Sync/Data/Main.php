@@ -67,7 +67,7 @@ class Main
      * Get product ids
      *
      * @param array <mixed> $productIds
-     * @param int|null $storeId
+     * @param int|null|string $storeId
      * @param array <mixed> $items
      * @return mixed
      */
