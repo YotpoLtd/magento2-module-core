@@ -166,4 +166,17 @@ class Request
         $response->setData('is_success', $successFullResponse);
         return $response;
     }
+
+    /**
+     * @return DataObject
+     */
+    public function getEmptyResponse()
+    {
+        $responseObject = new \Magento\Framework\DataObject();
+        $responseObject->setData('status', null);
+        $responseObject->setData('reason', null);
+        $responseObject->setData('response', []);
+        $responseObject->setData('is_success', false);
+        return $responseObject;
+    }
 }
