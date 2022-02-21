@@ -133,7 +133,7 @@ class Main extends AbstractJobs
      * @param array<string, string|int> $tempSqlArray
      * @param mixed $data
      * @param array<int, int> $externalIds
-     * @param boolean $visibleVariants
+     * @param boolean $isVisibleVariant
      * @return array<string, mixed>
      * @throws NoSuchEntityException
      */
@@ -143,7 +143,7 @@ class Main extends AbstractJobs
         $tempSqlArray,
         $data,
         $externalIds = [],
-        $visibleVariants = false
+        $isVisibleVariant = false
     ) {
         $storeId = $this->coreConfig->getStoreId();
         $fourNotFourData = [];
@@ -151,7 +151,7 @@ class Main extends AbstractJobs
             case $this->coreConfig->getProductSyncMethod('createProduct'):
             case $this->coreConfig->getProductSyncMethod('createProductVariant'):
             default:
-                $yotpoIdkey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
+                $yotpoIdkey = $isVisibleVariant ? 'visible_variant_yotpo_id' : 'yotpo_id';
                 if ($response->getData('is_success')) {
                     $tempSqlArray[$yotpoIdkey] = $this->getYotpoIdFromResponse($response, $apiParam['method']);
                     $this->writeSuccessLog($apiParam['method'], $storeId);
@@ -339,23 +339,23 @@ class Main extends AbstractJobs
      * @param array<int, array> $yotpoData
      * @param array<int, int> $parentIds
      * @param array<int|string, mixed> $parentData
-     * @param boolean $visibleVariant
+     * @param boolean $isVisibleVariant
      * @return array<string, string>
      * @throws NoSuchEntityException
      */
     protected function getApiParams(
         $productId,
         array $yotpoData,
-        array $parentIds = [],
+        array $parentIds,
         array $parentData,
-        $visibleVariant = false
+        $isVisibleVariant
     ) {
         $apiUrl = $this->coreConfig->getEndpoint('products');
         $method = $this->coreConfig->getProductSyncMethod('createProduct');
         $yotpoIdParent = $yotpoId = '';
         $yotpoIdKey = 'yotpo_id';
 
-        if ($visibleVariant) {
+        if ($isVisibleVariant) {
             $yotpoIdKey = 'visible_variant_yotpo_id';
         } elseif (isset($parentIds[$productId])) {
             $parentId = $parentIds[$productId];
