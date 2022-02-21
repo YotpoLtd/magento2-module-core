@@ -376,9 +376,12 @@ class Main extends AbstractJobs
         $apiUrl = $this->coreConfig->getEndpoint('products');
         $method = $this->coreConfig->getProductSyncMethod('createProduct');
         $yotpoIdParent = $yotpoId = '';
+        $yotpoIdKey = 'yotpo_id';
 
-        if (count($parentIds) && !$isVisibleVariant) {
-            if (isset($parentIds[$productId])
+        if ($isVisibleVariant) {
+            $yotpoIdKey = 'visible_variant_yotpo_id';
+        } else {
+            if (count($parentIds) && isset($parentIds[$productId])
                 && isset($parentData[$parentIds[$productId]])
                 && isset($parentData[$parentIds[$productId]]['yotpo_id'])
                 && $yotpoIdParent = $parentData[$parentIds[$productId]]['yotpo_id']) {
@@ -394,7 +397,6 @@ class Main extends AbstractJobs
             }
         }
 
-        $yotpoIdKey = $isVisibleVariant ? 'visible_variant_yotpo_id' : 'yotpo_id';
         if (count($yotpoData)) {
             if (isset($yotpoData[$productId])
                 && isset($yotpoData[$productId][$yotpoIdKey])
