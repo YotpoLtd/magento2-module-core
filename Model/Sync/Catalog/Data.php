@@ -190,11 +190,11 @@ class Data extends Main
 
     /**
      * @param array <mixed> $items
-     * @param boolean $visibleVariants
+     * @param boolean $isVariantsDataIncluded
      * @return array <mixed>
      * @throws NoSuchEntityException
      */
-    public function manageSyncItems($items, $visibleVariants = false)
+    public function manageSyncItems($items, $isVariantsDataIncluded = false)
     {
         $return = [
             'sync_data' => [],
@@ -210,7 +210,7 @@ class Data extends Main
         }
         $visibleVariantsData = [];
         $parentIds = [];
-        if (!$visibleVariants) {
+        if (!$isVariantsDataIncluded) {
             $configIds = $this->yotpoResource->getConfigProductIds($productsId);
             $syncItems = $this->mergeProductOptions($syncItems, $configIds, $productsObject);
             $groupIds = $this->yotpoResource->getGroupProductIds($productsId);
