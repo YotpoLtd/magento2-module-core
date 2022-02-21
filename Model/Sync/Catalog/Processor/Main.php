@@ -102,7 +102,6 @@ class Main extends AbstractJobs
     {
         switch ($params['method']) {
             case $this->coreConfig->getProductSyncMethod('createProduct'):
-            default:
                 $data = ['product' => $data, 'entityLog' => 'catalog'];
                 $response = $this->coreSync->sync('POST', $params['url'], $data);
                 break;
@@ -122,6 +121,19 @@ class Main extends AbstractJobs
                 $data = ['variant' => $data, 'entityLog' => 'catalog'];
                 $response = $this->coreSync->sync('PATCH', $params['url'], $data);
                 break;
+            default:
+                $response = $this->coreSync->getEmptyResponse();
+                $storeId = $this->coreConfig->getStoreId();
+                $this->yotpoCatalogLogger->info(
+                    __(
+                        'API request process failed due to a matching method was not found -
+                        Magento Store ID: %1, Name: %2',
+                        $storeId,
+                        $this->coreConfig->getStoreName($storeId)
+                    ),
+                    []
+                );
+
         }
         return $response;
     }
@@ -150,7 +162,6 @@ class Main extends AbstractJobs
         switch ($apiParam['method']) {
             case $this->coreConfig->getProductSyncMethod('createProduct'):
             case $this->coreConfig->getProductSyncMethod('createProductVariant'):
-            default:
                 $yotpoIdkey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
                 if ($response->getData('is_success')) {
                     $tempSqlArray[$yotpoIdkey] = $this->getYotpoIdFromResponse($response, $apiParam['method']);
@@ -191,6 +202,18 @@ class Main extends AbstractJobs
                     $this->writeFailedLog($apiParam['method'], $storeId);
                 }
                 break;
+            default:
+                $tempSqlArray = [];
+                $storeId = $this->coreConfig->getStoreId();
+                $this->yotpoCatalogLogger->info(
+                    __(
+                        'API Response Process failed due to a matching method was not found
+                        - Magento Store ID: %1, Name: %2',
+                        $storeId,
+                        $this->coreConfig->getStoreName($storeId)
+                    ),
+                    []
+                );
         }
 
         return [
