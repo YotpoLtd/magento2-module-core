@@ -516,13 +516,13 @@ class Processor extends Main
 
     /**
      * @param array <mixed> $items
-     * @param boolean $visibleVariants
+     * @param boolean $isVariantsDataIncluded
      * @return array <mixed>
      * @throws NoSuchEntityException
      */
-    protected function manageSyncItems($items, $visibleVariants = false): array
+    protected function manageSyncItems($items, $isVariantsDataIncluded = false): array
     {
-        return $this->catalogData->manageSyncItems($items, $visibleVariants);
+        return $this->catalogData->manageSyncItems($items, $isVariantsDataIncluded);
     }
 
     /**
