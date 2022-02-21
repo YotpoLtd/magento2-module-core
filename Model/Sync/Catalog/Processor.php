@@ -292,7 +292,7 @@ class Processor extends Main
                 $visibleVariants
             );
 
-            $syncDataRecordToUpdate = $returnResponse['temp_sql'];
+            $processedSyncDataRecordToUpdate = $returnResponse['temp_sql'];
             $externalIds = $returnResponse['external_id'];
 
             if (isset($this->retryItems[$storeId][$itemEntityId])) {
@@ -311,16 +311,15 @@ class Processor extends Main
             //push to parentData array if parent product is
             // being the part of current collection
             if (!$visibleVariants) {
-                $parentItemsData = $this->pushParentData((int)$itemEntityId, $syncDataRecordToUpdate, $parentItemsData, $parentItemsIds);
+                $parentItemsData = $this->pushParentData((int)$itemEntityId, $processedSyncDataRecordToUpdate, $parentItemsData, $parentItemsIds);
             }
-            $syncDataSql = [];
-            $syncDataSql[] = $syncDataRecordToUpdate;
             $this->insertOnDuplicate(
                 'yotpo_product_sync',
-                $syncDataSql
+                [$processedSyncDataRecordToUpdate]
             );
-            $sqlData[] = $syncDataRecordToUpdate;
+            $sqlData[] = $processedSyncDataRecordToUpdate;
         }
+
         $dataToSent = [];
         if (count($sqlData)) {
             $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($sqlData));
