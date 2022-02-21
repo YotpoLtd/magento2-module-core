@@ -716,7 +716,7 @@ class Processor extends Main
      *
      * @param array <mixed> $productIds
      * @param array <mixed> $visibleItems
-     * @param int|null|string $storeId
+     * @param int|null $storeId
      * @return bool
      */
     public function syncProducts($productIds, $visibleItems, $storeId)
@@ -736,7 +736,7 @@ class Processor extends Main
      *
      * @param array <mixed> $productIds
      * @param array <mixed> $visibleItems
-     * @param int|null|string $storeId
+     * @param int|null $storeId
      * @return mixed
      */
     public function getUnSyncedProductIds($productIds, $visibleItems, $storeId)
