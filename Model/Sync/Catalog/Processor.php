@@ -313,10 +313,8 @@ class Processor extends Main
             if (!$visibleVariants) {
                 $parentItemsData = $this->pushParentData((int)$itemEntityId, $processedSyncDataRecordToUpdate, $parentItemsData, $parentItemsIds);
             }
-            $this->insertOnDuplicate(
-                'yotpo_product_sync',
-                [$processedSyncDataRecordToUpdate]
-            );
+
+            $this->updateSyncTable($processedSyncDataRecordToUpdate);
             $sqlData[] = $processedSyncDataRecordToUpdate;
         }
 
@@ -759,5 +757,12 @@ class Processor extends Main
             'synced_to_yotpo' => $lastSyncTime,
             'response_code' => $responseCode
         ];
+    }
+
+    private function updateSyncTable($syncDataRecord) {
+        $this->insertOnDuplicate(
+            'yotpo_product_sync',
+            [$syncDataRecord]
+        );
     }
 }
