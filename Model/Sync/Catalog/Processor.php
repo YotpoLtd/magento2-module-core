@@ -520,7 +520,7 @@ class Processor extends Main
      * @return array <mixed>
      * @throws NoSuchEntityException
      */
-    protected function getSyncItems($items, $isVariantsDataIncluded = false): array
+    protected function getSyncItems($items, $isVariantsDataIncluded): array
     {
         return $this->catalogData->getSyncItems($items, $isVariantsDataIncluded);
     }
