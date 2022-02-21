@@ -194,7 +194,7 @@ class Data extends Main
      * @return array <mixed>
      * @throws NoSuchEntityException
      */
-    public function getSyncItems($items, $isVariantsDataIncluded = false)
+    public function getSyncItems($items, $isVariantsDataIncluded)
     {
         $return = [
             'sync_data' => [],
