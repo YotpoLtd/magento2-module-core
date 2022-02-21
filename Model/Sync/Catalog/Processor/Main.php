@@ -359,8 +359,9 @@ class Main extends AbstractJobs
             $yotpoIdKey = 'visible_variant_yotpo_id';
         } elseif (count($parentIds) && isset($parentIds[$productId])) {
             $parentId = $parentIds[$productId];
-            if (is_array($this->setProductVariantRequest($parentData, $parentId, $method, $apiUrl))) {
-                return [];
+
+            if ($this->isProductParentYotpoIdFound($parentData, $parentId)) {
+                $this->setProductVariantRequest($parentData, $parentId, $method, $apiUrl);
             }
         }
 
@@ -625,17 +626,13 @@ class Main extends AbstractJobs
      */
     private function setProductVariantRequest($parentData, $parentId, &$method, &$apiUrl)
     {
-        if ($this->isProductParentYotpoIdFound($parentData, $parentId)) {
-            $yotpoIdParent = $parentData[$parentId]['yotpo_id'];
+        $yotpoIdParent = $parentData[$parentId]['yotpo_id'];
 
-            $method = $this->coreConfig->getProductSyncMethod('createProductVariant');
-            $apiUrl = $this->coreConfig->getEndpoint(
-                'variant',
-                ['{yotpo_product_id}'],
-                [$yotpoIdParent]
-            );
-        } else {
-            return [];
-        }
+        $method = $this->coreConfig->getProductSyncMethod('createProductVariant');
+        $apiUrl = $this->coreConfig->getEndpoint(
+            'variant',
+            ['{yotpo_product_id}'],
+            [$yotpoIdParent]
+        );
     }
 }

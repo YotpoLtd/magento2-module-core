@@ -22,6 +22,9 @@ use Yotpo\Core\Api\ProductSyncRepositoryInterface;
  */
 class Processor extends Main
 {
+
+    const YOTPO_ID_KEY = 'yotpo_id';
+
     /**
      * @var CatalogData
      */
@@ -261,6 +264,8 @@ class Processor extends Main
                     }
                     continue;
                 }
+
+                $this->createVariantParentInYotpoIfNotExist($isVisibleVariantsSync, $parentData, $parentIds, $itemId);
 
                 $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData, $isVisibleVariantsSync);
 
@@ -750,5 +755,44 @@ class Processor extends Main
             $itemsMap[$product->getId()] = $product;
         }
         return $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
+    }
+
+    /**
+     * @param bool $isVisibleVariantsSync
+     * @param $parentsData
+     * @param $parentIds
+     * @param $productId
+     * @return void
+     */
+    private function createVariantParentInYotpoIfNotExist($isVisibleVariantsSync, $parentsData, $parentIds, $productId): void
+    {
+        if ($isVisibleVariantsSync || !isset($parentIds[$productId])) {
+            return;
+        }
+
+        $parentId = $parentIds[$productId];
+        if ($this->isProductParentYotpoIdFound($parentsData, $parentId)) {
+            return;
+        }
+
+        $parentData = $parentsData[$parentId];
+        $apiUrl = $this->coreConfig->getEndpoint('products');
+        $method = $this->coreConfig->getProductSyncMethod('createProduct');
+        $tempSqlArray = [];
+        $apiParam = [
+            'url' => $apiUrl,
+            'method' => $method,
+        ];
+
+        $parentProductsData = $this->getCollectionForSync([$parentId])->getItems();
+        if (!count($parentProductsData)) {
+            return;
+        }
+
+        $productData = $this->catalogData->attributeMapping(reset($parentProductsData));
+        $response = $this->processRequest($apiParam, $productData);
+
+        $tempSqlArray[$this::YOTPO_ID_KEY] = $this->getYotpoIdFromResponse($response, $method);
+        $this->pushParentData((int)$parentId, $tempSqlArray, $parentData, $parentIds);
     }
 }
