@@ -284,7 +284,7 @@ class Processor extends Main
 
             $lastSyncTime = $this->getCurrentTime();
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
-            $tempSqlArray = [
+            $syncDataRecordToUpdate = [
                 'product_id' => $itemEntityId,
                 $yotpoIdKey => $apiRequestParams['yotpo_id'] ?: 0,
                 'store_id' => $storeId,
@@ -293,9 +293,9 @@ class Processor extends Main
                 'sync_status' => 1
             ];
             if (!$isVisibleVariantsSync) {
-                $tempSqlArray['yotpo_id_parent'] = $apiRequestParams['yotpo_id_parent'] ?: 0;
+                $syncDataRecordToUpdate['yotpo_id_parent'] = $apiRequestParams['yotpo_id_parent'] ?: 0;
             }
-            if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
+            if ($this->coreConfig->canUpdateCustomAttributeForProducts($syncDataRecordToUpdate['response_code'])) {
                 if ($this->isSyncingAsMainEntity()) {
                     $this->insertOnDuplicate(
                         'catalog_product_entity_int',
@@ -307,13 +307,13 @@ class Processor extends Main
             $returnResponse = $this->processResponse(
                 $apiRequestParams,
                 $response,
-                $tempSqlArray,
+                $syncDataRecordToUpdate,
                 $yotpoFormatItemData,
                 $externalIds,
                 $isVisibleVariantsSync
             );
 
-            $tempSqlArray = $returnResponse['temp_sql'];
+            $syncDataRecordToUpdate = $returnResponse['temp_sql'];
             $externalIds = $returnResponse['external_id'];
 
             if (isset($this->retryItems[$storeId][$itemEntityId])) {
@@ -331,17 +331,17 @@ class Processor extends Main
             //push to parentData array if parent product is
             // being the part of current collection
             if (!$isVisibleVariantsSync) {
-                $parentItemsData = $this->pushParentData((int)$itemEntityId, $tempSqlArray, $parentItemsData, $parentItemsIds);
+                $parentItemsData = $this->pushParentData((int)$itemEntityId, $syncDataRecordToUpdate, $parentItemsData, $parentItemsIds);
             }
 
-            if ($tempSqlArray) {
+            if ($syncDataRecordToUpdate) {
                 $syncDataSql = [];
-                $syncDataSql[] = $tempSqlArray;
+                $syncDataSql[] = $syncDataRecordToUpdate;
                 $this->insertOnDuplicate(
                     'yotpo_product_sync',
                     $syncDataSql
                 );
-                $sqlData[] = $tempSqlArray;
+                $sqlData[] = $syncDataRecordToUpdate;
             }
 
             if ($this->isCommandLineSync && !$this->isImmediateRetry) {
