@@ -163,4 +163,34 @@ class Main extends AbstractJobs
         ];
         $this->insertOnDuplicate('yotpo_orders_sync', $finalData);
     }
+
+    /**
+     * @param DataObject $response
+     * @return array <mixed>
+     */
+    public function getMissingProductIds($response)
+    {
+        $message = $response->getData('reason');
+        $messagePrefix = "products not found:";
+
+        if (strpos($message, $messagePrefix) === false) {
+            return [];
+        }
+
+        $explode = explode($messagePrefix, $message);
+        if (count($explode) <=1) {
+            return [];
+        }
+
+        $productsPart = $explode[1];
+        $productsPart = str_replace("\"}]}", '', $productsPart);
+        $productsPart = trim($productsPart);
+        $productIds = explode(',', $productsPart);
+
+        $returnProductIds = [];
+        foreach ($productIds as $productId) {
+            $returnProductIds[] = trim($productId);
+        }
+        return $returnProductIds;
+    }
 }
