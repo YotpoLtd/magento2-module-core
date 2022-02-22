@@ -13,6 +13,7 @@ use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Yotpo\Core\Model\Sync\Category\Processor\ProcessByProduct as CategorySyncProcessor;
 use Magento\Quote\Model\Quote;
+use Yotpo\Core\Model\Sync\Data\Main as SyncDataMain;
 use Yotpo\Core\Model\Sync\Catalog\Processor\Main;
 use Yotpo\Core\Api\ProductSyncRepositoryInterface;
 
@@ -25,6 +26,11 @@ class Processor extends Main
      * @var CatalogData
      */
     protected $catalogData;
+
+    /**
+     * @var SyncDataMain
+     */
+    protected $syncDataMain;
 
     /**
      * @var DateTime
@@ -69,6 +75,7 @@ class Processor extends Main
      * @param YotpoResource $yotpoResource ,
      * @param CategorySyncProcessor $categorySyncProcessor
      * @param ProductSyncRepositoryInterface $productSyncRepositoryInterface
+     * @param SyncDataMain $syncDataMain
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -81,7 +88,8 @@ class Processor extends Main
         DateTime $dateTime,
         YotpoResource $yotpoResource,
         CategorySyncProcessor $categorySyncProcessor,
-        ProductSyncRepositoryInterface $productSyncRepositoryInterface
+        ProductSyncRepositoryInterface $productSyncRepositoryInterface,
+        SyncDataMain $syncDataMain
     ) {
         parent::__construct(
             $appEmulation,
@@ -96,41 +104,19 @@ class Processor extends Main
         $this->dateTime = $dateTime;
         $this->categorySyncProcessor = $categorySyncProcessor;
         $this->productSyncRepositoryInterface = $productSyncRepositoryInterface;
-    }
-
-    /**
-     * Sync products during checkout
-     * @param null|array <mixed> $unSyncedProductIds
-     * @return bool
-     */
-    public function processCheckoutProducts($unSyncedProductIds)
-    {
-        $this->normalSync = false;
-        try {
-            $storeId = $this->coreConfig->getStoreId();
-            $collection = $this->getCollectionForSync($unSyncedProductIds);
-            $this->syncItems($collection->getItems(), $storeId);
-            return true;
-        } catch (NoSuchEntityException $e) {
-            return false;
-        }
+        $this->syncDataMain = $syncDataMain;
     }
 
     /**
      * Process the Catalog Api
      * @param array <mixed> $forceSyncProducts
-     * @param Order|Quote $order
      * @param array <mixed> $storeIds
      * @return bool
      */
-    public function process($forceSyncProducts = [], $order = null, $storeIds = [])
+    public function process($forceSyncProducts = [], $storeIds = [])
     {
         try {
-            if ($order) {
-                $allStores = [$order->getStoreId()];
-            } else {
-                $allStores = array_unique($storeIds) ?: (array)$this->coreConfig->getAllStoreIds(false);
-            }
+            $allStores = array_unique($storeIds) ?: (array)$this->coreConfig->getAllStoreIds(false);
             $unSyncedStoreIds = [];
             foreach ($allStores as $storeId) {
                 if ($this->isCommandLineSync) {
@@ -156,7 +142,7 @@ class Processor extends Main
                                 $this->coreConfig->getStoreName($storeId) . PHP_EOL;
                         }
                     }
-                    if (!$order && !$this->coreConfig->isCatalogSyncActive()) {
+                    if ($this->normalSync && !$this->coreConfig->isCatalogSyncActive()) {
                         $disabled = true;
                         $this->yotpoCatalogLogger->info(
                             __(
@@ -212,7 +198,7 @@ class Processor extends Main
                 $this->stopEnvironmentEmulation();
             }
             $this->stopEnvironmentEmulation();
-            if ($order && in_array($order->getStoreId(), $unSyncedStoreIds)) {
+            if (!$this->normalSync && count($unSyncedStoreIds) > 0) {
                 return false;
             } else {
                 return true;
@@ -304,7 +290,7 @@ class Processor extends Main
                     'sync_status' => 1
                 ];
                 if (!$visibleVariants) {
-                    $tempSqlArray['yotpo_id_parent']  = $apiParam['yotpo_id_parent'] ?: 0;
+                    $tempSqlArray['yotpo_id_parent'] = $apiParam['yotpo_id_parent'] ?: 0;
                 }
                 if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
                     $tempSqlDataIntTable = [
@@ -722,10 +708,51 @@ class Processor extends Main
             $productByStore[$item['store_id']][] = $item['product_id'];
         }
         if ($productIds) {
-            $this->process($productByStore, null, array_unique($storeIds));
+            $this->process($productByStore, array_unique($storeIds));
         } else {
             // phpcs:ignore
             echo 'No catalog data to process.' . PHP_EOL;
         }
+    }
+
+    /**
+     * Check and sync the products if not already synced
+     *
+     * @param array <mixed> $productIds
+     * @param array <mixed> $visibleItems
+     * @param int|null $storeId
+     * @return bool
+     */
+    public function syncProducts($productIds, $visibleItems, $storeId)
+    {
+        $unSyncedProductIds = $this->getUnSyncedProductIds($productIds, $visibleItems, $storeId);
+        if ($unSyncedProductIds) {
+            $this->setNormalSyncFlag(false);
+            $sync = $this->process($unSyncedProductIds, [$storeId]);
+            $this->emulateFrontendArea($storeId);
+            return $sync;
+        }
+        return true;
+    }
+
+    /**
+     * Get the productIds od the products that are not synced
+     *
+     * @param array <mixed> $productIds
+     * @param array <mixed> $visibleItems
+     * @param int|null $storeId
+     * @return mixed
+     */
+    public function getUnSyncedProductIds($productIds, $visibleItems, $storeId)
+    {
+        $itemsMap = [];
+        foreach ($visibleItems as $visibleItem) {
+            $product = $visibleItem->getProduct();
+            if (!$product) {
+                continue;
+            }
+            $itemsMap[$product->getId()] = $product;
+        }
+        return $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
     }
 }

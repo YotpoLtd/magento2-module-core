@@ -64,26 +64,6 @@ class Main
     }
 
     /**
-     * Get the productIds od the products that are not synced
-     *
-     * @param array <mixed> $productIds
-     * @param Order $order
-     * @return mixed
-     */
-    public function getUnSyncedProductIds($productIds, $order)
-    {
-        $orderItems = [];
-        foreach ($order->getAllVisibleItems() as $orderItem) {
-            $product = $orderItem->getProduct();
-            if (!$product) {
-                continue;
-            }
-            $orderItems[$product->getId()] = $product;
-        }
-        return $this->getProductIds($productIds, $order->getStoreId(), $orderItems);
-    }
-
-    /**
      * Get product ids
      *
      * @param array <mixed> $productIds

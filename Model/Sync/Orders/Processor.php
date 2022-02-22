@@ -4,6 +4,7 @@ namespace Yotpo\Core\Model\Sync\Orders;
 
 use Magento\Framework\DataObject;
 use Magento\Sales\Model\Order;
+use Magento\Sales\Model\ResourceModel\Order\Collection as OrderCollection;
 use Magento\Sales\Model\ResourceModel\Order\CollectionFactory as OrderFactory;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\LocalizedException;
@@ -384,7 +385,7 @@ class Processor extends Main
      * Get Order collection
      *
      * @param array <mixed> $retryOrderIds
-     * @return OrderCollection<mixed>
+     * @return OrderCollection <mixed>
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
@@ -438,7 +439,9 @@ class Processor extends Main
         $this->yotpoOrdersLogger->info('Orders sync - data prepared - Order ID - ' . $orderId, []);
         $productIds = $this->data->getLineItemsIds();
         if ($productIds) {
-            $isProductSyncSuccess = $this->checkAndSyncProducts($productIds, $order);
+            $visibleItems = $order->getAllVisibleItems();
+            $storeId = $order->getStoreId();
+            $isProductSyncSuccess = $this->catalogProcessor->syncProducts($productIds, $visibleItems, $storeId);
             if (!$isProductSyncSuccess) {
                 $this->yotpoOrdersLogger->info('Products sync failed - Order ID - ' . $order->getId(), []);
                 return [];
@@ -492,25 +495,6 @@ class Processor extends Main
             echo 'Order process completed for orderId - ' . $orderId . PHP_EOL;
         }
         return $response;
-    }
-
-    /**
-     * Check and sync the products if not already synced
-     *
-     * @param array <mixed> $productIds
-     * @param Order $order
-     * @return bool
-     */
-    public function checkAndSyncProducts($productIds, $order)
-    {
-        $unSyncedProductIds = $this->data->getUnSyncedProductIds($productIds, $order);
-        if ($unSyncedProductIds) {
-            $this->catalogProcessor->setNormalSyncFlag(false);
-            $sync = $this->catalogProcessor->process($unSyncedProductIds, $order);
-            $this->emulateFrontendArea($this->currentStoreId);
-            return $sync;
-        }
-        return true;
     }
 
     /**
