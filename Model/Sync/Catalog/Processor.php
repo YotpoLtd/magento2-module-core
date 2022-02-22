@@ -250,11 +250,8 @@ class Processor extends Main
 
             if ($yotpoSyncTableItemsData
                 && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
-                && !$this->coreConfig->canResync(
-                    $yotpoSyncTableItemsData[$itemEntityId]['response_code'],
-                    $yotpoSyncTableItemsData[$itemEntityId],
-                    $this->isCommandLineSync
-                )&& $this->isSyncingAsMainEntity()
+                && $this->isSyncingAsMainEntity()
+                && !$this->shouldItemBeResynced($yotpoSyncTableItemsData[$itemEntityId])
             ) {
                 $tempSqlDataIntTable = [
                     'attribute_id' => $syncedToYotpoProductAttributeId,
@@ -761,5 +758,10 @@ class Processor extends Main
             $itemsMap[$product->getId()] = $product;
         }
         return $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
+    }
+
+    private function shouldItemBeResynced($yotpoSyncTableItemData)
+    {
+        return $this->coreConfig->canResync($yotpoSyncTableItemData['response_code'], $yotpoSyncTableItemData, $this->isCommandLineSync);
     }
 }
