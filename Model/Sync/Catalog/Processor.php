@@ -248,12 +248,13 @@ class Processor extends Main
             $itemRowId = $yotpoFormatItemData['row_id'];
             unset($yotpoFormatItemData['row_id']);
 
+            $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId);
+
             if ($yotpoSyncTableItemsData
                 && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
                 && $this->isSyncingAsMainEntity()
                 && !$this->shouldItemBeResynced($yotpoSyncTableItemsData[$itemEntityId])
             ) {
-                $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId);
                 $this->insertOnDuplicate(
                     'catalog_product_entity_int',
                     [$attributeDataToUpdate]
@@ -294,7 +295,6 @@ class Processor extends Main
                 $tempSqlArray['yotpo_id_parent'] = $apiParam['yotpo_id_parent'] ?: 0;
             }
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
-                $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId);
                 if ($this->isSyncingAsMainEntity()) {
                     $this->insertOnDuplicate(
                         'catalog_product_entity_int',
