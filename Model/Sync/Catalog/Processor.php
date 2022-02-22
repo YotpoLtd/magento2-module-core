@@ -175,8 +175,9 @@ class Processor extends Main
                     }
                     $this->retryItems[$storeId] = [];
                     if ($this->productSyncLimit > 0) {
-                        $forceSyncProductIds = $forceSyncProducts[$storeId] ?? $forceSyncProducts;
-                        $collection = $this->getCollectionForSync($forceSyncProductIds);
+                        $forceSyncProductIds = $this->isCommandLineSync &&
+                        isset($forceSyncProducts[$storeId]) ? $forceSyncProducts[$storeId] : $forceSyncProducts;
+                         $collection = $this->getCollectionForSync($forceSyncProductIds);
                         $this->isImmediateRetry = false;
                         $this->syncItems($collection->getItems(), $storeId);
                     } else {
