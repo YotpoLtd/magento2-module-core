@@ -59,7 +59,7 @@ class OrderMain
             0
         );
         $this->updateOrderSyncTable($order->getId());
-        if ($this->yotpoConfig->isOrdersSyncActive($order->getStoreId())) {
+        if ($this->yotpoConfig->isRealTimeOrdersSyncActive($order->getStoreId())) {
             $this->ordersProcessor->processOrder($order);
         }
     }
