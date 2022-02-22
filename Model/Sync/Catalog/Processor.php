@@ -283,16 +283,10 @@ class Processor extends Main
 
             $response = $this->processRequest($apiRequestParams, $yotpoFormatItemData);
 
-            $lastSyncTime = $this->getCurrentTime();
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
-            $syncDataRecordToUpdate = [
-                'product_id' => $itemEntityId,
-                $yotpoIdKey => $apiRequestParams['yotpo_id'] ?: 0,
-                'store_id' => $storeId,
-                'synced_to_yotpo' => $lastSyncTime,
-                'response_code' => $response->getData('status'),
-                'sync_status' => 1
-            ];
+            $yotpoIdValue = $apiRequestParams['yotpo_id'] ?: 0;
+            $responseCode = $response->getData('status');
+            $syncDataRecordToUpdate = $this->prepareSyncTableDataToUpdate($itemEntityId, $yotpoIdKey, $yotpoIdValue, $storeId, $responseCode);
             if (!$isVisibleVariantsSync) {
                 $syncDataRecordToUpdate['yotpo_id_parent'] = $apiRequestParams['yotpo_id_parent'] ?: 0;
             }
@@ -645,13 +639,9 @@ class Processor extends Main
                     $parentId = $product['yotpo_product_id'];
                 }
                 $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
-                $sqlData[] = [
-                    'product_id' => $product['external_id'],
-                    'store_id' => $this->coreConfig->getStoreId(),
-                    $yotpoIdKey => $product['yotpo_id'],
-                    'yotpo_id_parent' => $parentId,
-                    'response_code' => '200'
-                ];
+
+                $responseCode = '200';
+                $sqlData[] = $this->prepareSyncTableDataToUpdate($product['external_id'], $yotpoIdKey, $product['yotpo_id'], $this->coreConfig->getStoreId(), $responseCode);
             }
         }
         return $sqlData;
@@ -754,6 +744,19 @@ class Processor extends Main
             'store_id' => $storeId,
             'value' => 1,
             $this->entityIdFieldValue => $itemRowId
+        ];
+    }
+
+    private function prepareSyncTableDataToUpdate($itemEntityId, $yotpoIdKey, $yotpoIdValue, $storeId, $responseCode, $yotpoParentId = null)
+    {
+        $lastSyncTime = $this->getCurrentTime();
+        return [
+            'product_id' => $itemEntityId,
+            $yotpoIdKey => $yotpoIdValue,
+            'yotpo_id_parent' => $yotpoParentId,
+            'store_id' => $storeId,
+            'synced_to_yotpo' => $lastSyncTime,
+            'response_code' => $responseCode
         ];
     }
 }
