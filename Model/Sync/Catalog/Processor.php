@@ -307,7 +307,7 @@ class Processor extends Main
                 $isVisibleVariantsSync
             );
 
-            $syncDataRecordToUpdate = $returnResponse['temp_sql'];
+            $processedSyncDataRecordToUpdate = $returnResponse['temp_sql'];
             $externalIds = $returnResponse['external_id'];
 
             if (isset($this->retryItems[$storeId][$itemEntityId])) {
@@ -325,17 +325,17 @@ class Processor extends Main
             //push to parentData array if parent product is
             // being the part of current collection
             if (!$isVisibleVariantsSync) {
-                $parentItemsData = $this->pushParentData((int)$itemEntityId, $syncDataRecordToUpdate, $parentItemsData, $parentItemsIds);
+                $parentItemsData = $this->pushParentData((int)$itemEntityId, $processedSyncDataRecordToUpdate, $parentItemsData, $parentItemsIds);
             }
 
-            if ($syncDataRecordToUpdate) {
+            if ($processedSyncDataRecordToUpdate) {
                 $syncDataSql = [];
-                $syncDataSql[] = $syncDataRecordToUpdate;
+                $syncDataSql[] = $processedSyncDataRecordToUpdate;
                 $this->insertOnDuplicate(
                     'yotpo_product_sync',
                     $syncDataSql
                 );
-                $sqlData[] = $syncDataRecordToUpdate;
+                $sqlData[] = $processedSyncDataRecordToUpdate;
             }
 
             if ($this->isCommandLineSync && !$this->isImmediateRetry) {
