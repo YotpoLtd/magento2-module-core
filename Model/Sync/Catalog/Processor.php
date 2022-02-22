@@ -281,7 +281,7 @@ class Processor extends Main
                 )
             );
 
-            $response = $this->processRequest($apiRequestParams, $magentoItemData);
+            $response = $this->processRequest($apiRequestParams, $yotpoFormatItemData);
 
             $lastSyncTime = $this->getCurrentTime();
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
