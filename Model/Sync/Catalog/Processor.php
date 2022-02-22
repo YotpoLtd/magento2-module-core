@@ -244,15 +244,15 @@ class Processor extends Main
         $visibleVariantsDataValues = array_values($visibleVariantsData);
 
         $itemsToBeSyncedToYotpo = $items['sync_data'];
-        foreach ($itemsToBeSyncedToYotpo as $itemId => $itemData) {
+        foreach ($itemsToBeSyncedToYotpo as $itemEntityId => $itemData) {
             $rowId = $itemData['row_id'];
             unset($itemData['row_id']);
 
             if ($yotpoSyncTableItemsData
-                && array_key_exists($itemId, $yotpoSyncTableItemsData)
+                && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
                 && !$this->coreConfig->canResync(
-                    $yotpoSyncTableItemsData[$itemId]['response_code'],
-                    $yotpoSyncTableItemsData[$itemId],
+                    $yotpoSyncTableItemsData[$itemEntityId]['response_code'],
+                    $yotpoSyncTableItemsData[$itemEntityId],
                     $this->isCommandLineSync
                 )
             ) {
@@ -273,10 +273,10 @@ class Processor extends Main
                 continue;
             }
 
-            $apiParam = $this->getApiParams($itemId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $isVisibleVariantsSync);
+            $apiParam = $this->getApiParams($itemEntityId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $isVisibleVariantsSync);
 
             if (!$apiParam) {
-                $parentProductId = $parentItemsIds[$itemId] ?? 0;
+                $parentProductId = $parentItemsIds[$itemEntityId] ?? 0;
                 if ($parentProductId) {
                     continue;
                 }
@@ -295,7 +295,7 @@ class Processor extends Main
             $lastSyncTime = $this->getCurrentTime();
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $tempSqlArray = [
-                'product_id' => $itemId,
+                'product_id' => $itemEntityId,
                 $yotpoIdKey => $apiParam['yotpo_id'] ?: 0,
                 'store_id' => $storeId,
                 'synced_to_yotpo' => $lastSyncTime,
@@ -334,8 +334,8 @@ class Processor extends Main
             $tempSqlArray = $returnResponse['temp_sql'];
             $externalIds = $returnResponse['external_id'];
 
-            if (isset($this->retryItems[$storeId][$itemId])) {
-                unset($this->retryItems[$storeId][$itemId]);
+            if (isset($this->retryItems[$storeId][$itemEntityId])) {
+                unset($this->retryItems[$storeId][$itemEntityId]);
             }
 
             if (count($returnResponse['four_not_four_data'])) {
@@ -350,7 +350,7 @@ class Processor extends Main
             //push to parentData array if parent product is
             // being the part of current collection
             if (!$isVisibleVariantsSync) {
-                $parentItemsData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentItemsData, $parentItemsIds);
+                $parentItemsData = $this->pushParentData((int)$itemEntityId, $tempSqlArray, $parentItemsData, $parentItemsIds);
             }
 
             if ($tempSqlArray) {
@@ -365,7 +365,7 @@ class Processor extends Main
 
             if ($this->isCommandLineSync && !$this->isImmediateRetry) {
                 // phpcs:ignore
-                echo 'Catalog process completed for productid - ' . $itemId . PHP_EOL;
+                echo 'Catalog process completed for productid - ' . $itemEntityId . PHP_EOL;
             }
         }
         $dataToSent = [];
