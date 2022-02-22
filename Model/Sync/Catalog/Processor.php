@@ -255,10 +255,7 @@ class Processor extends Main
                 && $this->isSyncingAsMainEntity()
                 && !$this->shouldItemBeResynced($yotpoSyncTableItemsData[$itemEntityId])
             ) {
-                $this->insertOnDuplicate(
-                    'catalog_product_entity_int',
-                    [$attributeDataToUpdate]
-                );
+                $this->updateProductSyncAttribute($attributeDataToUpdate);
                 continue;
             }
 
@@ -291,10 +288,7 @@ class Processor extends Main
             }
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($syncDataRecordToUpdate['response_code'])) {
                 if ($this->isSyncingAsMainEntity()) {
-                    $this->insertOnDuplicate(
-                        'catalog_product_entity_int',
-                        [$attributeDataToUpdate]
-                    );
+                    $this->updateProductSyncAttribute($attributeDataToUpdate);
                 }
             }
 
@@ -743,6 +737,13 @@ class Processor extends Main
             'synced_to_yotpo' => $lastSyncTime,
             'response_code' => $responseCode
         ];
+    }
+
+    private function updateProductSyncAttribute($attributeDataToUpdate) {
+        $this->insertOnDuplicate(
+            'catalog_product_entity_int',
+            [$attributeDataToUpdate]
+        );
     }
 
     private function updateSyncTable($syncDataRecord) {
