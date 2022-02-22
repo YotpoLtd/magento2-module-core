@@ -639,8 +639,8 @@ class Main extends AbstractJobs
     }
 
     /**
-     * @param $parentData
-     * @param $parentId
+     * @param array $parentData
+     * @param integer $parentId
      * @return bool
      */
     public function isProductParentYotpoIdFound($parentData, $parentId): bool

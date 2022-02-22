@@ -706,11 +706,21 @@ class Processor extends Main
         return $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
     }
 
+    /**
+     * @param array $yotpoSyncTableItemData
+     * @return bool
+     */
     private function shouldItemBeResynced($yotpoSyncTableItemData)
     {
         return $this->coreConfig->canResync($yotpoSyncTableItemData['response_code'], $yotpoSyncTableItemData, $this->isCommandLineSync);
     }
 
+    /**
+     * @param integer $storeId
+     * @param integer $itemRowId
+     * @param integer $syncedToYotpoProductAttributeId
+     * @return array
+     */
     private function prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId)
     {
         return [
@@ -721,6 +731,15 @@ class Processor extends Main
         ];
     }
 
+    /**
+     * @param integer $itemEntityId
+     * @param string $yotpoIdKey
+     * @param integer $yotpoIdValue
+     * @param integer $storeId
+     * @param integer $responseCode
+     * @param integer $yotpoParentId
+     * @return array
+     */
     private function prepareSyncTableDataToUpdate($itemEntityId, $yotpoIdKey, $yotpoIdValue, $storeId, $responseCode, $yotpoParentId = null)
     {
         $lastSyncTime = $this->getCurrentTime();
@@ -734,6 +753,10 @@ class Processor extends Main
         ];
     }
 
+    /**
+     * @param array $attributeDataToUpdate
+     * @return void
+     */
     private function updateProductSyncAttribute($attributeDataToUpdate) {
         $this->insertOnDuplicate(
             'catalog_product_entity_int',
@@ -741,6 +764,10 @@ class Processor extends Main
         );
     }
 
+    /**
+     * @param array $syncDataRecord
+     * @return void
+     */
     private function updateSyncTable($syncDataRecord) {
         $this->insertOnDuplicate(
             'yotpo_product_sync',
