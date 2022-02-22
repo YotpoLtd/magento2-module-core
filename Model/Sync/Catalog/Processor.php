@@ -235,7 +235,7 @@ class Processor extends Main
         $items = $this->getSyncItems($collectionItems, $isVisibleVariantsSync);
         $parentItemsIds = $items['parent_ids'];
         $yotpoSyncTableItemsData = $items['yotpo_data'];
-        $parentData = $items['parent_data'];
+        $parentItemsData = $items['parent_data'];
 
         $lastSyncTime = '';
         $sqlData = $sqlDataIntTable = [];
@@ -270,7 +270,7 @@ class Processor extends Main
                 continue;
             }
 
-            $apiParam = $this->getApiParams($itemId, $yotpoSyncTableItemsData, $parentItemsIds, $parentData, $isVisibleVariantsSync);
+            $apiParam = $this->getApiParams($itemId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $isVisibleVariantsSync);
 
             if (!$apiParam) {
                 $parentProductId = $parentItemsIds[$itemId] ?? 0;
@@ -346,7 +346,7 @@ class Processor extends Main
             //push to parentData array if parent product is
             // being the part of current collection
             if (!$isVisibleVariantsSync) {
-                $parentData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentData, $parentItemsIds);
+                $parentItemsData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentItemsData, $parentItemsIds);
             }
 
             if ($tempSqlArray) {
@@ -372,7 +372,7 @@ class Processor extends Main
         if ($externalIds) {
             $yotpoExistingProducts = $this->processExistData(
                 $externalIds,
-                $parentData,
+                $parentItemsData,
                 $parentItemsIds,
                 $isVisibleVariantsSync
             );
