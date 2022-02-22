@@ -238,7 +238,7 @@ class Processor extends Main
         $parentItemsData = $items['parent_data'];
 
         $syncTableRecordsUpdated = [];
-        $externalIds = [];
+        $externalIdsWithConflictResponse = [];
         $visibleVariantsData = $isVisibleVariantsSync ? [] : $items['visible_variants'];
         $visibleVariantsDataValues = array_values($visibleVariantsData);
 
@@ -296,12 +296,12 @@ class Processor extends Main
                 $response,
                 $syncDataRecordToUpdate,
                 $yotpoFormatItemData,
-                $externalIds,
+                $externalIdsWithConflictResponse,
                 $isVisibleVariantsSync
             );
 
             $processedSyncDataRecordToUpdate = $returnResponse['temp_sql'];
-            $externalIds = $returnResponse['external_id'];
+            $externalIdsWithConflictResponse = $returnResponse['external_id'];
 
             if (isset($this->retryItems[$storeId][$itemEntityId])) {
                 unset($this->retryItems[$storeId][$itemEntityId]);
@@ -336,9 +336,9 @@ class Processor extends Main
             $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($syncTableRecordsUpdated));
         }
 
-        if ($externalIds) {
+        if ($externalIdsWithConflictResponse) {
             $yotpoExistingProducts = $this->processExistData(
-                $externalIds,
+                $externalIdsWithConflictResponse,
                 $parentItemsData,
                 $parentItemsIds,
                 $isVisibleVariantsSync
