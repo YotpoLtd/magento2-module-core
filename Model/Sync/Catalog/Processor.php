@@ -243,7 +243,8 @@ class Processor extends Main
         $visibleVariantsData = $isVisibleVariantsSync ? [] : $items['visible_variants'];
         $visibleVariantsDataValues = array_values($visibleVariantsData);
 
-        foreach ($items['sync_data'] as $itemId => $itemData) {
+        $itemsToBeSyncedToYotpo = $items['sync_data'];
+        foreach ($itemsToBeSyncedToYotpo as $itemId => $itemData) {
             $rowId = $itemData['row_id'];
             unset($itemData['row_id']);
 
