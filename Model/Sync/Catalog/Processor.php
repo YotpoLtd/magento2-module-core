@@ -218,6 +218,17 @@ class Processor extends Main
      * @return boolean|void
      * @throws NoSuchEntityException
      */
+    public function syncItemsNew($collectionItems, $storeId, $visibleVariants = false) {
+
+    }
+
+    /**
+     * @param array <mixed> $collectionItems
+     * @param int $storeId
+     * @param boolean $visibleVariants
+     * @return boolean|void
+     * @throws NoSuchEntityException
+     */
     public function syncItems($collectionItems, $storeId, $visibleVariants = false)
     {
         if (!count($collectionItems)) {
@@ -229,6 +240,7 @@ class Processor extends Main
         $parentItemsIds = $items['parent_ids'];
         $parentItemsData = $items['parent_data'];
         $yotpoSyncTableItemsData = $items['yotpo_data'];
+        $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
 
         $lastSyncTime = '';
         $sqlData = $sqlDataIntTable = [];
@@ -267,9 +279,12 @@ class Processor extends Main
                 )
             );
 
+            if (in_array($apiRequestParams['method'], ['createProduct', 'updateProduct', 'createProductVariant', 'updateProductVariant'])) {
+                upsertItem();
+            }
+
             $response = $this->processRequest($apiRequestParams, $magentoItemData);
 
-            $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $yotpoIdValue = $apiRequestParams['yotpo_id'] ?: 0;
             $syncDataRecordToUpdate = $this->prepareSyncTableDataToUpdate($itemEntityId, $yotpoIdKey, $yotpoIdValue, $storeId, $response->getData('status'));
             if (!$visibleVariants) {
@@ -764,5 +779,58 @@ class Processor extends Main
             'yotpo_product_sync',
             [$syncDataRecord]
         );
+    }
+
+    private function upsertItem($method, $entityType, $requestUrl, $data) {
+        if (in_array($method, ['createProduct', 'updateProduct'])) {
+            return $this->upsertProduct($method, $requestUrl, $data);
+        } elseif (in_array($method, ['createProductVariant', 'updateProductVariant'])) {
+            return $this->upsertVariant($method, $requestUrl, $data);
+        }
+    }
+
+    private function upsertProduct($method, $requestUrl, $data) {
+        $requestData = ['product' => $data, 'entityLog' => 'catalog'];
+
+        $response = $this->createItem($requestUrl, $requestData);
+        $productResponseStatusCode = $response->getData('status');
+        if ($productResponseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE && !$this->isSyncingAsMainEntity()) {
+            $response = $this->createMinimalProduct($requestUrl, $data);
+        }
+
+        return $response;
+    }
+
+    private function upsertVariant($method, $requestUrl, $data) {
+        $requestData = ['variant' => $data, 'entityLog' => 'catalog'];
+
+        $response = $this->createItem($requestUrl, $requestData);
+        $productResponseStatusCode = $response->getData('status');
+        if ($productResponseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE && !$this->isSyncingAsMainEntity()) {
+            $response = $this->createMinimalProduct($requestUrl, $data);
+        }
+
+        return $response;
+    }
+
+    private function createItem($requestUrl, $requestData) {
+        $response = $this->coreSync->sync($this->coreConfig::METHOD_POST, $requestUrl, $requestData);
+
+
+
+        return $response;
+    }
+
+
+
+    private function updateItem($requestUrl, $requestData) {
+        $response = $this->coreSync->sync($this->coreConfig::METHOD_PATCH, $requestUrl, $requestData);
+
+        return $response;
+    }
+
+    private function createMinimalProduct($requestUrl, $data) {
+        $requestData['product'] = $this->catalogData->getMinimalProductRequestData($data);
+        return $this->coreSync->sync($this->coreConfig::METHOD_POST, $requestUrl, $requestData);
     }
 }
