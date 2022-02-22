@@ -220,189 +220,7 @@ class Processor extends Main
      */
     public function syncItems($collectionItems, $storeId, $isVisibleVariantsSync = false)
     {
-        if (count($collectionItems)) {
-            $attributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
-            $items = $this->getSyncItems($collectionItems, $isVisibleVariantsSync);
-            $parentIds = $items['parent_ids'];
-            $yotpoData = $items['yotpo_data'];
-            $parentData = $items['parent_data'];
-
-            $lastSyncTime = '';
-            $sqlData = $sqlDataIntTable = [];
-            $externalIds = [];
-            $visibleVariantsData = $isVisibleVariantsSync ? [] : $items['visible_variants'];
-            $visibleVariantsDataValues = array_values($visibleVariantsData);
-
-            foreach ($items['sync_data'] as $itemId => $itemData) {
-                $rowId = $itemData['row_id'];
-                unset($itemData['row_id']);
-
-                if ($yotpoData
-                    && array_key_exists($itemId, $yotpoData)
-                    && !$this->coreConfig->canResync(
-                        $yotpoData[$itemId]['response_code'],
-                        $yotpoData[$itemId],
-                        $this->isCommandLineSync
-                    ) && $this->isSyncingAsMainEntity()
-                ) {
-                    $tempSqlDataIntTable = [
-                        'attribute_id' => $attributeId,
-                        'store_id' => $storeId,
-                        'value' => 1,
-                        $this->entityIdFieldValue => $rowId
-                    ];
-                    $sqlDataIntTable = [];
-                    $sqlDataIntTable[] = $tempSqlDataIntTable;
-                    $this->insertOnDuplicate(
-                        'catalog_product_entity_int',
-                        $sqlDataIntTable
-                    );
-                    continue;
-                }
-
-                $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData, $isVisibleVariantsSync);
-
-                if (!$apiParam) {
-                    $parentProductId = $parentIds[$itemId] ?? 0;
-                    if ($parentProductId) {
-                        continue;
-                    }
-                }
-
-                $this->yotpoCatalogLogger->info(
-                    __(
-                        'Data ready to sync - Method: %1 - Magento Store ID: %2, Name: %3',
-                        $apiParam['method'],
-                        $storeId,
-                        $this->coreConfig->getStoreName($storeId)
-                    )
-                );
-                $response = $this->processRequest($apiParam, $itemData);
-
-                $lastSyncTime = $this->getCurrentTime();
-                $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
-                $tempSqlArray = [
-                    'product_id' => $itemId,
-                    $yotpoIdKey => $apiParam['yotpo_id'] ?: 0,
-                    'store_id' => $storeId,
-                    'synced_to_yotpo' => $lastSyncTime,
-                    'response_code' => $response->getData('status'),
-                    'sync_status' => 1
-                ];
-                if (!$isVisibleVariantsSync) {
-                    $tempSqlArray['yotpo_id_parent'] = $apiParam['yotpo_id_parent'] ?: 0;
-                }
-                if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
-                    $tempSqlDataIntTable = [
-                        'attribute_id' => $attributeId,
-                        'store_id' => $storeId,
-                        'value' => 1,
-                        $this->entityIdFieldValue => $rowId
-                    ];
-                    $sqlDataIntTable = [];
-                    $sqlDataIntTable[] = $tempSqlDataIntTable;
-                    if ($this->isSyncingAsMainEntity()) {
-                        $this->insertOnDuplicate(
-                            'catalog_product_entity_int',
-                            $sqlDataIntTable
-                        );
-                    }
-                }
-
-                $returnResponse = $this->processResponse(
-                    $apiParam,
-                    $response,
-                    $tempSqlArray,
-                    $itemData,
-                    $externalIds,
-                    $isVisibleVariantsSync
-                );
-
-                $tempSqlArray = $returnResponse['temp_sql'];
-                $externalIds = $returnResponse['external_id'];
-
-                if (isset($this->retryItems[$storeId][$itemId])) {
-                    unset($this->retryItems[$storeId][$itemId]);
-                }
-
-                if (count($returnResponse['four_not_four_data'])) {
-                    foreach ($returnResponse['four_not_four_data'] as $retryId) {
-                        if ($this->isImmediateRetry($response, $this->entity, $isVisibleVariantsSync.$retryId, $storeId)) {
-                            $this->retryItems[$storeId][$retryId] = $retryId;
-                        }
-                    }
-                }
-
-                //push to parentData array if parent product is
-                // being the part of current collection
-                if (!$isVisibleVariantsSync) {
-                    $parentData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentData, $parentIds);
-                }
-                if ($tempSqlArray) {
-                    $syncDataSql = [];
-                    $syncDataSql[] = $tempSqlArray;
-                    $this->insertOnDuplicate(
-                        'yotpo_product_sync',
-                        $syncDataSql
-                    );
-                    $sqlData[] = $tempSqlArray;
-                }
-                if ($this->isCommandLineSync && !$this->isImmediateRetry) {
-                    // phpcs:ignore
-                    echo 'Catalog process completed for productid - ' . $itemId . PHP_EOL;
-                }
-            }
-            $dataToSent = [];
-            if (count($sqlData)) {
-                $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($sqlData));
-            }
-
-            if ($externalIds) {
-                $yotpoExistingProducts = $this->processExistData(
-                    $externalIds,
-                    $parentData,
-                    $parentIds,
-                    $isVisibleVariantsSync
-                );
-                if ($yotpoExistingProducts && $this->isSyncingAsMainEntity()) {
-                    $dataToSent = array_merge(
-                        $dataToSent,
-                        $this->catalogData->filterDataForCatSync($yotpoExistingProducts)
-                    );
-                }
-            }
-
-            if ($this->isSyncingAsMainEntity()) {
-                $this->coreConfig->saveConfig('catalog_last_sync_time', $lastSyncTime);
-                $dataForCategorySync = [];
-                if ($dataToSent && !$isVisibleVariantsSync) {
-                    $dataForCategorySync = $this->getProductsForCategorySync(
-                        $dataToSent,
-                        $collectionItems,
-                        $dataForCategorySync
-                    );
-                }
-                if (count($dataForCategorySync) > 0) {
-                    $this->categorySyncProcessor->process($dataForCategorySync);
-                }
-            }
-
-            $reSyncYotpoKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
-            if (isset($this->retryItems[$storeId]) && count($this->retryItems[$storeId]) > 0) {
-                $this->update(
-                    'yotpo_product_sync',
-                    [$reSyncYotpoKey => 0, 'response_code' => coreConfig::CUSTOM_RESPONSE_DATA],
-                    ['product_id' . ' IN (?)' => $this->retryItems[$storeId], 'store_id = ?' => $storeId]
-                );
-                $collection = $this->getCollectionForSync($this->retryItems[$storeId]);
-                $this->isImmediateRetry = true;
-                $this->syncItems($collection->getItems(), $storeId, $isVisibleVariantsSync);
-            }
-
-            if ($visibleVariantsDataValues && !$isVisibleVariantsSync) {
-                $this->syncItems($visibleVariantsDataValues, $storeId, true);
-            }
-        } else {
+        if (!count($collectionItems)) {
             $this->yotpoCatalogLogger->info(
                 __(
                     'Product Sync complete : No Data, Magento Store ID: %1, Name: %2',
@@ -410,6 +228,191 @@ class Processor extends Main
                     $this->coreConfig->getStoreName($storeId)
                 )
             );
+            return;
+        }
+
+        $attributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
+        $items = $this->getSyncItems($collectionItems, $isVisibleVariantsSync);
+        $parentIds = $items['parent_ids'];
+        $yotpoData = $items['yotpo_data'];
+        $parentData = $items['parent_data'];
+
+        $lastSyncTime = '';
+        $sqlData = $sqlDataIntTable = [];
+        $externalIds = [];
+        $visibleVariantsData = $isVisibleVariantsSync ? [] : $items['visible_variants'];
+        $visibleVariantsDataValues = array_values($visibleVariantsData);
+
+        foreach ($items['sync_data'] as $itemId => $itemData) {
+            $rowId = $itemData['row_id'];
+            unset($itemData['row_id']);
+
+            if ($yotpoData
+                && array_key_exists($itemId, $yotpoData)
+                && !$this->coreConfig->canResync(
+                    $yotpoData[$itemId]['response_code'],
+                    $yotpoData[$itemId],
+                    $this->isCommandLineSync
+                )&& $this->isSyncingAsMainEntity()
+            ) {
+                $tempSqlDataIntTable = [
+                    'attribute_id' => $attributeId,
+                    'store_id' => $storeId,
+                    'value' => 1,
+                    $this->entityIdFieldValue => $rowId
+                ];
+                $sqlDataIntTable = [];
+                $sqlDataIntTable[] = $tempSqlDataIntTable;
+                $this->insertOnDuplicate(
+                    'catalog_product_entity_int',
+                    $sqlDataIntTable
+                );
+                continue;
+            }
+
+            $apiParam = $this->getApiParams($itemId, $yotpoData, $parentIds, $parentData, $isVisibleVariantsSync);
+
+            if (!$apiParam) {
+                $parentProductId = $parentIds[$itemId] ?? 0;
+                if ($parentProductId) {
+                    continue;
+                }
+            }
+
+            $this->yotpoCatalogLogger->info(
+                __(
+                    'Data ready to sync - Method: %1 - Magento Store ID: %2, Name: %3',
+                    $apiParam['method'],
+                    $storeId,
+                    $this->coreConfig->getStoreName($storeId)
+                )
+            );
+            $response = $this->processRequest($apiParam, $itemData);
+
+            $lastSyncTime = $this->getCurrentTime();
+            $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
+            $tempSqlArray = [
+                'product_id' => $itemId,
+                $yotpoIdKey => $apiParam['yotpo_id'] ?: 0,
+                'store_id' => $storeId,
+                'synced_to_yotpo' => $lastSyncTime,
+                'response_code' => $response->getData('status'),
+                'sync_status' => 1
+            ];
+            if (!$isVisibleVariantsSync) {
+                $tempSqlArray['yotpo_id_parent'] = $apiParam['yotpo_id_parent'] ?: 0;
+            }
+            if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
+                $tempSqlDataIntTable = [
+                    'attribute_id' => $attributeId,
+                    'store_id' => $storeId,
+                    'value' => 1,
+                    $this->entityIdFieldValue => $rowId
+                ];
+                $sqlDataIntTable = [];
+                $sqlDataIntTable[] = $tempSqlDataIntTable;
+                if ($this->isSyncingAsMainEntity()) {
+                    $this->insertOnDuplicate(
+                        'catalog_product_entity_int',
+                        $sqlDataIntTable
+                    );
+                }
+            }
+
+            $returnResponse = $this->processResponse(
+                $apiParam,
+                $response,
+                $tempSqlArray,
+                $itemData,
+                $externalIds,
+                $isVisibleVariantsSync
+            );
+
+            $tempSqlArray = $returnResponse['temp_sql'];
+            $externalIds = $returnResponse['external_id'];
+
+            if (isset($this->retryItems[$storeId][$itemId])) {
+                unset($this->retryItems[$storeId][$itemId]);
+            }
+
+            if (count($returnResponse['four_not_four_data'])) {
+                foreach ($returnResponse['four_not_four_data'] as $retryId) {
+                    if ($this->isImmediateRetry($response, $this->entity, $isVisibleVariantsSync.$retryId, $storeId)) {
+                        $this->retryItems[$storeId][$retryId] = $retryId;
+                    }
+                }
+            }
+
+            //push to parentData array if parent product is
+            // being the part of current collection
+            if (!$isVisibleVariantsSync) {
+                $parentData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentData, $parentIds);
+            }
+
+            if ($tempSqlArray) {
+                $syncDataSql = [];
+                $syncDataSql[] = $tempSqlArray;
+                $this->insertOnDuplicate(
+                    'yotpo_product_sync',
+                    $syncDataSql
+                );
+                $sqlData[] = $tempSqlArray;
+            }
+
+            if ($this->isCommandLineSync && !$this->isImmediateRetry) {
+                // phpcs:ignore
+                echo 'Catalog process completed for productid - ' . $itemId . PHP_EOL;
+            }
+        }
+        $dataToSent = [];
+        if (count($sqlData)) {
+            $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($sqlData));
+        }
+
+        if ($externalIds) {
+            $yotpoExistingProducts = $this->processExistData(
+                $externalIds,
+                $parentData,
+                $parentIds,
+                $isVisibleVariantsSync
+            );
+            if ($yotpoExistingProducts && $this->isSyncingAsMainEntity()) {
+                $dataToSent = array_merge(
+                    $dataToSent,
+                    $this->catalogData->filterDataForCatSync($yotpoExistingProducts)
+                );
+            }
+        }
+
+        if ($this->isSyncingAsMainEntity()) {
+            $this->coreConfig->saveConfig('catalog_last_sync_time', $lastSyncTime);
+            $dataForCategorySync = [];
+            if ($dataToSent && !$isVisibleVariantsSync) {
+                $dataForCategorySync = $this->getProductsForCategorySync(
+                    $dataToSent,
+                    $collectionItems,
+                    $dataForCategorySync
+                );
+            }
+            if (count($dataForCategorySync) > 0) {
+                $this->categorySyncProcessor->process($dataForCategorySync);
+            }
+        }
+
+        $reSyncYotpoKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
+        if (isset($this->retryItems[$storeId]) && count($this->retryItems[$storeId]) > 0) {
+            $this->update(
+                'yotpo_product_sync',
+                [$reSyncYotpoKey => 0, 'response_code' => coreConfig::CUSTOM_RESPONSE_DATA],
+                ['product_id' . ' IN (?)' => $this->retryItems[$storeId], 'store_id = ?' => $storeId]
+            );
+            $collection = $this->getCollectionForSync($this->retryItems[$storeId]);
+            $this->isImmediateRetry = true;
+            $this->syncItems($collection->getItems(), $storeId, $isVisibleVariantsSync);
+        }
+
+        if ($visibleVariantsDataValues && !$isVisibleVariantsSync) {
+            $this->syncItems($visibleVariantsDataValues, $storeId, true);
         }
     }
 
