@@ -236,8 +236,7 @@ class Processor extends Main
         $parentItemsIds = $items['parent_ids'];
         $yotpoSyncTableItemsData = $items['yotpo_data'];
         $parentItemsData = $items['parent_data'];
-
-        $lastSyncTime = '';
+        
         $sqlData = $sqlDataIntTable = [];
         $externalIds = [];
         $visibleVariantsData = $isVisibleVariantsSync ? [] : $items['visible_variants'];
@@ -353,7 +352,7 @@ class Processor extends Main
         }
 
         if ($this->isSyncingAsMainEntity()) {
-            $this->coreConfig->saveConfig('catalog_last_sync_time', $lastSyncTime);
+            $this->coreConfig->saveConfig('catalog_last_sync_time', $this->getCurrentTime());
             $dataForCategorySync = [];
             if ($dataToSent && !$isVisibleVariantsSync) {
                 $dataForCategorySync = $this->getProductsForCategorySync(
