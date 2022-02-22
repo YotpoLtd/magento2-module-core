@@ -262,9 +262,9 @@ class Processor extends Main
                 continue;
             }
 
-            $apiParam = $this->getApiParams($itemEntityId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $isVisibleVariantsSync);
+            $apiRequestParams = $this->getApiParams($itemEntityId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $isVisibleVariantsSync);
 
-            if (!$apiParam) {
+            if (!$apiRequestParams) {
                 $parentProductId = $parentItemsIds[$itemEntityId] ?? 0;
                 if ($parentProductId) {
                     continue;
@@ -274,25 +274,26 @@ class Processor extends Main
             $this->yotpoCatalogLogger->info(
                 __(
                     'Data ready to sync - Method: %1 - Magento Store ID: %2, Name: %3',
-                    $apiParam['method'],
+                    $apiRequestParams['method'],
                     $storeId,
                     $this->coreConfig->getStoreName($storeId)
                 )
             );
-            $response = $this->processRequest($apiParam, $yotpoFormatItemData);
+
+            $response = $this->processRequest($apiRequestParams, $yotpoFormatItemData);
 
             $lastSyncTime = $this->getCurrentTime();
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $tempSqlArray = [
                 'product_id' => $itemEntityId,
-                $yotpoIdKey => $apiParam['yotpo_id'] ?: 0,
+                $yotpoIdKey => $apiRequestParams['yotpo_id'] ?: 0,
                 'store_id' => $storeId,
                 'synced_to_yotpo' => $lastSyncTime,
                 'response_code' => $response->getData('status'),
                 'sync_status' => 1
             ];
             if (!$isVisibleVariantsSync) {
-                $tempSqlArray['yotpo_id_parent'] = $apiParam['yotpo_id_parent'] ?: 0;
+                $tempSqlArray['yotpo_id_parent'] = $apiRequestParams['yotpo_id_parent'] ?: 0;
             }
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
                 if ($this->isSyncingAsMainEntity()) {
@@ -304,7 +305,7 @@ class Processor extends Main
             }
 
             $returnResponse = $this->processResponse(
-                $apiParam,
+                $apiRequestParams,
                 $response,
                 $tempSqlArray,
                 $yotpoFormatItemData,
