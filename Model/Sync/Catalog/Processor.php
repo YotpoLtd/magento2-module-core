@@ -244,9 +244,9 @@ class Processor extends Main
         $visibleVariantsDataValues = array_values($visibleVariantsData);
 
         $itemsToBeSyncedToYotpo = $items['sync_data'];
-        foreach ($itemsToBeSyncedToYotpo as $itemEntityId => $itemData) {
-            $rowId = $itemData['row_id'];
-            unset($itemData['row_id']);
+        foreach ($itemsToBeSyncedToYotpo as $itemEntityId => $yotpoFormatItemData) {
+            $rowId = $yotpoFormatItemData['row_id'];
+            unset($yotpoFormatItemData['row_id']);
 
             if ($yotpoSyncTableItemsData
                 && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
@@ -288,7 +288,7 @@ class Processor extends Main
                     $this->coreConfig->getStoreName($storeId)
                 )
             );
-            $response = $this->processRequest($apiParam, $itemData);
+            $response = $this->processRequest($apiParam, $yotpoFormatItemData);
 
             $lastSyncTime = $this->getCurrentTime();
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
@@ -324,7 +324,7 @@ class Processor extends Main
                 $apiParam,
                 $response,
                 $tempSqlArray,
-                $itemData,
+                $yotpoFormatItemData,
                 $externalIds,
                 $isVisibleVariantsSync
             );
