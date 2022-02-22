@@ -237,7 +237,7 @@ class Processor extends Main
         $yotpoSyncTableItemsData = $items['yotpo_data'];
         $parentItemsData = $items['parent_data'];
 
-        $sqlData = [];
+        $syncTableRecordsUpdated = [];
         $externalIds = [];
         $visibleVariantsData = $isVisibleVariantsSync ? [] : $items['visible_variants'];
         $visibleVariantsDataValues = array_values($visibleVariantsData);
@@ -323,7 +323,7 @@ class Processor extends Main
 
             if ($processedSyncDataRecordToUpdate) {
                 $this->updateSyncTable($processedSyncDataRecordToUpdate);
-                $sqlData[] = $processedSyncDataRecordToUpdate;
+                $syncTableRecordsUpdated[] = $processedSyncDataRecordToUpdate;
             }
 
             if ($this->isCommandLineSync && !$this->isImmediateRetry) {
@@ -332,8 +332,8 @@ class Processor extends Main
             }
         }
         $dataToSent = [];
-        if (count($sqlData)) {
-            $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($sqlData));
+        if (count($syncTableRecordsUpdated)) {
+            $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($syncTableRecordsUpdated));
         }
 
         if ($externalIds) {
