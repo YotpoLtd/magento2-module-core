@@ -252,18 +252,11 @@ class Processor extends Main
                 && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
                 && !$this->shouldItemBeResynced($yotpoSyncTableItemsData[$itemEntityId])
             ) {
-                $tempSqlDataIntTable = [
-                    'attribute_id' => $syncedToYotpoProductAttributeId,
-                    'store_id' => $storeId,
-                    'value' => 1,
-                    $this->entityIdFieldValue => $itemRowId
-                ];
-                $sqlDataIntTable = [];
-                $sqlDataIntTable[] = $tempSqlDataIntTable;
+                $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId);
                 if ($this->isSyncingAsMainEntity()) {
                     $this->insertOnDuplicate(
                         'catalog_product_entity_int',
-                        $sqlDataIntTable
+                        [$attributeDataToUpdate]
                     );
                 }
                 continue;
@@ -302,18 +295,11 @@ class Processor extends Main
                 $tempSqlArray['yotpo_id_parent'] = $apiParam['yotpo_id_parent'] ?: 0;
             }
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($tempSqlArray['response_code'])) {
-                $tempSqlDataIntTable = [
-                    'attribute_id' => $syncedToYotpoProductAttributeId,
-                    'store_id' => $storeId,
-                    'value' => 1,
-                    $this->entityIdFieldValue => $itemRowId
-                ];
-                $sqlDataIntTable = [];
-                $sqlDataIntTable[] = $tempSqlDataIntTable;
+                $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId);
                 if ($this->isSyncingAsMainEntity()) {
                     $this->insertOnDuplicate(
                         'catalog_product_entity_int',
-                        $sqlDataIntTable
+                        [$attributeDataToUpdate]
                     );
                 }
             }
@@ -758,5 +744,15 @@ class Processor extends Main
     private function shouldItemBeResynced($yotpoSyncTableItemData)
     {
         return $this->coreConfig->canResync($yotpoSyncTableItemData['response_code'], $yotpoSyncTableItemData, $this->isCommandLineSync);
+    }
+
+    private function prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId)
+    {
+        return [
+            'attribute_id' => $syncedToYotpoProductAttributeId,
+            'store_id' => $storeId,
+            'value' => 1,
+            $this->entityIdFieldValue => $itemRowId
+        ];
     }
 }
