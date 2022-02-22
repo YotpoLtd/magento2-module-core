@@ -142,7 +142,7 @@ class Processor extends Main
                                 $this->coreConfig->getStoreName($storeId) . PHP_EOL;
                         }
                     }
-                    if ($this->normalSync && !$this->coreConfig->isCatalogSyncActive()) {
+                    if ($this->isSyncingAsMainEntity() && !$this->coreConfig->isCatalogSyncActive()) {
                         $disabled = true;
                         $this->yotpoCatalogLogger->info(
                             __(
@@ -169,7 +169,7 @@ class Processor extends Main
                             $this->coreConfig->getStoreName($storeId)
                         )
                     );
-                    if ($this->normalSync) {
+                    if ($this->isSyncingAsMainEntity()) {
                         $this->processDeleteData();
                         $this->processUnAssignData();
                     }
@@ -198,7 +198,7 @@ class Processor extends Main
                 $this->stopEnvironmentEmulation();
             }
             $this->stopEnvironmentEmulation();
-            if (!$this->normalSync && count($unSyncedStoreIds) > 0) {
+            if (!$this->isSyncingAsMainEntity() && count($unSyncedStoreIds) > 0) {
                 return false;
             } else {
                 return true;
@@ -243,7 +243,7 @@ class Processor extends Main
                         $yotpoData[$itemId]['response_code'],
                         $yotpoData[$itemId],
                         $this->isCommandLineSync
-                    ) && $this->normalSync
+                    ) && $this->isSyncingAsMainEntity()
                 ) {
                     $tempSqlDataIntTable = [
                         'attribute_id' => $attributeId,
@@ -301,7 +301,7 @@ class Processor extends Main
                     ];
                     $sqlDataIntTable = [];
                     $sqlDataIntTable[] = $tempSqlDataIntTable;
-                    if ($this->normalSync) {
+                    if ($this->isSyncingAsMainEntity()) {
                         $this->insertOnDuplicate(
                             'catalog_product_entity_int',
                             $sqlDataIntTable
@@ -364,7 +364,7 @@ class Processor extends Main
                     $parentIds,
                     $isVisibleVariantsSync
                 );
-                if ($yotpoExistingProducts && $this->normalSync) {
+                if ($yotpoExistingProducts && $this->isSyncingAsMainEntity()) {
                     $dataToSent = array_merge(
                         $dataToSent,
                         $this->catalogData->filterDataForCatSync($yotpoExistingProducts)
@@ -372,7 +372,7 @@ class Processor extends Main
                 }
             }
 
-            if ($this->normalSync) {
+            if ($this->isSyncingAsMainEntity()) {
                 $this->coreConfig->saveConfig('catalog_last_sync_time', $lastSyncTime);
                 $dataForCategorySync = [];
                 if ($dataToSent && !$isVisibleVariantsSync) {

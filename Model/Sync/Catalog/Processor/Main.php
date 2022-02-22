@@ -678,4 +678,12 @@ class Main extends AbstractJobs
     {
         return isset($parentData[$parentId]) && isset($parentData[$parentId]['yotpo_id']);
     }
+
+    /**
+     * @return boolean
+     */
+    protected function isSyncingAsMainEntity()
+    {
+        return $this->normalSync;
+    }
 }
