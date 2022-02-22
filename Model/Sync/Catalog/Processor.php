@@ -245,7 +245,7 @@ class Processor extends Main
 
         $itemsToBeSyncedToYotpo = $items['sync_data'];
         foreach ($itemsToBeSyncedToYotpo as $itemEntityId => $yotpoFormatItemData) {
-            $rowId = $yotpoFormatItemData['row_id'];
+            $itemRowId = $yotpoFormatItemData['row_id'];
             unset($yotpoFormatItemData['row_id']);
 
             if ($yotpoSyncTableItemsData
@@ -260,7 +260,7 @@ class Processor extends Main
                     'attribute_id' => $syncedToYotpoProductAttributeId,
                     'store_id' => $storeId,
                     'value' => 1,
-                    $this->entityIdFieldValue => $rowId
+                    $this->entityIdFieldValue => $itemRowId
                 ];
                 $sqlDataIntTable = [];
                 $sqlDataIntTable[] = $tempSqlDataIntTable;
@@ -310,7 +310,7 @@ class Processor extends Main
                     'attribute_id' => $syncedToYotpoProductAttributeId,
                     'store_id' => $storeId,
                     'value' => 1,
-                    $this->entityIdFieldValue => $rowId
+                    $this->entityIdFieldValue => $itemRowId
                 ];
                 $sqlDataIntTable = [];
                 $sqlDataIntTable[] = $tempSqlDataIntTable;
