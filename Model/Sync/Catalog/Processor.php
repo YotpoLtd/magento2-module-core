@@ -236,8 +236,8 @@ class Processor extends Main
         $parentItemsIds = $items['parent_ids'];
         $yotpoSyncTableItemsData = $items['yotpo_data'];
         $parentItemsData = $items['parent_data'];
-        
-        $sqlData = $sqlDataIntTable = [];
+
+        $sqlData = [];
         $externalIds = [];
         $visibleVariantsData = $isVisibleVariantsSync ? [] : $items['visible_variants'];
         $visibleVariantsDataValues = array_values($visibleVariantsData);
