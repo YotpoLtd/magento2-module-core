@@ -329,12 +329,7 @@ class Processor extends Main
             }
 
             if ($processedSyncDataRecordToUpdate) {
-                $syncDataSql = [];
-                $syncDataSql[] = $processedSyncDataRecordToUpdate;
-                $this->insertOnDuplicate(
-                    'yotpo_product_sync',
-                    $syncDataSql
-                );
+                $this->updateSyncTable($processedSyncDataRecordToUpdate);
                 $sqlData[] = $processedSyncDataRecordToUpdate;
             }
 
@@ -414,12 +409,7 @@ class Processor extends Main
                 ];
                 if (!$itemData['yotpo_id']) {
                     $tempDeleteQry['is_deleted_at_yotpo'] = 1;
-                    $sqlData = [];
-                    $sqlData[] = $tempDeleteQry;
-                    $this->insertOnDuplicate(
-                        'yotpo_product_sync',
-                        $sqlData
-                    );
+                    $this->updateSyncTable($tempDeleteQry);
                     continue;
                 }
 
@@ -438,12 +428,7 @@ class Processor extends Main
                     $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
                 }
 
-                $sqlData = [];
-                $sqlData[] = $returnResponse['temp_sql'];
-                $this->insertOnDuplicate(
-                    'yotpo_product_sync',
-                    $sqlData
-                );
+                $this->updateSyncTable($returnResponse['temp_sql']);
             }
             $this->updateProductSyncLimit($dataCount);
         }
@@ -482,12 +467,7 @@ class Processor extends Main
                     $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
                 }
 
-                $sqlData = [];
-                $sqlData[] = $returnResponse['temp_sql'];
-                $this->insertOnDuplicate(
-                    'yotpo_product_sync',
-                    $sqlData
-                );
+                $this->updateSyncTable($returnResponse['temp_sql']);
             }
             $this->updateProductSyncLimit($dataCount);
         }
@@ -763,5 +743,12 @@ class Processor extends Main
             'synced_to_yotpo' => $lastSyncTime,
             'response_code' => $responseCode
         ];
+    }
+
+    private function updateSyncTable($syncDataRecord) {
+        $this->insertOnDuplicate(
+            'yotpo_product_sync',
+            [$syncDataRecord]
+        );
     }
 }
