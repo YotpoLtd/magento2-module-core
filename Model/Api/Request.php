@@ -87,13 +87,12 @@ class Request
         }
         $options['headers'] = $this->prepareHeaders();
         $response = $this->yotpoHttpclient->send($method, $baseUrl, $endPoint, $options);
-        $successFullResponse = $this->yotpoResponse->validateResponse($response);
+        $successFullResponse = $response->getData('is_success');
         if (!$successFullResponse && $this->yotpoResponse->invalidToken($response) && $this->retryRequestInvalidToken) {
             $this->getAuthToken(true); //generate new token
             $this->retryRequestInvalidToken--;
             $this->send($method, $endPoint, $data);
         }
-        $response->setData('is_success', $successFullResponse);
         return $response;
     }
 
@@ -157,13 +156,20 @@ class Request
         $options['headers'] = $this->prepareHeaders();
 
         $response = $this->yotpoHttpclient->send($method, $baseUrl, $endPoint, $options);
-        $successFullResponse = $this->yotpoResponse->validateResponse($response);
+        $successFullResponse = $response->getData('is_success');
         if (!$successFullResponse && $this->yotpoResponse->invalidToken($response) && $this->retryRequestInvalidToken) {
             $this->getAuthToken(true); //generate new token
             $this->retryRequestInvalidToken--;
             $this->sendV1ApiRequest($method, $endPoint, $data);
         }
-        $response->setData('is_success', $successFullResponse);
         return $response;
+    }
+
+    /**
+     * @return DataObject
+     */
+    public function getEmptyResponse()
+    {
+        return $this->yotpoHttpclient->getEmptyResponse();
     }
 }
