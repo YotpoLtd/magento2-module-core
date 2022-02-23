@@ -213,7 +213,7 @@ class Processor extends Main
      * @param array <mixed> $collectionItems
      * @param int $storeId
      * @param boolean $isVisibleVariantsSync
-     * @return void
+     * @return bool
      * @throws NoSuchEntityException
      */
     public function syncItems($collectionItems, $storeId, $isVisibleVariantsSync = false)
@@ -229,6 +229,7 @@ class Processor extends Main
             return;
         }
 
+        $isSuccessfulSync = true;
         $syncedToYotpoProductAttributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
         $items = $this->getSyncItems($collectionItems, $isVisibleVariantsSync);
         $parentItemsIds = $items['parent_ids'];
@@ -257,7 +258,6 @@ class Processor extends Main
             }
 
             $apiRequestParams = $this->getApiParams($itemEntityId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $isVisibleVariantsSync);
-
             if (!$apiRequestParams) {
                 $parentProductId = $parentItemsIds[$itemEntityId] ?? 0;
                 if ($parentProductId) {
@@ -283,6 +283,9 @@ class Processor extends Main
                 $response = $this->processRequest($apiRequestParams, $yotpoFormatItemData);
             }
 
+            if (!$response->getData('is_success')) {
+                $isSuccessfulSync = false;
+            }
 
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $yotpoIdValue = $apiRequestParams['yotpo_id'] ?: 0;
@@ -291,6 +294,7 @@ class Processor extends Main
             if (!$isVisibleVariantsSync) {
                 $syncDataRecordToUpdate['yotpo_id_parent'] = $apiRequestParams['yotpo_id_parent'] ?: 0;
             }
+
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($syncDataRecordToUpdate['response_code'])) {
                 if ($this->isSyncingAsMainEntity()) {
                     $this->updateProductSyncAttribute($attributeDataToUpdate);
@@ -337,6 +341,7 @@ class Processor extends Main
                 echo 'Catalog process completed for productid - ' . $itemEntityId . PHP_EOL;
             }
         }
+
         $dataToSent = [];
         if (count($syncTableRecordsUpdated)) {
             $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($syncTableRecordsUpdated));
@@ -366,12 +371,21 @@ class Processor extends Main
             );
             $collection = $this->getCollectionForSync($this->retryItems[$storeId]);
             $this->isImmediateRetry = true;
-            $this->syncItems($collection->getItems(), $storeId, $isVisibleVariantsSync);
+
+            $isSuccessfulRetrySync = $this->syncItems($collection->getItems(), $storeId, $isVisibleVariantsSync);
+            if (!$isSuccessfulRetrySync) {
+                return false;
+            }
         }
 
         if ($visibleVariantsDataValues && !$isVisibleVariantsSync) {
-            $this->syncItems($visibleVariantsDataValues, $storeId, true);
+            $isSuccessfulVisibleVariantsSync = $this->syncItems($visibleVariantsDataValues, $storeId, true);
+            if (!$isSuccessfulVisibleVariantsSync) {
+                return false;
+            }
         }
+
+        return $isSuccessfulSync;
     }
 
     /**
