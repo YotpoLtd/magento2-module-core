@@ -22,6 +22,7 @@ use Yotpo\Core\Api\ProductSyncRepositoryInterface;
  */
 class Processor extends Main
 {
+
     /**
      * @var CatalogData
      */
@@ -233,9 +234,9 @@ class Processor extends Main
 
         $syncedToYotpoProductAttributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
         $items = $this->getSyncItems($collectionItems, $isVisibleVariantsSync);
-        $parentItemsIds = $items['parent_ids'];
+        $parentItemsIds = $items['parents_ids'];
         $yotpoSyncTableItemsData = $items['yotpo_data'];
-        $parentItemsData = $items['parent_data'];
+        $parentItemsData = $items['parents_data'];
 
         $syncTableRecordsUpdated = [];
         $externalIdsWithConflictResponse = [];
@@ -493,66 +494,66 @@ class Processor extends Main
      * Push Yotpo Id to Parent data
      * @param int $productId
      * @param array<string, int|string> $tempSqlArray
-     * @param array<int|string, mixed> $parentData
-     * @param array<int, int> $parentIds
+     * @param array<int|string, mixed> $parentsData
+     * @param array<int, int> $parentsIds
      * @return array<int|string, mixed>
      */
-    protected function pushParentData($productId, $tempSqlArray, $parentData, $parentIds)
+    protected function pushParentData($productId, $tempSqlArray, $parentsData, $parentsIds)
     {
         $yotpoId = 0;
         if (isset($tempSqlArray['yotpo_id'])
             && $tempSqlArray['yotpo_id']) {
-            if (!isset($parentData[$productId])) {
-                $parentId = $this->findParentId($productId, $parentIds);
+            if (!isset($parentsData[$productId])) {
+                $parentId = $this->findParentId($productId, $parentsIds);
                 if ($parentId) {
                     $yotpoId = $tempSqlArray['yotpo_id'];
                 }
             }
         }
         if ($yotpoId) {
-            $parentData[$productId] = [
+            $parentsData[$productId] = [
                 'product_id' => $productId,
                 'yotpo_id' => $yotpoId
             ];
         }
 
-        return $parentData;
+        return $parentsData;
     }
 
     /**
      * Find it parent ID is exist in the synced data
      * @param int $productId
-     * @param array<int, int> $parentIds
+     * @param array<int, int> $parentsIds
      * @return false|int|string
      */
-    protected function findParentId($productId, $parentIds)
+    protected function findParentId($productId, $parentsIds)
     {
-        return array_search($productId, $parentIds);
+        return array_search($productId, $parentsIds);
     }
 
     /**
      * Fetch Existing data and update the product_sync table
      *
      * @param array<int, int|string> $externalIds
-     * @param array<int|string, mixed> $parentData
-     * @param array<int, int> $parentIds
+     * @param array<int|string, mixed> $parentsData
+     * @param array<int, int> $parentsIds
      * @param boolean $visibleVariants
      * @return array<mixed>
      * @throws NoSuchEntityException
      */
     protected function processExistData(
         array $externalIds,
-        array $parentData,
-        array $parentIds,
+        array $parentsData,
+        array $parentsIds,
         $visibleVariants = false
     ) {
         $sqlData = $filters = [];
         if (count($externalIds) > 0) {
             foreach ($externalIds as $externalId) {
-                if (isset($parentIds[$externalId]) && $parentIds[$externalId] && !$visibleVariants) {
-                    if (isset($parentData[$parentIds[$externalId]]) &&
-                        isset($parentData[$parentIds[$externalId]]['yotpo_id']) &&
-                        $parentYotpoId = $parentData[$parentIds[$externalId]]['yotpo_id']) {
+                if (isset($parentsIds[$externalId]) && $parentsIds[$externalId] && !$visibleVariants) {
+                    if (isset($parentsData[$parentsIds[$externalId]]) &&
+                        isset($parentsData[$parentsIds[$externalId]]['yotpo_id']) &&
+                        $parentYotpoId = $parentsData[$parentsIds[$externalId]]['yotpo_id']) {
                         $filters['variants'][$parentYotpoId][] = $externalId;
                     } else {
                         $filters['products'][] = $externalId;
@@ -676,7 +677,6 @@ class Processor extends Main
         $unSyncedProductIds = $this->getUnSyncedProductIds($productIds, $visibleItems, $storeId);
         if ($unSyncedProductIds) {
             $this->setNormalSyncFlag(false);
-            $unSyncedProductIds = [$storeId => $unSyncedProductIds];
             $sync = $this->process($unSyncedProductIds, [$storeId]);
             $this->emulateFrontendArea($storeId);
             return $sync;

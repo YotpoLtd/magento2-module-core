@@ -360,8 +360,8 @@ class Main extends AbstractJobs
      * Get API End URL and API Method
      * @param int|string $productId
      * @param array<int, array> $yotpoData
-     * @param array<int, int> $parentIds
-     * @param array<int|string, mixed> $parentData
+     * @param array<int, int> $parentsIds
+     * @param array<int|string, mixed> $parentsData
      * @param boolean $isVisibleVariant
      * @return array<string, string>
      * @throws NoSuchEntityException
@@ -369,8 +369,8 @@ class Main extends AbstractJobs
     protected function getApiParams(
         $productId,
         array $yotpoData,
-        array $parentIds,
-        array $parentData,
+        array $parentsIds,
+        array $parentsData,
         $isVisibleVariant
     ) {
         $apiUrl = $this->coreConfig->getEndpoint('products');
@@ -380,10 +380,10 @@ class Main extends AbstractJobs
 
         if ($isVisibleVariant) {
             $yotpoIdKey = 'visible_variant_yotpo_id';
-        } elseif (count($parentIds) && isset($parentIds[$productId])) {
-            $parentId = $parentIds[$productId];
-            if ($this->isProductParentYotpoIdFound($parentData, $parentId)) {
-                $yotpoIdParent = $parentData[$parentId]['yotpo_id'];
+        } elseif (count($parentsIds) && isset($parentsIds[$productId])) {
+            $parentId = $parentsIds[$productId];
+            if ($this->isProductParentYotpoIdFound($parentsData, $parentId)) {
+                $yotpoIdParent = $parentsData[$parentId]['yotpo_id'];
 
                 $method = $this->coreConfig->getProductSyncMethod('createProductVariant');
                 $apiUrl = $this->coreConfig->getEndpoint(
