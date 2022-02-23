@@ -3,6 +3,7 @@ namespace Yotpo\Core\Model\Sync\Catalog;
 
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Sales\Model\Order;
+use Yotpo\Core\Model\Api\ErrorHandler as ApiErrorHandler;
 use Yotpo\Core\Model\Config as CoreConfig;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
 use Magento\Store\Model\App\Emulation as AppEmulation;
@@ -22,11 +23,6 @@ use Yotpo\Core\Api\ProductSyncRepositoryInterface;
  */
 class Processor extends Main
 {
-    /**
-     * @var CatalogData
-     */
-    protected $catalogData;
-
     /**
      * @var SyncDataMain
      */
@@ -89,7 +85,8 @@ class Processor extends Main
         YotpoResource $yotpoResource,
         CategorySyncProcessor $categorySyncProcessor,
         ProductSyncRepositoryInterface $productSyncRepositoryInterface,
-        SyncDataMain $syncDataMain
+        SyncDataMain $syncDataMain,
+        ApiErrorHandler $apiErrorHandler
     ) {
         parent::__construct(
             $appEmulation,
@@ -98,9 +95,10 @@ class Processor extends Main
             $yotpoCatalogLogger,
             $yotpoResource,
             $collectionFactory,
-            $coreSync
+            $coreSync,
+            $catalogData,
+            $apiErrorHandler
         );
-        $this->catalogData = $catalogData;
         $this->dateTime = $dateTime;
         $this->categorySyncProcessor = $categorySyncProcessor;
         $this->productSyncRepositoryInterface = $productSyncRepositoryInterface;
@@ -277,7 +275,15 @@ class Processor extends Main
                 )
             );
 
-            $response = $this->processRequest($apiRequestParams, $yotpoFormatItemData);
+            $syncMethod = $apiRequestParams['method'];
+            if (in_array($syncMethod, ['createProduct', 'updateProduct'])) {
+                $response = $this->upsertProduct($itemEntityId, $syncMethod, $apiRequestParams['url'], $yotpoFormatItemData);
+            } elseif (in_array($syncMethod, ['createProductVariant', 'updateProductVariant'])) {
+                $response = $this->upsertVariant($itemEntityId, $syncMethod, $apiRequestParams['url'], $yotpoFormatItemData, $apiRequestParams['yotpo_id_parent']);
+            } else {
+                $response = $this->processRequest($apiRequestParams, $yotpoFormatItemData);
+            }
+
 
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $yotpoIdValue = $apiRequestParams['yotpo_id'] ?: 0;
