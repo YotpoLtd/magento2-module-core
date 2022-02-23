@@ -175,9 +175,8 @@ class Processor extends Main
                     }
                     $this->retryItems[$storeId] = [];
                     if ($this->productSyncLimit > 0) {
-                        $forceSyncProductIds = $this->isCommandLineSync &&
-                        isset($forceSyncProducts[$storeId]) ? $forceSyncProducts[$storeId] : $forceSyncProducts;
-                         $collection = $this->getCollectionForSync($forceSyncProductIds);
+                        $forceSyncProductIds = $forceSyncProducts[$storeId] ?? $forceSyncProducts;
+                        $collection = $this->getCollectionForSync($forceSyncProductIds);
                         $this->isImmediateRetry = false;
                         $this->syncItems($collection->getItems(), $storeId);
                     } else {
@@ -725,6 +724,7 @@ class Processor extends Main
         $unSyncedProductIds = $this->getUnSyncedProductIds($productIds, $visibleItems, $storeId);
         if ($unSyncedProductIds) {
             $this->setNormalSyncFlag(false);
+            $unSyncedProductIds = [$storeId => $unSyncedProductIds];
             $sync = $this->process($unSyncedProductIds, [$storeId]);
             $this->emulateFrontendArea($storeId);
             return $sync;
