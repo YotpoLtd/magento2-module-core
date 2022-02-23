@@ -341,13 +341,15 @@ class Processor extends Main
                 if (!$visibleVariants) {
                     $parentData = $this->pushParentData((int)$itemId, $tempSqlArray, $parentData, $parentIds);
                 }
-                $syncDataSql = [];
-                $syncDataSql[] = $tempSqlArray;
-                $this->insertOnDuplicate(
-                    'yotpo_product_sync',
-                    $syncDataSql
-                );
-                $sqlData[] = $tempSqlArray;
+                if ($tempSqlArray) {
+                    $syncDataSql = [];
+                    $syncDataSql[] = $tempSqlArray;
+                    $this->insertOnDuplicate(
+                        'yotpo_product_sync',
+                        $syncDataSql
+                    );
+                    $sqlData[] = $tempSqlArray;
+                }
                 if ($this->isCommandLineSync && !$this->isImmediateRetry) {
                     // phpcs:ignore
                     echo 'Catalog process completed for productid - ' . $itemId . PHP_EOL;
