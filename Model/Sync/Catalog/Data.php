@@ -198,8 +198,8 @@ class Data extends Main
     {
         $return = [
             'sync_data' => [],
-            'parent_ids' => [],
-            'parent_data' => []
+            'parents_ids' => [],
+            'parents_data' => []
         ];
         $syncItems = $productsId = $productsObject = [];
         foreach ($items as $item) {
@@ -223,10 +223,10 @@ class Data extends Main
             }
         }
         $return['sync_data'] = $syncItems;
-        $return['parent_ids'] = $parentIds;
+        $return['parents_ids'] = $parentIds;
         $yotpoData = $this->fetchYotpoData($productsId, $parentIds);
         $return['yotpo_data'] = $yotpoData['yotpo_data'];
-        $return['parent_data'] = $yotpoData['parent_data'];
+        $return['parents_data'] = $yotpoData['parents_data'];
         $return['visible_variants'] = $visibleVariantsData;
         return $return;
     }
