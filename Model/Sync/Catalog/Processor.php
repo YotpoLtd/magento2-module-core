@@ -677,9 +677,16 @@ class Processor extends Main
      */
     protected function getProductsForCategorySync($data, $collectionItems, array $dataForCategorySync): array
     {
+        $storeId = $this->coreConfig->getStoreId();
+        $retryItems = [];
+        if ($this->retryItems && isset($this->retryItems[$storeId])) {
+            $retryItems = $this->retryItems[$storeId];
+        }
         foreach ($data as $dataItem) {
             foreach ($collectionItems as $item) {
-                if ($item->getId() == $dataItem['product_id']) {
+                if ($item->getId() == $dataItem['product_id'] &&
+                    !isset($retryItems[$item->getId()])
+                ) {
                     $dataForCategorySync[$dataItem['yotpo_id']] = $item;
                     break;
                 }
