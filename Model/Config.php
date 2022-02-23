@@ -62,6 +62,13 @@ class Config
         'unassignProductVariant' => 'unassignProductVariant'
     ];
 
+    protected $syncMethodToRequestMethodMap = [
+        'createProduct' => self::METHOD_POST,
+        'updateProduct' => self::METHOD_PATCH,
+        'createProductVariant' => self::METHOD_POST,
+        'updateProductVariant' => self::METHOD_PATCH
+    ];
+
     /**
      * @var string[]
      */
@@ -655,6 +662,11 @@ class Config
     public function getCustRespCodeMissingProd()
     {
         return 222;
+    }
+
+    public function getRequestMethodFromSyncMethod($syncMethod)
+    {
+        return $this->syncMethodToRequestMethodMap[$syncMethod];
     }
 
     /**
