@@ -176,7 +176,11 @@ class Processor extends Main
                         $forceSyncProductIds = $forceSyncProducts[$storeId] ?? $forceSyncProducts;
                         $collection = $this->getCollectionForSync($forceSyncProductIds);
                         $this->isImmediateRetry = false;
-                        $this->syncItems($collection->getItems(), $storeId);
+
+                        $isSuccessfulSync = $this->syncItems($collection->getItems(), $storeId);
+                        if (!$isSuccessfulSync) {
+                            $unSyncedStoreIds[] = $storeId;
+                        }
                     } else {
                         $this->yotpoCatalogLogger->info(
                             __('Product Sync - Stopped - Magento Store ID: %1', $storeId)
