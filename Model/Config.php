@@ -41,6 +41,8 @@ class Config
     const CUSTOM_RESPONSE_DATA = '000';
     const SUCCESS_RESPONSE_CODE = '200';
     const BAD_REQUEST_RESPONSE_CODE = 400;
+    const NOT_FOUND_RESPONSE_CODE = 404;
+    const CONFLICT_RESPONSE_CODE = 409;
 
     /**
      * @var mixed[]

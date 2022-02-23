@@ -232,6 +232,15 @@ class Data extends Main
     }
 
     /**
+     * @param $yotpoFormatItemData
+     * @return array
+     */
+    public function getMinimalProductRequestData($yotpoFormatItemData) {
+        $magentoProductId = $yotpoFormatItemData['external_id'];
+        return ['external_id' => $magentoProductId];
+    }
+
+    /**
      * Fetch yotpo data from yotpo_product_sync
      * @param array<int, int> $productsId
      * @param array<int|string, int|string> $parentIds

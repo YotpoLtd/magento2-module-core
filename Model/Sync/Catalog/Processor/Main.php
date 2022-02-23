@@ -8,7 +8,9 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\App\Emulation as AppEmulation;
 use Yotpo\Core\Model\AbstractJobs;
+use Yotpo\Core\Model\Api\ErrorHandler as ApiErrorHandler;
 use Yotpo\Core\Model\Config as CoreConfig;
+use Yotpo\Core\Model\Sync\Catalog\Data as CatalogData;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
 use Yotpo\Core\Model\Sync\Catalog\YotpoResource;
 use Yotpo\Core\Model\Api\Sync as CoreSync;
@@ -18,6 +20,9 @@ use Yotpo\Core\Model\Api\Sync as CoreSync;
  */
 class Main extends AbstractJobs
 {
+    const PRODUCTS_ENTITY_TYPE_IN_YOTPO_API = 'products';
+    const VARIANTS_ENTITY_TYPE_IN_YOTPO_API = 'variants';
+
     /**
      * @var CoreConfig
      */
@@ -54,6 +59,16 @@ class Main extends AbstractJobs
     protected $entityIdFieldValue;
 
     /**
+     * @var CatalogData
+     */
+    protected $catalogData;
+
+    /**
+     * @var ApiErrorHandler
+     */
+    protected $apiErrorHandler;
+
+    /**
      * @var string
      */
     protected $entity = 'products';
@@ -72,6 +87,8 @@ class Main extends AbstractJobs
      * @param YotpoResource $yotpoResource
      * @param CollectionFactory $collectionFactory
      * @param CoreSync $coreSync
+     * @param CatalogData $catalogData,
+     * @param ApiErrorHandler $apiErrorHandler
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -80,13 +97,17 @@ class Main extends AbstractJobs
         YotpoCoreCatalogLogger $yotpoCatalogLogger,
         YotpoResource $yotpoResource,
         CollectionFactory $collectionFactory,
-        CoreSync $coreSync
+        CoreSync $coreSync,
+        CatalogData $catalogData,
+        ApiErrorHandler $apiErrorHandler
     ) {
         $this->coreConfig = $coreConfig;
         $this->yotpoCatalogLogger = $yotpoCatalogLogger;
         $this->yotpoResource = $yotpoResource;
         $this->collectionFactory = $collectionFactory;
         $this->coreSync = $coreSync;
+        $this->catalogData = $catalogData;
+        $this->apiErrorHandler = $apiErrorHandler;
         $this->entityIdFieldValue = $this->coreConfig->getEavRowIdFieldName();
         parent::__construct($appEmulation, $resourceConnection);
     }
@@ -654,5 +675,57 @@ class Main extends AbstractJobs
     protected function isSyncingAsMainEntity()
     {
         return $this->normalSync;
+    }
+
+    protected function upsertProduct($entityId, $syncMethod, $requestUrl, $yotpoFormatItemData)
+    {
+        $requestMethod = $this->coreConfig->getRequestMethodFromSyncMethod($syncMethod);
+        $requestData = ['product' => $yotpoFormatItemData, 'entityLog' => 'catalog'];
+
+        $response = $this->coreSync->sync($requestMethod, $requestUrl, $requestData);
+        $responseStatusCode = $response->getData('status');
+        if (!$this->isSyncingAsMainEntity() && $responseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE) {
+            $minimalProductRequestData = $this->catalogData->getMinimalProductRequestData($yotpoFormatItemData);
+            $response = $this->createMinimalProduct($requestUrl, $minimalProductRequestData);
+        } else if ($responseStatusCode == CoreConfig::NOT_FOUND_RESPONSE_CODE) {
+            $response = $this->apiErrorHandler->handleConflictResponse($entityId, self::PRODUCTS_ENTITY_TYPE_IN_YOTPO_API, $yotpoFormatItemData);
+        } else if ($responseStatusCode == CoreConfig::CONFLICT_RESPONSE_CODE) {
+            $response = $this->apiErrorHandler->handleNotFoundResponse($entityId, self::PRODUCTS_ENTITY_TYPE_IN_YOTPO_API, $yotpoFormatItemData);
+        }
+
+        return $response;
+    }
+
+    protected function upsertVariant($entityId, $syncMethod, $requestUrl, $yotpoFormatItemData, $parentYotpoId)
+    {
+        $requestMethod = $this->coreConfig->getRequestMethodFromSyncMethod($syncMethod);
+        $requestData = ['variant' => $yotpoFormatItemData, 'entityLog' => 'catalog'];
+
+        $response = $this->coreSync->sync($requestMethod, $requestUrl, $requestData);
+        $responseStatusCode = $response->getData('status');
+        if ($responseStatusCode == CoreConfig::NOT_FOUND_RESPONSE_CODE) {
+            $response = $this->apiErrorHandler->handleConflictResponse(
+                $entityId,
+                self::VARIANTS_ENTITY_TYPE_IN_YOTPO_API,
+                $yotpoFormatItemData,
+                self::PRODUCTS_ENTITY_TYPE_IN_YOTPO_API,
+                $parentYotpoId
+            );
+        } else if ($responseStatusCode == CoreConfig::CONFLICT_RESPONSE_CODE) {
+            $response = $this->apiErrorHandler->handleNotFoundResponse(
+                $entityId,
+                self::VARIANTS_ENTITY_TYPE_IN_YOTPO_API,
+                $yotpoFormatItemData,
+                self::PRODUCTS_ENTITY_TYPE_IN_YOTPO_API,
+                $parentYotpoId
+            );
+        }
+
+        return $response;
+    }
+
+    private function createMinimalProduct($requestUrl, $requestData) {
+        $requestData['product'] = $this->catalogData->getMinimalProductRequestData($requestData);
+        return $this->coreSync->sync('POST', $requestUrl, $requestData);
     }
 }
