@@ -36,6 +36,7 @@ class Config
     const METHOD_PATCH = 'PATCH';
     const CUSTOM_RESPONSE_DATA = '000';
     const SUCCESS_RESPONSE_CODE = '200';
+    const CREATED_STATUS_CODE = '201';
     const BAD_REQUEST_RESPONSE_CODE = 400;
 
     /**
