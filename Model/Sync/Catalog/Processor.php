@@ -215,7 +215,7 @@ class Processor extends Main
      * @param array <mixed> $collectionItems
      * @param int $storeId
      * @param boolean $isVisibleVariantsSync
-     * @return void
+     * @return bool
      * @throws NoSuchEntityException
      */
     public function syncItems($collectionItems, $storeId, $isVisibleVariantsSync = false)
@@ -231,6 +231,7 @@ class Processor extends Main
             return;
         }
 
+        $wereProductCreationAttemptsSuccessful = true;
         $syncedToYotpoProductAttributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
         $items = $this->getSyncItems($collectionItems, $isVisibleVariantsSync);
         $parentItemsIds = $items['parent_ids'];
@@ -287,6 +288,9 @@ class Processor extends Main
             );
 
             $response = $this->processRequest($apiRequestParams, $yotpoFormatItemData);
+            if ($apiRequestParams['method'] == 'createProduct' && !$response->getData('is_success')) {
+                $wereProductCreationAttemptsSuccessful = false;
+            }
 
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $yotpoIdValue = $apiRequestParams['yotpo_id'] ?: 0;
@@ -301,6 +305,7 @@ class Processor extends Main
             if (!$isVisibleVariantsSync) {
                 $syncDataRecordToUpdate['yotpo_id_parent'] = $apiRequestParams['yotpo_id_parent'] ?: 0;
             }
+
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($syncDataRecordToUpdate['response_code'])) {
                 if ($this->isSyncingAsMainEntity()) {
                     $this->updateProductSyncAttribute($attributeDataToUpdate);
@@ -352,6 +357,7 @@ class Processor extends Main
                 echo 'Catalog process completed for productid - ' . $itemEntityId . PHP_EOL;
             }
         }
+
         $dataToSent = [];
         if (count($syncTableRecordsUpdated)) {
             $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($syncTableRecordsUpdated));
@@ -400,8 +406,31 @@ class Processor extends Main
         }
 
         if ($visibleVariantsDataValues && !$isVisibleVariantsSync) {
-            $this->syncItems($visibleVariantsDataValues, $storeId, true);
+            $wereVisibleVariantsCreationAttemptsSuccessful = $this->syncItems($visibleVariantsDataValues, $storeId, true);
+            if (!$wereVisibleVariantsCreationAttemptsSuccessful) {
+                $this->yotpoCatalogLogger->info(
+                    __(
+                        'API errors occurred while trying to create visible variants. Store ID: %1, Store Name: %2',
+                        $storeId,
+                        $this->coreConfig->getStoreName($storeId)
+                    )
+                );
+
+                return false;
+            }
         }
+
+        if (!$wereProductCreationAttemptsSuccessful) {
+            $this->yotpoCatalogLogger->info(
+                __(
+                    'API errors occurred while trying to create products. Store ID: %1, Store Name: %2',
+                    $storeId,
+                    $this->coreConfig->getStoreName($storeId)
+                )
+            );
+        }
+
+        return $wereProductCreationAttemptsSuccessful;
     }
 
     /**
