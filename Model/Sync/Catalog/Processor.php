@@ -178,7 +178,11 @@ class Processor extends Main
                         $forceSyncProductIds = $forceSyncProducts[$storeId] ?? $forceSyncProducts;
                         $collection = $this->getCollectionForSync($forceSyncProductIds);
                         $this->isImmediateRetry = false;
-                        $this->syncItems($collection->getItems(), $storeId);
+
+                        $wereProductCreationAttemptsSuccessful = $this->syncItems($collection->getItems(), $storeId);
+                        if (!$wereProductCreationAttemptsSuccessful) {
+                            $unSyncedStoreIds[] = $storeId;
+                        }
                     } else {
                         $this->yotpoCatalogLogger->info(
                             __('Product Sync - Stopped - Magento Store ID: %1', $storeId)
@@ -198,7 +202,7 @@ class Processor extends Main
                 $this->stopEnvironmentEmulation();
             }
             $this->stopEnvironmentEmulation();
-            if (!$this->isSyncingAsMainEntity() && count($unSyncedStoreIds) > 0) {
+            if (count($unSyncedStoreIds) > 0) {
                 return false;
             } else {
                 return true;
