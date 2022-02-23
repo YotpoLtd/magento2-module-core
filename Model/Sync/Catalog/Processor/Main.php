@@ -406,8 +406,6 @@ class Main extends AbstractJobs
                     ['{yotpo_product_id}'],
                     [$yotpoIdParent]
                 );
-            } else {
-                return [];
             }
         }
 
