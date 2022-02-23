@@ -168,7 +168,7 @@ class Main extends AbstractJobs
      * @param DataObject $response
      * @return array <mixed>
      */
-    public function getMissingProductIds($response)
+    public function getMissingProductIdsFromNotFoundResponse($response)
     {
         $message = $response->getData('reason');
         $messagePrefix = "products not found:";

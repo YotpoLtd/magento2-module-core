@@ -483,7 +483,7 @@ class Processor extends Main
                 ['external_ids' => $incrementId, 'entityLog' => 'orders']
             );
         } elseif ($this->isImmediateRetry($response, $this->entity, $orderId, $order->getStoreId())) {
-            $missingProducts = $this->getMissingProductIds($response);
+            $missingProducts = $this->getMissingProductIdsFromNotFoundResponse($response);
             if ($missingProducts) {
                 $this->catalogProcessor->removeProductFromSyncTable($missingProducts, [$storeId]);
             }
