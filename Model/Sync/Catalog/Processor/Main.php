@@ -445,49 +445,13 @@ class Main extends AbstractJobs
 
         if (!$yotpoId) {
             if ($method == 'createProduct') {
-                $url = $this->coreConfig->getEndpoint('products');
-
-                if (!$this->getImmediateRetryAlreadyDone(
-                    $this->entity,
-                    (int)$productId,
-                    $this->coreConfig->getStoreId()
-                )) {
-                    $existingProduct = $this->getExistingProductsFromAPI($url, $productId, 'products');
-                    if (is_array($existingProduct) && count($existingProduct)) {
-                        $yotpoId = $existingProduct[0]['yotpo_id'];
-                        $apiUrl = $this->coreConfig->getEndpoint(
-                            'updateProduct',
-                            ['{yotpo_product_id}'],
-                            [$yotpoId]
-                        );
-                        $method = $this->coreConfig->getProductSyncMethod('updateProduct');
-                    }
-                }
-            }
-
-            if ($method == 'createProductVariant' && $yotpoIdParent) {
-                $url = $this->coreConfig->getEndpoint(
+                $apiUrl = $this->coreConfig->getEndpoint('products');
+            } elseif ($method == 'createProductVariant' && $yotpoIdParent) {
+                $apiUrl = $this->coreConfig->getEndpoint(
                     'variant',
                     ['{yotpo_product_id}'],
                     [$yotpoIdParent]
                 );
-
-                if (!$this->getImmediateRetryAlreadyDone(
-                    $this->entity,
-                    (int)$productId,
-                    $this->coreConfig->getStoreId()
-                )) {
-                    $existingVariant = $this->getExistingProductsFromAPI($url, $productId, 'variants');
-                    if (is_array($existingVariant) && count($existingVariant)) {
-                        $yotpoId = $existingVariant[0]['yotpo_id'];
-                        $apiUrl = $this->coreConfig->getEndpoint(
-                            'updateVariant',
-                            ['{yotpo_product_id}','{yotpo_variant_id}'],
-                            [$yotpoIdParent, $yotpoId]
-                        );
-                        $method = $this->coreConfig->getProductSyncMethod('updateProductVariant');
-                    }
-                }
             }
         }
 
