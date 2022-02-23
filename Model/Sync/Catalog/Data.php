@@ -327,7 +327,7 @@ class Data extends Main
      * @return array<string, string|array>
      * @throws NoSuchEntityException
      */
-    protected function attributeMapping(Product $item)
+    public function attributeMapping(Product $item)
     {
         $itemArray = [];
         $mapAttributes = $this->mappingAttributes;
