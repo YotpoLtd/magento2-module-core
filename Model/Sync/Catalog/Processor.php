@@ -288,8 +288,7 @@ class Processor extends Main
                     $yotpoIdKey => $apiParam['yotpo_id'] ?: 0,
                     'store_id' => $storeId,
                     'synced_to_yotpo' => $lastSyncTime,
-                    'response_code' => $response->getData('status'),
-                    'sync_status' => 1
+                    'response_code' => $response->getData('status')
                 ];
                 if (!$visibleVariants) {
                     $tempSqlArray['yotpo_id_parent'] = $apiParam['yotpo_id_parent'] ?: 0;

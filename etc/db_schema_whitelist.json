@@ -5,19 +5,17 @@
             "product_id": true,
             "store_id": true,
             "yotpo_id": true,
+            "visible_variant_yotpo_id": true,
             "yotpo_id_unassign": true,
             "yotpo_id_parent": true,
             "is_deleted": true,
             "is_deleted_at_yotpo": true,
             "synced_to_yotpo": true,
-            "response_code": true,
-            "sync_status": true,
-            "visible_variant_yotpo_id": true
+            "response_code": true
         },
         "index": {
             "YOTPO_PRODUCT_SYNC_ENTITY_ID": true,
             "YOTPO_PRODUCT_SYNC_YOTPO_ID": true,
-            "YOTPO_PRODUCT_SYNC_SYNC_STATUS": true,
             "YOTPO_PRODUCT_SYNC_VISIBLE_VARIANT_YOTPO_ID": true
         },
         "constraint": {
