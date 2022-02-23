@@ -87,13 +87,12 @@ class Request
         }
         $options['headers'] = $this->prepareHeaders();
         $response = $this->yotpoHttpclient->send($method, $baseUrl, $endPoint, $options);
-        $successFullResponse = $this->yotpoResponse->validateResponse($response);
+        $successFullResponse = $response->getData('is_success');
         if (!$successFullResponse && $this->yotpoResponse->invalidToken($response) && $this->retryRequestInvalidToken) {
             $this->getAuthToken(true); //generate new token
             $this->retryRequestInvalidToken--;
             $this->send($method, $endPoint, $data);
         }
-        $response->setData('is_success', $successFullResponse);
         return $response;
     }
 
@@ -157,13 +156,12 @@ class Request
         $options['headers'] = $this->prepareHeaders();
 
         $response = $this->yotpoHttpclient->send($method, $baseUrl, $endPoint, $options);
-        $successFullResponse = $this->yotpoResponse->validateResponse($response);
+        $successFullResponse = $response->getData('is_success');
         if (!$successFullResponse && $this->yotpoResponse->invalidToken($response) && $this->retryRequestInvalidToken) {
             $this->getAuthToken(true); //generate new token
             $this->retryRequestInvalidToken--;
             $this->sendV1ApiRequest($method, $endPoint, $data);
         }
-        $response->setData('is_success', $successFullResponse);
         return $response;
     }
 
@@ -172,11 +170,6 @@ class Request
      */
     public function getEmptyResponse()
     {
-        $responseObject = new \Magento\Framework\DataObject();
-        $responseObject->setData('status', null);
-        $responseObject->setData('reason', null);
-        $responseObject->setData('response', []);
-        $responseObject->setData('is_success', false);
-        return $responseObject;
+        return $this->yotpoHttpclient->getEmptyResponse();
     }
 }

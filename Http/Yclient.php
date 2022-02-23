@@ -7,8 +7,10 @@ use GuzzleHttp\ClientFactory;
 use GuzzleHttp\Exception\GuzzleException;
 use GuzzleHttp\Psr7\Response;
 use GuzzleHttp\Psr7\ResponseFactory;
+use Magento\Framework\DataObject;
 use Magento\Framework\Webapi\Rest\Request;
 use Yotpo\Core\Model\Api\Logger as YotpoApiLogger;
+use Yotpo\Core\Model\Api\Response as YotpoResponse;
 
 /**
  * Class Yclient to manage API client communication
@@ -27,6 +29,11 @@ class Yclient
     protected $clientFactory;
 
     /**
+     * @var YotpoResponse
+     */
+    protected $yotpoResponse;
+
+    /**
      * @var YotpoApiLogger
      */
     protected $yotpoApiLogger;
@@ -40,15 +47,18 @@ class Yclient
      * Yclient constructor.
      * @param ClientFactory $clientFactory
      * @param ResponseFactory $responseFactory
+     * @param YotpoResponse $yotpoResponse
      * @param YotpoApiLogger $yotpoApiLogger
      */
     public function __construct(
         ClientFactory $clientFactory,
         ResponseFactory $responseFactory,
+        YotpoResponse $yotpoResponse,
         YotpoApiLogger $yotpoApiLogger
     ) {
         $this->clientFactory = $clientFactory;
         $this->responseFactory = $responseFactory;
+        $this->yotpoResponse = $yotpoResponse;
         $this->yotpoApiLogger = $yotpoApiLogger;
     }
 
@@ -133,8 +143,12 @@ class Yclient
         $responseContent = $responseBody->getContents();
         $this->yotpoApiLogger->info($responseContent, []);
         $responseBody->rewind();
-        $responseObject = new \Magento\Framework\DataObject();
+        $responseObject = new DataObject();
         $responseObject->setData('status', $status);
+        $responseObject->setData(
+            'is_success',
+            $this->yotpoResponse->validateResponse($responseObject)
+        );
         $responseObject->setData('reason', $responseReason);
         $responseObject->setData('response', json_decode($responseContent, true));
         return $responseObject;
@@ -164,5 +178,18 @@ class Yclient
         if ($handlerInstance) {
             $this->yotpoApiLogger->setHandlers([$handlerInstance]);
         }
+    }
+
+    /**
+     * @return DataObject
+     */
+    public function getEmptyResponse()
+    {
+        $responseObject = new DataObject();
+        $responseObject->setData('status', null);
+        $responseObject->setData('reason', null);
+        $responseObject->setData('response', []);
+        $responseObject->setData('is_success', false);
+        return $responseObject;
     }
 }
