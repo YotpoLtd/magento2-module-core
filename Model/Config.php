@@ -1,6 +1,7 @@
 <?php
 namespace Yotpo\Core\Model;
 
+use http\Exception\InvalidArgumentException;
 use Magento\Eav\Model\Entity;
 use Magento\Framework\App\ProductMetadataInterface;
 use Magento\Framework\Exception\LocalizedException;
@@ -27,6 +28,9 @@ class Config
     const UPDATE_SQL_LIMIT = 50000;
 
     const MODULE_NAME = 'Yotpo_Core';
+
+    const BOTH_PARENT_ENTITY_TYPE_AND_PARENT_ENTITY_ID_REQUIRED_EXCEPTION_MESSAGE = "Both parent type and parent ID are required";
+    const ENTITY_ID_REQUIRED_FOR_PATCH_EXCEPTION_MESSAGE = "Yotpo entity ID is required for PATCH requests";
 
     /**
      * API method types
@@ -675,5 +679,24 @@ class Config
     public function getUpdateSqlLimit(): int
     {
         return self::UPDATE_SQL_LIMIT;
+    }
+
+
+    public function buildYotpoEntityRequestUrl($yotpoEntityType, $requestMethod, $yotpoEntityId = null, $yotpoParentEntityType = null, $yotpoParentId = null) {
+        if (!$yotpoParentEntityType || !$yotpoParentId) {
+            throw new InvalidArgumentException(self::BOTH_PARENT_ENTITY_TYPE_AND_PARENT_ENTITY_ID_REQUIRED_EXCEPTION_MESSAGE);
+        }
+
+        $urlComponents = [$yotpoParentEntityType, $yotpoParentId, $yotpoEntityType];
+
+        if ($requestMethod == self::METHOD_PATCH) {
+            if (!$yotpoEntityId) {
+                throw new InvalidArgumentException(self::ENTITY_ID_REQUIRED_FOR_PATCH_EXCEPTION_MESSAGE);
+            }
+
+            $urlComponents[] = $yotpoEntityId;
+        }
+
+        return join('/', array_filter($urlComponents));
     }
 }
