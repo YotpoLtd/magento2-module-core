@@ -174,7 +174,11 @@ class Processor extends Main
                         $forceSyncProductIds = $forceSyncProducts[$storeId] ?? $forceSyncProducts;
                         $collection = $this->getCollectionForSync($forceSyncProductIds);
                         $this->isImmediateRetry = false;
-                        $this->syncItems($collection->getItems(), $storeId);
+
+                        $hasFailedCreatingAnyProduct = $this->syncItems($collection->getItems(), $storeId);
+                        if ($hasFailedCreatingAnyProduct) {
+                            $unSyncedStoreIds[] = $storeId;
+                        }
                     } else {
                         $this->yotpoCatalogLogger->info(
                             __('Product Sync - Stopped - Magento Store ID: %1', $storeId)
@@ -194,7 +198,7 @@ class Processor extends Main
                 $this->stopEnvironmentEmulation();
             }
             $this->stopEnvironmentEmulation();
-            if (!$this->isSyncingAsMainEntity() && count($unSyncedStoreIds) > 0) {
+            if (count($unSyncedStoreIds) > 0) {
                 return false;
             } else {
                 return true;
@@ -211,7 +215,7 @@ class Processor extends Main
      * @param array <mixed> $collectionItems
      * @param int $storeId
      * @param boolean $isVisibleVariantsSync
-     * @return void
+     * @return bool
      * @throws NoSuchEntityException
      */
     public function syncItems($collectionItems, $storeId, $isVisibleVariantsSync = false)
@@ -227,6 +231,7 @@ class Processor extends Main
             return;
         }
 
+        $hasFailedCreatingAnyProduct = false;
         $syncedToYotpoProductAttributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
         $items = $this->getSyncItems($collectionItems, $isVisibleVariantsSync);
         $parentItemsIds = $items['parents_ids'];
@@ -283,6 +288,9 @@ class Processor extends Main
             );
 
             $response = $this->processRequest($apiRequestParams, $yotpoFormatItemData);
+            if ($apiRequestParams['method'] == 'createProduct' && !$response->getData('is_success')) {
+                $hasFailedCreatingAnyProduct = true;
+            }
 
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $yotpoIdValue = $apiRequestParams['yotpo_id'] ?: 0;
@@ -297,6 +305,7 @@ class Processor extends Main
             if (!$isVisibleVariantsSync) {
                 $syncDataRecordToUpdate['yotpo_id_parent'] = $apiRequestParams['yotpo_id_parent'] ?: 0;
             }
+
             if ($this->coreConfig->canUpdateCustomAttributeForProducts($syncDataRecordToUpdate['response_code'])) {
                 if ($this->isSyncingAsMainEntity()) {
                     $this->updateProductSyncAttribute($attributeDataToUpdate);
@@ -348,6 +357,7 @@ class Processor extends Main
                 echo 'Catalog process completed for productid - ' . $itemEntityId . PHP_EOL;
             }
         }
+
         $dataToSent = [];
         if (count($syncTableRecordsUpdated)) {
             $dataToSent = array_merge($dataToSent, $this->catalogData->filterDataForCatSync($syncTableRecordsUpdated));
@@ -396,8 +406,24 @@ class Processor extends Main
         }
 
         if ($visibleVariantsDataValues && !$isVisibleVariantsSync) {
-            $this->syncItems($visibleVariantsDataValues, $storeId, true);
+            $hasFailedCreatingAnyVisibleVariant = $this->syncItems($visibleVariantsDataValues, $storeId, true);
+            if ($hasFailedCreatingAnyVisibleVariant) {
+                $hasFailedCreatingAnyProduct = true;
+            }
         }
+
+        if ($hasFailedCreatingAnyProduct) {
+            $this->yotpoCatalogLogger->info(
+                __(
+                    'API errors occurred while trying to create products - Store ID: %1, Store Name: %2, Is Visible Variants Sync: %3',
+                    $storeId,
+                    $this->coreConfig->getStoreName($storeId),
+                    var_export($isVisibleVariantsSync, true)
+                )
+            );
+        }
+
+        return $hasFailedCreatingAnyProduct;
     }
 
     /**
