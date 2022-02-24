@@ -785,14 +785,17 @@ class Processor extends Main
         $yotpoParentId = null
     ) {
         $lastSyncTime = $this->getCurrentTime();
-        return [
+        $return =  [
             'product_id' => $itemEntityId,
             $yotpoIdKey => $yotpoIdValue,
-            'yotpo_id_parent' => $yotpoParentId,
             'store_id' => $storeId,
             'synced_to_yotpo' => $lastSyncTime,
             'response_code' => $responseCode
         ];
+        if ($yotpoParentId !== null) {
+            $return['yotpo_id_parent'] = $yotpoParentId;
+        }
+        return $return;
     }
 
     /**
