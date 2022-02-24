@@ -612,7 +612,7 @@ class Processor extends Main
                 $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
 
                 $responseCode = '200';
-                $sqlData[] = $this->prepareSyncTableDataToUpdate($product['external_id'], $yotpoIdKey, $product['yotpo_id'], $this->coreConfig->getStoreId(), $responseCode);
+                $sqlData[] = $this->prepareSyncTableDataToUpdate($product['external_id'], $yotpoIdKey, $product['yotpo_id'], $this->coreConfig->getStoreId(), $responseCode, $parentId);
             }
         }
         return $sqlData;
