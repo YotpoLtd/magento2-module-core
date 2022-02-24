@@ -165,10 +165,6 @@ class Processor extends Main
         $storeId = $order->getStoreId();
         $this->emulateFrontendArea((int)$storeId);
         $this->currentStoreId = $this->config->getStoreId();
-        if (!$this->config->isOrdersSyncActive()) {
-            $this->stopEnvironmentEmulation();
-            return;
-        }
         $this->yotpoOrdersLogger->info(
             __(
                 'Process order for Magento Store ID: %1, Name: %2',
@@ -438,8 +434,10 @@ class Processor extends Main
         }
         $this->yotpoOrdersLogger->info('Orders sync - data prepared - Order ID - ' . $orderId, []);
         $productIds = $this->data->getLineItemsIds();
+        $storeId = $order->getStoreId();
         if ($productIds) {
-            $isProductSyncSuccess = $this->checkAndSyncProducts($productIds, $order);
+            $visibleItems = $order->getAllVisibleItems();
+            $isProductSyncSuccess = $this->catalogProcessor->syncProducts($productIds, $visibleItems, $storeId);
             if (!$isProductSyncSuccess) {
                 $this->yotpoOrdersLogger->info('Products sync failed - Order ID - ' . $order->getId(), []);
                 return [];
@@ -481,6 +479,10 @@ class Processor extends Main
                 ['external_ids' => $incrementId, 'entityLog' => 'orders']
             );
         } elseif ($this->isImmediateRetry($response, $this->entity, $orderId, $order->getStoreId())) {
+            $missingProducts = $this->getMissingProductIdsFromNotFoundResponse($response);
+            if ($missingProducts) {
+                $this->catalogProcessor->removeProductFromSyncTable($missingProducts, [$storeId]);
+            }
             $immediateRetry = true;
             $this->setImmediateRetryAlreadyDone($this->entity, $orderId, $order->getStoreId());
             if (array_key_exists($orderId, $yotpoSyncedOrders)) {
@@ -493,25 +495,6 @@ class Processor extends Main
             echo 'Order process completed for orderId - ' . $orderId . PHP_EOL;
         }
         return $response;
-    }
-
-    /**
-     * Check and sync the products if not already synced
-     *
-     * @param array <mixed> $productIds
-     * @param Order $order
-     * @return bool
-     */
-    public function checkAndSyncProducts($productIds, $order)
-    {
-        $unSyncedProductIds = $this->data->getUnSyncedProductIds($productIds, $order);
-        if ($unSyncedProductIds) {
-            $this->catalogProcessor->setNormalSyncFlag(false);
-            $sync = $this->catalogProcessor->process($unSyncedProductIds, $order);
-            $this->emulateFrontendArea($this->currentStoreId);
-            return $sync;
-        }
-        return true;
     }
 
     /**

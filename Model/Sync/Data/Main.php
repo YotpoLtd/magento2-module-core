@@ -64,26 +64,6 @@ class Main
     }
 
     /**
-     * Get the productIds od the products that are not synced
-     *
-     * @param array <mixed> $productIds
-     * @param Order $order
-     * @return mixed
-     */
-    public function getUnSyncedProductIds($productIds, $order)
-    {
-        $orderItems = [];
-        foreach ($order->getAllVisibleItems() as $orderItem) {
-            $product = $orderItem->getProduct();
-            if (!$product) {
-                continue;
-            }
-            $orderItems[$product->getId()] = $product;
-        }
-        return $this->getProductIds($productIds, $order->getStoreId(), $orderItems);
-    }
-
-    /**
      * Get product ids
      *
      * @param array <mixed> $productIds
@@ -94,6 +74,7 @@ class Main
     public function getProductIds($productIds, $storeId, $items)
     {
         $productIds = array_unique($productIds);
+
         $connection = $this->resourceConnection->getConnection();
         $table = $this->resourceConnection->getTableName('yotpo_product_sync');
         $products = $connection->select()
@@ -101,6 +82,8 @@ class Main
             ->where('product_id IN(?) ', $productIds)
             ->where('store_id=(?)', $storeId);
         $products = $connection->fetchAssoc($products, []);
+
+        $existingProductIds = [];
         foreach ($products as $product) {
             $orderItemProduct = $items[$product['product_id']] ?? null;
             $yotpoIdKey = 'yotpo_id';
@@ -113,11 +96,11 @@ class Main
             }
 
             if ($product[$yotpoIdKey]) {
-                $position = array_search($product['product_id'], $productIds);
-                array_splice($productIds, (int)$position, 1);
+                $existingProductIds[] = $product['product_id'];
             }
         }
-        return $productIds;
+
+        return array_diff($productIds, $existingProductIds);
     }
 
     /**
