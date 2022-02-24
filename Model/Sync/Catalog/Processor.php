@@ -247,7 +247,11 @@ class Processor extends Main
             $itemRowId = $yotpoFormatItemData['row_id'];
             unset($yotpoFormatItemData['row_id']);
 
-            $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId);
+            $attributeDataToUpdate = $this->prepareAttributeDataToUpdate(
+                $storeId,
+                $itemRowId,
+                $syncedToYotpoProductAttributeId
+            );
 
             if ($yotpoSyncTableItemsData
                 && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
@@ -259,7 +263,13 @@ class Processor extends Main
                 continue;
             }
 
-            $apiRequestParams = $this->getApiParams($itemEntityId, $yotpoSyncTableItemsData, $parentItemsIds, $parentItemsData, $isVisibleVariantsSync);
+            $apiRequestParams = $this->getApiParams(
+                $itemEntityId,
+                $yotpoSyncTableItemsData,
+                $parentItemsIds,
+                $parentItemsData,
+                $isVisibleVariantsSync
+            );
 
             if (!$apiRequestParams) {
                 $parentProductId = $parentItemsIds[$itemEntityId] ?? 0;
@@ -282,7 +292,13 @@ class Processor extends Main
             $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $yotpoIdValue = $apiRequestParams['yotpo_id'] ?: 0;
             $responseCode = $response->getData('status');
-            $syncDataRecordToUpdate = $this->prepareSyncTableDataToUpdate($itemEntityId, $yotpoIdKey, $yotpoIdValue, $storeId, $responseCode);
+            $syncDataRecordToUpdate = $this->prepareSyncTableDataToUpdate(
+                $itemEntityId,
+                $yotpoIdKey,
+                $yotpoIdValue,
+                $storeId,
+                $responseCode
+            );
             if (!$isVisibleVariantsSync) {
                 $syncDataRecordToUpdate['yotpo_id_parent'] = $apiRequestParams['yotpo_id_parent'] ?: 0;
             }
@@ -320,7 +336,12 @@ class Processor extends Main
             //push to parentData array if parent product is
             // being the part of current collection
             if (!$isVisibleVariantsSync) {
-                $parentItemsData = $this->pushParentData((int)$itemEntityId, $processedSyncDataRecordToUpdate, $parentItemsData, $parentItemsIds);
+                $parentItemsData = $this->pushParentData(
+                    (int)$itemEntityId,
+                    $processedSyncDataRecordToUpdate,
+                    $parentItemsData,
+                    $parentItemsIds
+                );
             }
 
             if ($processedSyncDataRecordToUpdate) {
@@ -614,7 +635,13 @@ class Processor extends Main
                 $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
 
                 $responseCode = '200';
-                $sqlData[] = $this->prepareSyncTableDataToUpdate($product['external_id'], $yotpoIdKey, $product['yotpo_id'], $this->coreConfig->getStoreId(), $responseCode);
+                $sqlData[] = $this->prepareSyncTableDataToUpdate(
+                    $product['external_id'],
+                    $yotpoIdKey,
+                    $product['yotpo_id'],
+                    $this->coreConfig->getStoreId(),
+                    $responseCode
+                );
             }
         }
         return $sqlData;
@@ -706,19 +733,23 @@ class Processor extends Main
     }
 
     /**
-     * @param array $yotpoSyncTableItemData
+     * @param array <mixed> $yotpoSyncTableItemData
      * @return bool
      */
     private function shouldItemBeResynced($yotpoSyncTableItemData)
     {
-        return $this->coreConfig->canResync($yotpoSyncTableItemData['response_code'], $yotpoSyncTableItemData, $this->isCommandLineSync);
+        return $this->coreConfig->canResync(
+            $yotpoSyncTableItemData['response_code'],
+            $yotpoSyncTableItemData,
+            $this->isCommandLineSync
+        );
     }
 
     /**
      * @param integer $storeId
      * @param integer $itemRowId
      * @param integer $syncedToYotpoProductAttributeId
-     * @return array
+     * @return array <mixed>
      */
     private function prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId)
     {
@@ -733,14 +764,20 @@ class Processor extends Main
     /**
      * @param integer $itemEntityId
      * @param string $yotpoIdKey
-     * @param integer $yotpoIdValue
+     * @param integer|string $yotpoIdValue
      * @param integer $storeId
-     * @param integer $responseCode
+     * @param integer|string $responseCode
      * @param integer $yotpoParentId
-     * @return array
+     * @return array <mixed>
      */
-    private function prepareSyncTableDataToUpdate($itemEntityId, $yotpoIdKey, $yotpoIdValue, $storeId, $responseCode, $yotpoParentId = null)
-    {
+    private function prepareSyncTableDataToUpdate(
+        $itemEntityId,
+        $yotpoIdKey,
+        $yotpoIdValue,
+        $storeId,
+        $responseCode,
+        $yotpoParentId = null
+    ) {
         $lastSyncTime = $this->getCurrentTime();
         return [
             'product_id' => $itemEntityId,
@@ -753,10 +790,11 @@ class Processor extends Main
     }
 
     /**
-     * @param array $attributeDataToUpdate
+     * @param array <mixed> $attributeDataToUpdate
      * @return void
      */
-    private function updateProductSyncAttribute($attributeDataToUpdate) {
+    private function updateProductSyncAttribute($attributeDataToUpdate)
+    {
         $this->insertOnDuplicate(
             'catalog_product_entity_int',
             [$attributeDataToUpdate]
@@ -764,10 +802,11 @@ class Processor extends Main
     }
 
     /**
-     * @param array $syncDataRecord
+     * @param array <mixed> $syncDataRecord
      * @return void
      */
-    private function updateSyncTable($syncDataRecord) {
+    private function updateSyncTable($syncDataRecord)
+    {
         $this->insertOnDuplicate(
             'yotpo_product_sync',
             [$syncDataRecord]
