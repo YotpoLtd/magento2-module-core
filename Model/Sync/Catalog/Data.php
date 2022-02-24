@@ -523,4 +523,13 @@ class Data extends Main
         return trim($item->getData('description')) ?:
             trim($item->getData('short_description'));
     }
+
+    /**
+     * @param array $yotpoFormatItemData
+     * @return array
+     */
+    public function getMinimalProductRequestData($yotpoFormatItemData) {
+        $magentoProductId = $yotpoFormatItemData['external_id'];
+        return ['external_id' => $magentoProductId];
+    }
 }

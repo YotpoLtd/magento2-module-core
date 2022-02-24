@@ -9,6 +9,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\App\Emulation as AppEmulation;
 use Yotpo\Core\Model\AbstractJobs;
 use Yotpo\Core\Model\Config as CoreConfig;
+use Yotpo\Core\Model\Sync\Catalog\Data as CatalogData;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
 use Yotpo\Core\Model\Sync\Catalog\YotpoResource;
 use Yotpo\Core\Model\Api\Sync as CoreSync;
@@ -44,6 +45,11 @@ class Main extends AbstractJobs
     protected $coreSync;
 
     /**
+     * @var CatalogData
+     */
+    protected $catalogData;
+
+    /**
      * @var null|int
      */
     protected $productSyncLimit = null;
@@ -71,7 +77,8 @@ class Main extends AbstractJobs
      * @param YotpoCoreCatalogLogger $yotpoCatalogLogger
      * @param YotpoResource $yotpoResource
      * @param CollectionFactory $collectionFactory
-     * @param CoreSync $coreSync
+     * @param CoreSync $coreSync,
+     * @param CatalogData $catalogData
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -80,7 +87,8 @@ class Main extends AbstractJobs
         YotpoCoreCatalogLogger $yotpoCatalogLogger,
         YotpoResource $yotpoResource,
         CollectionFactory $collectionFactory,
-        CoreSync $coreSync
+        CoreSync $coreSync,
+        CatalogData $catalogData
     ) {
         $this->coreConfig = $coreConfig;
         $this->yotpoCatalogLogger = $yotpoCatalogLogger;
@@ -88,6 +96,7 @@ class Main extends AbstractJobs
         $this->collectionFactory = $collectionFactory;
         $this->coreSync = $coreSync;
         $this->entityIdFieldValue = $this->coreConfig->getEavRowIdFieldName();
+        $this->catalogData = $catalogData;
         parent::__construct($appEmulation, $resourceConnection);
     }
 
@@ -102,8 +111,14 @@ class Main extends AbstractJobs
     {
         switch ($params['method']) {
             case $this->coreConfig->getProductSyncMethod('createProduct'):
-                $data = ['product' => $data, 'entityLog' => 'catalog'];
-                $response = $this->coreSync->sync('POST', $params['url'], $data);
+                $requestData = ['product' => $data, 'entityLog' => 'catalog'];
+                $response = $this->coreSync->sync('POST', $params['url'], $requestData);
+
+                $productResponseStatusCode = $response->getData('status');
+                if ($productResponseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE && !$this->isSyncingAsMainEntity()) {
+                    $requestData['product'] = $this->catalogData->getMinimalProductRequestData($data);
+                    $response = $this->coreSync->sync('POST', $params['url'], $requestData);
+                }
                 break;
             case $this->coreConfig->getProductSyncMethod('updateProduct'):
             case $this->coreConfig->getProductSyncMethod('deleteProduct'):

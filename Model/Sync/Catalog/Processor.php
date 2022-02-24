@@ -23,11 +23,6 @@ use Yotpo\Core\Api\ProductSyncRepositoryInterface;
 class Processor extends Main
 {
     /**
-     * @var CatalogData
-     */
-    protected $catalogData;
-
-    /**
      * @var SyncDataMain
      */
     protected $syncDataMain;
@@ -98,9 +93,9 @@ class Processor extends Main
             $yotpoCatalogLogger,
             $yotpoResource,
             $collectionFactory,
-            $coreSync
+            $coreSync,
+            $catalogData
         );
-        $this->catalogData = $catalogData;
         $this->dateTime = $dateTime;
         $this->categorySyncProcessor = $categorySyncProcessor;
         $this->productSyncRepositoryInterface = $productSyncRepositoryInterface;
