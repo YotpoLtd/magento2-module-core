@@ -22,8 +22,6 @@
                 comment="Is Deleted At Yotpo"/>
         <column xsi:type="datetime" name="synced_to_yotpo" nullable="true" comment="Synced to Yotpo"/>
         <column xsi:type="varchar" name="response_code" nullable="true" length="255" comment="Response Code"/>
-        <column xsi:type="smallint" name="sync_status" unsigned="true" nullable="false" identity="false" default="0"
-                comment="Sync Status"/>
         <constraint xsi:type="primary" referenceId="PRIMARY">
             <column name="entity_id"/>
         </constraint>
@@ -39,9 +37,6 @@
         </index>
         <index referenceId="YOTPO_PRODUCT_SYNC_VISIBLE_VARIANT_YOTPO_ID" indexType="btree">
             <column name="visible_variant_yotpo_id"/>
-        </index>
-        <index referenceId="YOTPO_PRODUCT_SYNC_SYNC_STATUS" indexType="btree">
-            <column name="sync_status"/>
         </index>
     </table>
     <table name="yotpo_orders_sync" resource="default" engine="innodb" comment="Orders sync with Yotpo">
