@@ -523,4 +523,13 @@ class Data extends Main
         return trim($item->getData('description')) ?:
             trim($item->getData('short_description'));
     }
+
+    /**
+     * @param array<string, mixed> $yotpoItemData
+     * @return array<string, integer>
+     */
+    public function getMinimalProductRequestData($yotpoItemData) {
+        $externalId = $yotpoItemData['external_id'];
+        return ['external_id' => $externalId];
+    }
 }
