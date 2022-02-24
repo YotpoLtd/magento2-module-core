@@ -362,7 +362,7 @@ class Main extends AbstractJobs
      * @param array<int, array> $yotpoData
      * @param array<int, int> $parentIds
      * @param array<int|string, mixed> $parentData
-     * @param boolean $visibleVariants
+     * @param boolean $isVisibleVariant
      * @return array<string, string>
      * @throws NoSuchEntityException
      */
@@ -371,17 +371,19 @@ class Main extends AbstractJobs
         array $yotpoData,
         array $parentIds,
         array $parentData,
-        $visibleVariants = false
+        $isVisibleVariant
     ) {
         $apiUrl = $this->coreConfig->getEndpoint('products');
         $method = $this->coreConfig->getProductSyncMethod('createProduct');
         $yotpoIdParent = $yotpoId = '';
+        $yotpoIdKey = 'yotpo_id';
 
-        if (count($parentIds) && !$visibleVariants) {
-            if (isset($parentIds[$productId])
-                && isset($parentData[$parentIds[$productId]])
-                && isset($parentData[$parentIds[$productId]]['yotpo_id'])
-                && $yotpoIdParent = $parentData[$parentIds[$productId]]['yotpo_id']) {
+        if ($isVisibleVariant) {
+            $yotpoIdKey = 'visible_variant_yotpo_id';
+        } elseif (count($parentIds) && isset($parentIds[$productId])) {
+            $parentId = $parentIds[$productId];
+            if ($this->isProductParentYotpoIdFound($parentData, $parentId)) {
+                $yotpoIdParent = $parentData[$parentId]['yotpo_id'];
 
                 $method = $this->coreConfig->getProductSyncMethod('createProductVariant');
                 $apiUrl = $this->coreConfig->getEndpoint(
@@ -389,12 +391,11 @@ class Main extends AbstractJobs
                     ['{yotpo_product_id}'],
                     [$yotpoIdParent]
                 );
-            } elseif (isset($parentIds[$productId])) {
+            } else {
                 return [];
             }
         }
 
-        $yotpoIdKey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
         if (count($yotpoData)) {
             if (isset($yotpoData[$productId])
                 && isset($yotpoData[$productId][$yotpoIdKey])
@@ -427,7 +428,7 @@ class Main extends AbstractJobs
 
                 if (!$this->getImmediateRetryAlreadyDone(
                     $this->entity,
-                    (int)$productId,
+                    $isVisibleVariant.(int)$productId,
                     $this->coreConfig->getStoreId()
                 )) {
                     $existingProduct = $this->getExistingProductsFromAPI($url, $productId, 'products');
@@ -440,6 +441,11 @@ class Main extends AbstractJobs
                         );
                         $method = $this->coreConfig->getProductSyncMethod('updateProduct');
                     }
+                    $this->setImmediateRetryAlreadyDone(
+                        $this->entity,
+                        $isVisibleVariant.(int)$productId,
+                        $this->coreConfig->getStoreId()
+                    );
                 }
             }
 
@@ -452,7 +458,7 @@ class Main extends AbstractJobs
 
                 if (!$this->getImmediateRetryAlreadyDone(
                     $this->entity,
-                    (int)$productId,
+                    $isVisibleVariant.(int)$productId,
                     $this->coreConfig->getStoreId()
                 )) {
                     $existingVariant = $this->getExistingProductsFromAPI($url, $productId, 'variants');
@@ -465,6 +471,11 @@ class Main extends AbstractJobs
                         );
                         $method = $this->coreConfig->getProductSyncMethod('updateProductVariant');
                     }
+                    $this->setImmediateRetryAlreadyDone(
+                        $this->entity,
+                        $isVisibleVariant.(int)$productId,
+                        $this->coreConfig->getStoreId()
+                    );
                 }
             }
         }
@@ -557,8 +568,8 @@ class Main extends AbstractJobs
     protected function getFourNotFourParentId($apiParam)
     {
         $return = 0;
-        $connection = $this->resourceConnection->getConnection();
-        $tableName = $this->resourceConnection->getTableName('yotpo_product_sync');
+        $connection = $this->getConnection();
+        $tableName = $this->getTableName('yotpo_product_sync');
         $yotpoId = isset($apiParam['yotpo_id_parent']) ? $apiParam['yotpo_id_parent'] : 0;
         if ($yotpoId) {
             $select = $connection->select()
@@ -635,5 +646,44 @@ class Main extends AbstractJobs
     public function setNormalSyncFlag($flag)
     {
         $this->normalSync = $flag;
+    }
+
+    /**
+     * @param array <int> $productIds
+     * @param array <int | null> $storeId
+     * @return void
+     */
+    public function removeProductFromSyncTable($productIds, $storeId)
+    {
+        if (!$productIds) {
+            return;
+        }
+        $connection = $this->getConnection();
+        $tableName = $this->getTableName('yotpo_product_sync');
+        $whereConditions = [
+            $connection->quoteInto('product_id IN (?)', $productIds)
+        ];
+        if ($storeId) {
+            $whereConditions[] = $connection->quoteInto('store_id IN (?)', $storeId);
+        }
+        $connection->delete($tableName, $whereConditions);
+    }
+
+    /**
+     * @param array <mixed> $parentData
+     * @param integer $parentId
+     * @return bool
+     */
+    public function isProductParentYotpoIdFound($parentData, $parentId): bool
+    {
+        return isset($parentData[$parentId]) && isset($parentData[$parentId]['yotpo_id']);
+    }
+
+    /**
+     * @return boolean
+     */
+    protected function isSyncingAsMainEntity()
+    {
+        return $this->normalSync;
     }
 }

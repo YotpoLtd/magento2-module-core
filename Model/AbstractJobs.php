@@ -173,4 +173,21 @@ class AbstractJobs
     {
         return in_array($responseCode, ['404','401']);
     }
+
+    /**
+     * @return \Magento\Framework\DB\Adapter\AdapterInterface
+     */
+    public function getConnection()
+    {
+        return $this->resourceConnection->getConnection();
+    }
+
+    /**
+     * @param string $tableName
+     * @return string
+     */
+    public function getTableName($tableName)
+    {
+        return $this->resourceConnection->getTableName($tableName);
+    }
 }

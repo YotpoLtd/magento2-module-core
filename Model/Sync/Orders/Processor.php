@@ -434,9 +434,9 @@ class Processor extends Main
         }
         $this->yotpoOrdersLogger->info('Orders sync - data prepared - Order ID - ' . $orderId, []);
         $productIds = $this->data->getLineItemsIds();
+        $storeId = $order->getStoreId();
         if ($productIds) {
             $visibleItems = $order->getAllVisibleItems();
-            $storeId = $order->getStoreId();
             $isProductSyncSuccess = $this->catalogProcessor->syncProducts($productIds, $visibleItems, $storeId);
             if (!$isProductSyncSuccess) {
                 $this->yotpoOrdersLogger->info('Products sync failed - Order ID - ' . $order->getId(), []);
@@ -479,6 +479,10 @@ class Processor extends Main
                 ['external_ids' => $incrementId, 'entityLog' => 'orders']
             );
         } elseif ($this->isImmediateRetry($response, $this->entity, $orderId, $order->getStoreId())) {
+            $missingProducts = $this->getMissingProductIdsFromNotFoundResponse($response);
+            if ($missingProducts) {
+                $this->catalogProcessor->removeProductFromSyncTable($missingProducts, [$storeId]);
+            }
             $immediateRetry = true;
             $this->setImmediateRetryAlreadyDone($this->entity, $orderId, $order->getStoreId());
             if (array_key_exists($orderId, $yotpoSyncedOrders)) {
