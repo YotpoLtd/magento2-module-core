@@ -670,7 +670,7 @@ class Main extends AbstractJobs
     }
 
     /**
-     * @param array $parentData
+     * @param array <mixed> $parentData
      * @param integer $parentId
      * @return bool
      */
