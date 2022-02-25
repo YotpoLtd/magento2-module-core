@@ -133,6 +133,18 @@ class Config
             [
                 'path' => 'yotpo_core/widget_settings/marketing_settings/attr_customer'
             ],
+        'reset_sync_in_progress_catalog' =>
+            [
+                'path' => 'yotpo_core/sync_settings/reset_sync/reset_sync_in_progress_catalog'
+            ],
+        'reset_sync_in_progress_order' =>
+            [
+                'path' => 'yotpo_core/sync_settings/reset_sync/reset_sync_in_progress_order'
+            ],
+        'reset_sync_in_progress_customer' =>
+            [
+                'path' => 'yotpo_core/sync_settings/reset_sync/reset_sync_in_progress_customer'
+            ]
     ];
 
     /**
@@ -270,7 +282,7 @@ class Config
     /**
      * @param string $key
      * @param string $value
-     * @param string|null $scopeId
+     * @param string|int|null $scopeId
      * @param string|null $scope
      * @throws NoSuchEntityException
      * @return void
@@ -663,5 +675,17 @@ class Config
     public function getUpdateSqlLimit(): int
     {
         return self::UPDATE_SQL_LIMIT;
+    }
+
+    /**
+     * @param int|null $scopeId
+     * @param string $entity
+     * @return boolean
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function syncResetInProgress($scopeId, $entity)
+    {
+        return (bool) $this->getConfig('reset_sync_in_progress_'.$entity, $scopeId);
     }
 }

@@ -9,7 +9,7 @@ class Orders extends Main
 
     const ORDERS_TABLE = 'sales_order';
     const ORDERS_DATA_LIMIT = 300;
-
+    const YOTPO_ENTITY_NAME = 'order';
     /**
      * @return array <string>
      */
@@ -27,13 +27,24 @@ class Orders extends Main
     }
 
     /**
-     * @param int $storeId
-     * @return void
+     * @return string
      */
-    public function resetSync($storeId)
+    public function getYotpoEntityName()
     {
-        parent::resetSync($storeId);
+        return self::YOTPO_ENTITY_NAME;
+    }
+
+    /**
+     * @param int $storeId
+     * @param boolean $skipSyncTables
+     * @return void
+     * @throws \Zend_Db_Statement_Exception
+     */
+    public function resetSync($storeId, $skipSyncTables = false)
+    {
+        parent::resetSync($storeId, true);
         $this->clearSyncTracks($storeId);
+        $this->setResetInProgressConfig($storeId, '0');
     }
 
     /**
@@ -49,11 +60,10 @@ class Orders extends Main
             ->where('store_id', $storeId);
 
         $offset = 0;
-        $entityIds = [];
         do {
             $entityIds = $connection->fetchCol($select->limit(self::ORDERS_DATA_LIMIT, $offset));
             $this->resetOrderSyncFlag($storeId, $entityIds);
-
+            $this->cleanUpSyncTable($entityIds);
             $offset += self::ORDERS_DATA_LIMIT;
         } while ($entityIds);
     }
@@ -77,5 +87,19 @@ class Orders extends Main
                 'entity_id IN (?) ' => $orderIds
             ]
         );
+    }
+
+    /**
+     * @param array <int> $orderIds
+     * @return void
+     */
+    public function cleanUpSyncTable($orderIds)
+    {
+        $connection  = $this->resourceConnection->getConnection();
+        $tableName = $this->resourceConnection->getTableName(self::ORDERS_SYNC_TABLE);
+        $whereConditions = [
+            $connection->quoteInto('order_id IN (?)', $orderIds)
+        ];
+        $connection->delete($tableName, $whereConditions);
     }
 }

@@ -2,7 +2,9 @@
 
 namespace Yotpo\Core\Model\Sync\Reset;
 
+use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\App\ResourceConnection;
+use Yotpo\Core\Model\Config;
 use Yotpo\Core\Model\Sync\Data\Main as SyncDataMain;
 use Yotpo\Core\Model\Config as CoreConfig;
 
@@ -11,6 +13,7 @@ class Catalog extends Main
     const PRODUCT_SYNC_TABLE = 'yotpo_product_sync';
     const CATEGORY_SYNC_TABLE = 'yotpo_category_sync';
     const CRONJOB_CODES = ['yotpo_cron_core_category_sync','yotpo_cron_core_products_sync'];
+    const YOTPO_ENTITY_NAME = 'catalog';
 
     /**
      * @var SyncDataMain
@@ -23,23 +26,37 @@ class Catalog extends Main
      */
     public function __construct(
         ResourceConnection $resourceConnection,
+        Config $config,
+        TypeListInterface $cacheTypeList,
         SyncDataMain $syncDataMain
     ) {
         parent::__construct(
-            $resourceConnection
+            $resourceConnection,
+            $config,
+            $cacheTypeList
         );
         $this->syncDataMain = $syncDataMain;
     }
 
     /**
+     * @return string
+     */
+    public function getYotpoEntityName()
+    {
+        return self::YOTPO_ENTITY_NAME;
+    }
+
+    /**
      * @param int $storeId
+     * @param boolean $skipSyncTables
      * @return void
      * @throws \Zend_Db_Statement_Exception
      */
-    public function resetSync($storeId)
+    public function resetSync($storeId, $skipSyncTables = false)
     {
         parent::resetSync($storeId);
         $this->resetCatalogSyncAttributes($storeId);
+        $this->setResetInProgressConfig($storeId, '0');
     }
 
     /**

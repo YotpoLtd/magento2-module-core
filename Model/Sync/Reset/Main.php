@@ -2,7 +2,9 @@
 
 namespace Yotpo\Core\Model\Sync\Reset;
 
+use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\App\ResourceConnection;
+use Yotpo\Core\Model\Config;
 
 class Main
 {
@@ -15,23 +17,41 @@ class Main
     protected $resourceConnection;
 
     /**
+     * @var Config
+     */
+    protected $config;
+
+    /**
+     * @var TypeListInterface
+     */
+    protected $cacheTypeList;
+
+    /**
      * @param ResourceConnection $resourceConnection
      */
     public function __construct(
-        ResourceConnection $resourceConnection
+        ResourceConnection $resourceConnection,
+        Config $config,
+        TypeListInterface $cacheTypeList
     ) {
         $this->resourceConnection = $resourceConnection;
+        $this->config = $config;
+        $this->cacheTypeList = $cacheTypeList;
     }
 
     /**
      * @param int $storeId
+     * @param boolean $skipSyncTables
      * @return void
      * @throws \Zend_Db_Statement_Exception
      */
-    public function resetSync($storeId)
+    public function resetSync($storeId, $skipSyncTables = false)
     {
+        $this->setResetInProgressConfig($storeId, '1');
         $this->deleteRunningCronSchedules();
-        $this->deleteAllFromTables($storeId);
+        if (!$skipSyncTables) {
+            $this->deleteAllFromTables($storeId);
+        }
     }
 
     /**
@@ -48,6 +68,14 @@ class Main
     protected function getCronJobCodes()
     {
         return [];
+    }
+
+    /**
+     * @return string
+     */
+    protected function getYotpoEntityName()
+    {
+        return '';
     }
 
     /**
@@ -123,5 +151,18 @@ class Main
             ->where('status=\'running\'');
         $query = $connection->deleteFromSelect($select, new \Zend_Db_Expr(''));
         $connection->query($query);
+    }
+
+    /**
+     * @param int $storeId
+     * @param string $flag
+     * @return void
+     */
+    public function setResetInProgressConfig($storeId, $flag)
+    {
+        $yotpoEntityName = $this->getYotpoEntityName();
+        $key = 'reset_sync_in_progress_' . $yotpoEntityName;
+        $this->config->saveConfig($key, $flag, $storeId);
+        $this->cacheTypeList->cleanType(\Magento\Framework\App\Cache\Type\Config::TYPE_IDENTIFIER);
     }
 }
