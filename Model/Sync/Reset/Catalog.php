@@ -4,6 +4,7 @@ namespace Yotpo\Core\Model\Sync\Reset;
 
 use Magento\Framework\App\ResourceConnection;
 use Yotpo\Core\Model\Sync\Data\Main as SyncDataMain;
+use Yotpo\Core\Model\Config as CoreConfig;
 
 class Catalog extends Main
 {
@@ -75,14 +76,51 @@ class Catalog extends Main
         ];
         foreach ($dataSet as $data) {
             $connection =   $this->resourceConnection->getConnection();
-            $connection->update(
-                $this->resourceConnection->getTableName($data['table_name']),
-                ['value' => '0'],
-                [
-                    'attribute_id' => $this->syncDataMain->getAttributeId($data['attribute_code']),
-                    'store_id' => $storeId
-                ]
-            );
+            $attributeId = $this->syncDataMain->getAttributeId($data['attribute_code']);
+            $totalCount = $this->getCountOfEntities($data['table_name'], $attributeId, $storeId);
+            $tableName = $this->resourceConnection->getTableName($data['table_name']);
+            while ($totalCount > 0) {
+                if ($totalCount > self::UPDATE_LIMIT) {
+                    $limit = self::UPDATE_LIMIT;
+                    $totalCount -= self::UPDATE_LIMIT;
+                } else {
+                    $limit = $totalCount;
+                    $totalCount = 0;
+                }
+                $updateQuery = sprintf(
+                    'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `store_id` = %d AND `value` = 1
+                        ORDER BY `value_id` ASC LIMIT %d',
+                    $this->resourceConnection->getTableName($tableName),
+                    0,
+                    $this->syncDataMain->getAttributeId($data['attribute_code']),
+                    $storeId,
+                    $limit
+                );
+                $connection->query($updateQuery);
+            }
         }
+    }
+
+    /**
+     * @param string $tableName
+     * @param int $attributeId
+     * @param int $storeId
+     * @return int
+     */
+    public function getCountOfEntities($tableName, $attributeId, $storeId)
+    {
+        $connection  = $this->resourceConnection->getConnection();
+        $tableName = $this->resourceConnection->getTableName($tableName);
+        $select = $connection->select();
+        $query = $select->reset()
+            ->from(
+                ['p' => $tableName]
+            );
+        if ($storeId) {
+            $query->where('store_id = ?', $storeId);
+        }
+        $query->where('attribute_id = ?', $attributeId);
+        $query->where('value = ?', 1);
+        return $connection->query($query)->rowCount();
     }
 }

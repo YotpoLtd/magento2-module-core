@@ -122,35 +122,14 @@ class ResetYotpoSync extends Command
             if ($isAllOption) {
                 $this->resetAllSync($storeId);
             } else {
-                $yotpoEntity = $input->getOption(self::YOTPO_ENTITY);
-                if (is_array($yotpoEntity)) {
-                    $yotpoEntity = implode('', $yotpoEntity);
+                $yotpoEntityInput = $input->getOption(self::YOTPO_ENTITY);
+                if (!$yotpoEntityInput) {
+                    return $this;
                 }
-                switch ($yotpoEntity) {
-                    case self::YOTPO_ENTITY_CATALOG:
-                        $this->resetCatalogSync($storeId);
-                        break;
-                    case self::YOTPO_ENTITY_CUSTOMERS:
-                        $this->resetCustomersSync($storeId);
-                        break;
-                    case self::YOTPO_ENTITY_ORDERS:
-                        $this->resetOrdersSync($storeId);
-                        break;
-                    case self::YOTPO_ENTITY_ALL:
-                        $this->resetAllSync($storeId);
-                        break;
-                    default:
-                        $output->writeln('Yotpo Reset Sync');
-                        break;
+                if (!is_array($yotpoEntityInput)) {
+                    $yotpoEntityInput = [$yotpoEntityInput];
                 }
-                if (in_array($yotpoEntity, $this->yotpoEntities)) {
-                    $storeName = $this->config->getStoreName($storeId);
-                    $output->writeln(
-                        'Sync reset completed for Entity - ' . $yotpoEntity . ', Store ID - ' . $storeName
-                    );
-                } else {
-                    $output->writeln('Entity - ' . $yotpoEntity . ' does not exist');
-                }
+                $this->resetYotpoSync($yotpoEntityInput, $storeId, $output);
             }
         }
 
@@ -204,5 +183,43 @@ class ResetYotpoSync extends Command
     public function resetOrdersSync($storeId)
     {
         $this->syncReset->resetOrdersSync($storeId);
+    }
+
+    /**
+     * @param array <bool|string|null> $yotpoEntityInput
+     * @param int $storeId
+     * @param OutputInterface $output
+     * @return void
+     * @throws NoSuchEntityException
+     */
+    protected function resetYotpoSync($yotpoEntityInput, $storeId, OutputInterface $output)
+    {
+        foreach ($yotpoEntityInput as $yotpoEntity) {
+            switch ($yotpoEntity) {
+                case self::YOTPO_ENTITY_CATALOG:
+                    $this->resetCatalogSync($storeId);
+                    break;
+                case self::YOTPO_ENTITY_CUSTOMERS:
+                    $this->resetCustomersSync($storeId);
+                    break;
+                case self::YOTPO_ENTITY_ORDERS:
+                    $this->resetOrdersSync($storeId);
+                    break;
+                case self::YOTPO_ENTITY_ALL:
+                    $this->resetAllSync($storeId);
+                    break;
+                default:
+                    $output->writeln('Yotpo Reset Sync');
+                    break;
+            }
+            if (in_array($yotpoEntity, $this->yotpoEntities)) {
+                $storeName = $this->config->getStoreName($storeId);
+                $output->writeln(
+                    'Sync reset completed for Entity - ' . $yotpoEntity . ', Store ID - ' . $storeName
+                );
+            } else {
+                $output->writeln('Entity - ' . $yotpoEntity . ' does not exist');
+            }
+        }
     }
 }
