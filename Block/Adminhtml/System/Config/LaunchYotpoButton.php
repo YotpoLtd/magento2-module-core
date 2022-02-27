@@ -123,7 +123,7 @@ class LaunchYotpoButton extends Field
         if (!($appKey = $this->getAppKey())) {
             $button->setDisabled(true);
         } else {
-            $button->setOnClick("window.open('https://yap.yotpo.com/#/preferredAppKey={$appKey}','_blank');");
+            $button->setOnClick("window.open('https://www.yotpo.com/integrations/adobe-commerce-magento/?utm_source=MagentoAdmin_Dashboard','_blank');");
         }
 
         return $button->toHtml();
