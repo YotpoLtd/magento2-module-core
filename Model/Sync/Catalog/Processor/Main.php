@@ -115,7 +115,9 @@ class Main extends AbstractJobs
                 $response = $this->coreSync->sync('POST', $params['url'], $requestData);
 
                 $productResponseStatusCode = $response->getData('status');
-                if ($productResponseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE && !$this->isSyncingAsMainEntity()) {
+                if ($productResponseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE
+                    && !$this->isSyncingAsMainEntity()
+                ) {
                     $requestData['product'] = $this->catalogData->getMinimalProductRequestData($data);
                     $response = $this->coreSync->sync('POST', $params['url'], $requestData);
                 }

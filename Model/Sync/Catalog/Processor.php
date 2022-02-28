@@ -215,7 +215,7 @@ class Processor extends Main
      * @param array <mixed> $collectionItems
      * @param int $storeId
      * @param boolean $isVisibleVariantsSync
-     * @return bool
+     * @return bool|void
      * @throws NoSuchEntityException
      */
     public function syncItems($collectionItems, $storeId, $isVisibleVariantsSync = false)
@@ -415,7 +415,8 @@ class Processor extends Main
         if ($hasFailedCreatingAnyProduct) {
             $this->yotpoCatalogLogger->info(
                 __(
-                    'API errors occurred while trying to create products - Store ID: %1, Store Name: %2, Is Visible Variants Sync: %3',
+                    'API errors occurred while trying to create products -
+                    Store ID: %1, Store Name: %2, Is Visible Variants Sync: %3',
                     $storeId,
                     $this->coreConfig->getStoreName($storeId),
                     var_export($isVisibleVariantsSync, true)
