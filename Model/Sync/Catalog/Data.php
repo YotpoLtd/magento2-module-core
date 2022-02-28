@@ -528,7 +528,8 @@ class Data extends Main
      * @param array<string, mixed> $yotpoItemData
      * @return array<string, integer>
      */
-    public function getMinimalProductRequestData($yotpoItemData) {
+    public function getMinimalProductRequestData($yotpoItemData)
+    {
         $externalId = $yotpoItemData['external_id'];
         return ['external_id' => $externalId];
     }
