@@ -503,9 +503,8 @@ class Config
      */
     public function canUpdateCustomAttributeForProducts($responseCode = ''): bool
     {
-        return ($responseCode
-                && in_array($responseCode, $this->successfulResponseCodes))
-            || !$this->canResync($responseCode) || $responseCode == '409';
+        return ($responseCode && in_array($responseCode, $this->successfulResponseCodes))
+            || !($this->canResync($responseCode) || $responseCode == self::CONFLICT_RESPONSE_CODE);
     }
 
     /**

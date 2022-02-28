@@ -2,6 +2,7 @@
 
 namespace Yotpo\Core\Model\Sync\Catalog\Processor;
 
+use InvalidArgumentException;
 use Magento\Catalog\Model\ResourceModel\Product\Collection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use Magento\Framework\App\ResourceConnection;
@@ -72,6 +73,11 @@ class Main extends AbstractJobs
     protected $normalSync = true;
 
     /**
+     * @var CatalogRequestHandler
+     */
+    protected $catalogRequestHandler;
+
+    /**
      * AbstractJobs constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -90,7 +96,8 @@ class Main extends AbstractJobs
         YotpoResource $yotpoResource,
         CollectionFactory $collectionFactory,
         CoreSync $coreSync,
-        CatalogData $catalogData
+        CatalogData $catalogData,
+        CatalogRequestHandler $catalogRequestHandler
     ) {
         $this->coreConfig = $coreConfig;
         $this->yotpoCatalogLogger = $yotpoCatalogLogger;
@@ -99,47 +106,48 @@ class Main extends AbstractJobs
         $this->coreSync = $coreSync;
         $this->entityIdFieldValue = $this->coreConfig->getEavRowIdFieldName();
         $this->catalogData = $catalogData;
+        $this->catalogRequestHandler = $catalogRequestHandler;
         parent::__construct($appEmulation, $resourceConnection);
     }
 
     /**
-     * Trigger API
-     * @param array<string, string> $params
-     * @param mixed $data
-     * @return mixed
-     * @throws NoSuchEntityException
+     * @param integer $itemEntityId
+     * @param array<mixed> $yotpoItemData
+     * @param array<mixed> $apiRequestParams
+     * @return array<mixed>
      */
-    protected function processRequest($params, $data)
+    protected function handleRequest($itemEntityId, $yotpoItemData, $apiRequestParams)
     {
-        switch ($params['method']) {
-            case $this->coreConfig->getProductSyncMethod('createProduct'):
-                $requestData = ['product' => $data, 'entityLog' => 'catalog'];
-                $response = $this->coreSync->sync('POST', $params['url'], $requestData);
+        $syncMethod = $apiRequestParams['method'];
+        $yotpoItemId = null;
+        $yotpoParentItemId = null;
 
-                $productResponseStatusCode = $response->getData('status');
-                if ($productResponseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE
-                    && !$this->isSyncingAsMainEntity()
-                ) {
-                    $requestData['product'] = $this->catalogData->getMinimalProductRequestData($data);
-                    $response = $this->coreSync->sync('POST', $params['url'], $requestData);
-                }
-                break;
-            case $this->coreConfig->getProductSyncMethod('updateProduct'):
-            case $this->coreConfig->getProductSyncMethod('deleteProduct'):
-            case $this->coreConfig->getProductSyncMethod('unassignProduct'):
-                $data = ['product' => $data, 'entityLog' => 'catalog'];
-                $response = $this->coreSync->sync('PATCH', $params['url'], $data);
-                break;
-            case $this->coreConfig->getProductSyncMethod('createProductVariant'):
-                $data = ['variant' => $data, 'entityLog' => 'catalog'];
-                $response = $this->coreSync->sync('POST', $params['url'], $data);
-                break;
-            case $this->coreConfig->getProductSyncMethod('updateProductVariant'):
-            case $this->coreConfig->getProductSyncMethod('deleteProductVariant'):
-            case $this->coreConfig->getProductSyncMethod('unassignProductVariant'):
-                $data = ['variant' => $data, 'entityLog' => 'catalog'];
-                $response = $this->coreSync->sync('PATCH', $params['url'], $data);
-                break;
+        if (isset($apiRequestParams['yotpo_id'])) {
+            $yotpoItemId = $apiRequestParams['yotpo_id'];
+        }
+
+        if (isset($apiRequestParams['yotpo_id_parent'])) {
+            $yotpoParentItemId = $apiRequestParams['yotpo_id_parent'];
+        }
+
+        switch ($syncMethod) {
+            case 'createProduct':
+            case 'updateProduct':
+                return $this->catalogRequestHandler->handleProductUpsert($itemEntityId, $yotpoItemData, $yotpoItemId);
+            case 'createProductVariant':
+            case 'updateProductVariant':
+                return $this->catalogRequestHandler->handleVariantUpsert(
+                    $itemEntityId,
+                    $yotpoItemData,
+                    $yotpoParentItemId,
+                    $yotpoItemId
+                );
+            case 'deleteProduct':
+            case 'unassignProduct':
+            case 'deleteProductVariant':
+            case 'unassignProductVariant':
+                $response = $this->processRequest($apiRequestParams, $yotpoItemData);
+                return $this->catalogRequestHandler->prepareRequestResponseObject($syncMethod, $yotpoItemId, $response);
             default:
                 $response = $this->coreSync->getEmptyResponse();
                 $storeId = $this->coreConfig->getStoreId();
@@ -152,8 +160,34 @@ class Main extends AbstractJobs
                     ),
                     []
                 );
-
+                return $this->catalogRequestHandler->prepareRequestResponseObject($syncMethod, $yotpoItemId, $response);
         }
+    }
+
+    /**
+     * Trigger API
+     * @param array<string, string> $params
+     * @param mixed $data
+     * @return mixed
+     * @throws NoSuchEntityException|InvalidArgumentException
+     */
+    private function processRequest($params, $data)
+    {
+        switch ($params['method']) {
+            case $this->coreConfig->getProductSyncMethod('deleteProduct'):
+            case $this->coreConfig->getProductSyncMethod('unassignProduct'):
+                $data = ['product' => $data, 'entityLog' => 'catalog'];
+                $response = $this->coreSync->sync('PATCH', $params['url'], $data);
+                break;
+            case $this->coreConfig->getProductSyncMethod('deleteProductVariant'):
+            case $this->coreConfig->getProductSyncMethod('unassignProductVariant'):
+                $data = ['variant' => $data, 'entityLog' => 'catalog'];
+                $response = $this->coreSync->sync('PATCH', $params['url'], $data);
+                break;
+            default:
+                throw new InvalidArgumentException("Invalid method was passed to processRequest");
+        }
+
         return $response;
     }
 
@@ -183,7 +217,10 @@ class Main extends AbstractJobs
             case $this->coreConfig->getProductSyncMethod('createProductVariant'):
                 $yotpoIdkey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
                 if ($response->getData('is_success')) {
-                    $tempSqlArray[$yotpoIdkey] = $this->getYotpoIdFromResponse($response, $apiParam['method']);
+                    $tempSqlArray[$yotpoIdkey] = $this->catalogRequestHandler->getYotpoIdFromResponse(
+                        $response,
+                        $apiParam['method']
+                    );
                     $this->writeSuccessLog($apiParam['method'], $storeId);
                 } else {
                     if ($response->getStatus() == '409') {
@@ -301,33 +338,6 @@ class Main extends AbstractJobs
     }
 
     /**
-     * Get yotpo_id from response
-     * @param mixed $response
-     * @param string|int $method
-     * @return string|int
-     */
-    protected function getYotpoIdFromResponse($response, $method)
-    {
-        $array = [
-            $this->coreConfig->getProductSyncMethod('createProduct') => 'product',
-            $this->coreConfig->getProductSyncMethod('createProductVariant') => 'variant'
-        ];
-        $key = $array[$method] ?? null;
-        $yotpoId = 0;
-        if (!$key) {
-            return $yotpoId;
-        }
-        if ($response && $response->getData('response')) {
-            $responseData = $response->getData('response');
-            if ($responseData && is_array($responseData)) {
-                $yotpoId = isset($responseData[$key]) && is_array($responseData[$key])
-                && isset($responseData[$key]['yotpo_id']) ? $responseData[$key]['yotpo_id']  : 0;
-            }
-        }
-        return $yotpoId;
-    }
-
-    /**
      * Collection for fetching the data to delete
      * @param int $storeId
      * @return array<int, array<string, string|int>>
@@ -415,9 +425,7 @@ class Main extends AbstractJobs
             if (isset($yotpoData[$productId])
                 && isset($yotpoData[$productId][$yotpoIdKey])
             ) {
-
-                $yotpoId = $yotpoData[$productId][$yotpoIdKey] ;
-
+                $yotpoId = $yotpoData[$productId][$yotpoIdKey];
                 if ($yotpoId && $method ==  $this->coreConfig->getProductSyncMethod('createProduct')) {
                     $apiUrl = $this->coreConfig->getEndpoint(
                         'updateProduct',
@@ -434,64 +442,6 @@ class Main extends AbstractJobs
                     $method = $this->coreConfig->getProductSyncMethod('updateProductVariant');
                 }
 
-            }
-        }
-
-        if (!$yotpoId) {
-            if ($method == 'createProduct') {
-                $url = $this->coreConfig->getEndpoint('products');
-
-                if (!$this->getImmediateRetryAlreadyDone(
-                    $this->entity,
-                    $isVisibleVariant.(int)$productId,
-                    $this->coreConfig->getStoreId()
-                )) {
-                    $existingProduct = $this->getExistingProductsFromAPI($url, $productId, 'products');
-                    if (is_array($existingProduct) && count($existingProduct)) {
-                        $yotpoId = $existingProduct[0]['yotpo_id'];
-                        $apiUrl = $this->coreConfig->getEndpoint(
-                            'updateProduct',
-                            ['{yotpo_product_id}'],
-                            [$yotpoId]
-                        );
-                        $method = $this->coreConfig->getProductSyncMethod('updateProduct');
-                    }
-                    $this->setImmediateRetryAlreadyDone(
-                        $this->entity,
-                        $isVisibleVariant.(int)$productId,
-                        $this->coreConfig->getStoreId()
-                    );
-                }
-            }
-
-            if ($method == 'createProductVariant' && $yotpoIdParent) {
-                $url = $this->coreConfig->getEndpoint(
-                    'variant',
-                    ['{yotpo_product_id}'],
-                    [$yotpoIdParent]
-                );
-
-                if (!$this->getImmediateRetryAlreadyDone(
-                    $this->entity,
-                    $isVisibleVariant.(int)$productId,
-                    $this->coreConfig->getStoreId()
-                )) {
-                    $existingVariant = $this->getExistingProductsFromAPI($url, $productId, 'variants');
-                    if (is_array($existingVariant) && count($existingVariant)) {
-                        $yotpoId = $existingVariant[0]['yotpo_id'];
-                        $apiUrl = $this->coreConfig->getEndpoint(
-                            'updateVariant',
-                            ['{yotpo_product_id}','{yotpo_variant_id}'],
-                            [$yotpoIdParent, $yotpoId]
-                        );
-                        $method = $this->coreConfig->getProductSyncMethod('updateProductVariant');
-                    }
-                    $this->setImmediateRetryAlreadyDone(
-                        $this->entity,
-                        $isVisibleVariant.(int)$productId,
-                        $this->coreConfig->getStoreId()
-                    );
-                }
             }
         }
 
@@ -651,7 +601,9 @@ class Main extends AbstractJobs
 
         $params = $this->getDeleteApiParams($itemData, 'yotpo_id');
         $itemData = ['is_discontinued' => true];
-        return $this->processRequest($params, $itemData);
+
+        $responseObject = $this->handleRequest($itemId, $itemData, $params);
+        return $responseObject['response'];
     }
 
     /**
@@ -691,9 +643,9 @@ class Main extends AbstractJobs
      */
     public function isProductParentYotpoIdFound($yotpoData, $parentId): bool
     {
-        return isset($yotpoData[$parentId]) &&
-            isset($yotpoData[$parentId]['yotpo_id']) &&
-            $yotpoData[$parentId]['yotpo_id'];
+        return isset($yotpoData[$parentId])
+            && isset($yotpoData[$parentId]['yotpo_id'])
+            && $yotpoData[$parentId]['yotpo_id'];
     }
 
     /**
@@ -748,6 +700,19 @@ class Main extends AbstractJobs
         }
 
         return $productIdsToYotpoIdsMap;
+    }
+
+    /**
+     * @param integer $itemEntityId
+     * @param integer $parentItemId
+     * @param array <mixed> $yotpoSyncTableItemsData
+     * @return bool
+     */
+    public function isProductParentYotpoIdChanged($itemEntityId, $parentItemId, $yotpoSyncTableItemsData)
+    {
+        return array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
+            && array_key_exists($parentItemId, $yotpoSyncTableItemsData)
+            && $yotpoSyncTableItemsData[$itemEntityId]['yotpo_id_parent'] != $yotpoSyncTableItemsData[$parentItemId]['yotpo_id'];
     }
 
     /**
