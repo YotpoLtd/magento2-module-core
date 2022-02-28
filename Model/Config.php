@@ -38,6 +38,8 @@ class Config
     const SUCCESS_RESPONSE_CODE = '200';
     const CREATED_STATUS_CODE = '201';
     const BAD_REQUEST_RESPONSE_CODE = 400;
+    const NOT_FOUND_RESPONSE_CODE = 404;
+    const CONFLICT_RESPONSE_CODE = 409;
 
     /**
      * @var mixed[]
@@ -496,9 +498,8 @@ class Config
      */
     public function canUpdateCustomAttributeForProducts($responseCode = ''): bool
     {
-        return ($responseCode
-                && in_array($responseCode, $this->successfulResponseCodes))
-            || !$this->canResync($responseCode) || $responseCode == '409';
+        return ($responseCode && in_array($responseCode, $this->successfulResponseCodes))
+            || !($this->canResync($responseCode) || $responseCode == self::CONFLICT_RESPONSE_CODE);
     }
 
     /**
