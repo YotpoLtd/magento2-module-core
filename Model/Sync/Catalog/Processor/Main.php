@@ -9,6 +9,7 @@ use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\App\Emulation as AppEmulation;
 use Yotpo\Core\Model\AbstractJobs;
 use Yotpo\Core\Model\Config as CoreConfig;
+use Yotpo\Core\Model\Sync\Catalog\Data as CatalogData;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
 use Yotpo\Core\Model\Sync\Catalog\YotpoResource;
 use Yotpo\Core\Model\Api\Sync as CoreSync;
@@ -44,6 +45,11 @@ class Main extends AbstractJobs
     protected $coreSync;
 
     /**
+     * @var CatalogData
+     */
+    protected $catalogData;
+
+    /**
      * @var null|int
      */
     protected $productSyncLimit = null;
@@ -71,7 +77,8 @@ class Main extends AbstractJobs
      * @param YotpoCoreCatalogLogger $yotpoCatalogLogger
      * @param YotpoResource $yotpoResource
      * @param CollectionFactory $collectionFactory
-     * @param CoreSync $coreSync
+     * @param CoreSync $coreSync,
+     * @param CatalogData $catalogData
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -80,7 +87,8 @@ class Main extends AbstractJobs
         YotpoCoreCatalogLogger $yotpoCatalogLogger,
         YotpoResource $yotpoResource,
         CollectionFactory $collectionFactory,
-        CoreSync $coreSync
+        CoreSync $coreSync,
+        CatalogData $catalogData
     ) {
         $this->coreConfig = $coreConfig;
         $this->yotpoCatalogLogger = $yotpoCatalogLogger;
@@ -88,6 +96,7 @@ class Main extends AbstractJobs
         $this->collectionFactory = $collectionFactory;
         $this->coreSync = $coreSync;
         $this->entityIdFieldValue = $this->coreConfig->getEavRowIdFieldName();
+        $this->catalogData = $catalogData;
         parent::__construct($appEmulation, $resourceConnection);
     }
 
@@ -102,8 +111,14 @@ class Main extends AbstractJobs
     {
         switch ($params['method']) {
             case $this->coreConfig->getProductSyncMethod('createProduct'):
-                $data = ['product' => $data, 'entityLog' => 'catalog'];
-                $response = $this->coreSync->sync('POST', $params['url'], $data);
+                $requestData = ['product' => $data, 'entityLog' => 'catalog'];
+                $response = $this->coreSync->sync('POST', $params['url'], $requestData);
+
+                $productResponseStatusCode = $response->getData('status');
+                if ($productResponseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE && !$this->isSyncingAsMainEntity()) {
+                    $requestData['product'] = $this->catalogData->getMinimalProductRequestData($data);
+                    $response = $this->coreSync->sync('POST', $params['url'], $requestData);
+                }
                 break;
             case $this->coreConfig->getProductSyncMethod('updateProduct'):
             case $this->coreConfig->getProductSyncMethod('deleteProduct'):
@@ -360,8 +375,8 @@ class Main extends AbstractJobs
      * Get API End URL and API Method
      * @param int|string $productId
      * @param array<int, array> $yotpoData
-     * @param array<int, int> $parentIds
-     * @param array<int|string, mixed> $parentData
+     * @param array<int, int> $parentsIds
+     * @param array<int|string, mixed> $parentsData
      * @param boolean $isVisibleVariant
      * @return array<string, string>
      * @throws NoSuchEntityException
@@ -369,8 +384,8 @@ class Main extends AbstractJobs
     protected function getApiParams(
         $productId,
         array $yotpoData,
-        array $parentIds,
-        array $parentData,
+        array $parentsIds,
+        array $parentsData,
         $isVisibleVariant
     ) {
         $apiUrl = $this->coreConfig->getEndpoint('products');
@@ -380,10 +395,10 @@ class Main extends AbstractJobs
 
         if ($isVisibleVariant) {
             $yotpoIdKey = 'visible_variant_yotpo_id';
-        } elseif (count($parentIds) && isset($parentIds[$productId])) {
-            $parentId = $parentIds[$productId];
-            if ($this->isProductParentYotpoIdFound($parentData, $parentId)) {
-                $yotpoIdParent = $parentData[$parentId]['yotpo_id'];
+        } elseif (count($parentsIds) && isset($parentsIds[$productId])) {
+            $parentId = $parentsIds[$productId];
+            if ($this->isProductParentYotpoIdFound($parentsData, $parentId)) {
+                $yotpoIdParent = $parentsData[$parentId]['yotpo_id'];
 
                 $method = $this->coreConfig->getProductSyncMethod('createProductVariant');
                 $apiUrl = $this->coreConfig->getEndpoint(

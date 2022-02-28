@@ -85,7 +85,7 @@ class YotpoResource
         }
 
         $return['yotpo_data'] = $yotpoData;
-        $return['parent_data'] = $parentData;
+        $return['parents_data'] = $parentData;
         return $return;
     }
 
