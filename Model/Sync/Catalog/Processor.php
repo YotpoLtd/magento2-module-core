@@ -2,7 +2,6 @@
 namespace Yotpo\Core\Model\Sync\Catalog;
 
 use Magento\Framework\Exception\NoSuchEntityException;
-use Magento\Sales\Model\Order;
 use Yotpo\Core\Model\Config as CoreConfig;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
 use Magento\Store\Model\App\Emulation as AppEmulation;
@@ -12,7 +11,6 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use Magento\Framework\Stdlib\DateTime\DateTime;
 use Yotpo\Core\Model\Sync\Category\Processor\ProcessByProduct as CategorySyncProcessor;
-use Magento\Quote\Model\Quote;
 use Yotpo\Core\Model\Sync\Data\Main as SyncDataMain;
 use Yotpo\Core\Model\Sync\Catalog\Processor\Main;
 use Yotpo\Core\Api\ProductSyncRepositoryInterface;

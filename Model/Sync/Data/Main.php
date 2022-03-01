@@ -3,7 +3,6 @@
 namespace Yotpo\Core\Model\Sync\Data;
 
 use Magento\Framework\App\ResourceConnection;
-use Magento\Sales\Model\Order;
 
 /**
  * Class Main - Base class to retrieve attribute data

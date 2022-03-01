@@ -1,8 +1,6 @@
 <?php
 namespace Yotpo\Core\Model\Sync\Catalog\Cron;
 
-use Magento\Framework\Exception\LocalizedException;
-use Magento\Framework\Exception\NoSuchEntityException;
 use Yotpo\Core\Model\Sync\Catalog\Processor;
 
 /**
