@@ -10,7 +10,6 @@ use Magento\Eav\Api\AttributeRepositoryInterface;
 use Magento\Framework\Phrase;
 use Yotpo\Core\Setup\Patch\Data\CreateCategoryAttribute;
 use Yotpo\Core\Setup\Patch\Data\CreateProductAttribute;
-use Yotpo\Core\Model\CustomCustomerAttribute;
 use Yotpo\Core\Model\CustomCustomerAttributeSmsMarketing;
 use Magento\Eav\Model\ResourceModel\Entity\Attribute\CollectionFactory as AttributeCollectionFactory;
 use Magento\Eav\Api\Data\AttributeInterface;
@@ -46,11 +45,6 @@ class CustomSystemMessage implements MessageInterface
     protected $createProductAttribute;
 
     /**
-     * @var CustomCustomerAttribute
-     */
-    protected $customCustomerAttribute;
-
-    /**
      * @var CustomCustomerAttributeSmsMarketing
      */
     protected $customCustomerAttributeSmsMarketing;
@@ -73,7 +67,7 @@ class CustomSystemMessage implements MessageInterface
     /**
      * @var array <mixed>
      */
-    protected $missingAttributes = ['synced_to_yotpo_customer','yotpo_accepts_sms_marketing',
+    protected $missingAttributes = ['yotpo_accepts_sms_marketing',
         'synced_to_yotpo_product', 'synced_to_yotpo_collection'];
 
     /**
@@ -88,7 +82,6 @@ class CustomSystemMessage implements MessageInterface
      * @param ModuleListInterface $moduleList
      * @param CreateCategoryAttribute $createCategoryAttribute
      * @param CreateProductAttribute $createProductAttribute
-     * @param CustomCustomerAttribute $customCustomerAttribute
      * @param CustomCustomerAttributeSmsMarketing $customCustomerAttributeSmsMarketing
      * @param AttributeCollectionFactory $attributeFactory
      */
@@ -98,7 +91,6 @@ class CustomSystemMessage implements MessageInterface
         ModuleListInterface $moduleList,
         CreateCategoryAttribute $createCategoryAttribute,
         CreateProductAttribute $createProductAttribute,
-        CustomCustomerAttribute $customCustomerAttribute,
         CustomCustomerAttributeSmsMarketing $customCustomerAttributeSmsMarketing,
         AttributeCollectionFactory $attributeFactory
     ) {
@@ -107,7 +99,6 @@ class CustomSystemMessage implements MessageInterface
         $this->moduleList = $moduleList;
         $this->createCategoryAttribute = $createCategoryAttribute;
         $this->createProductAttribute = $createProductAttribute;
-        $this->customCustomerAttribute = $customCustomerAttribute;
         $this->customCustomerAttributeSmsMarketing = $customCustomerAttributeSmsMarketing;
         $this->attributeFactory = $attributeFactory;
     }
@@ -137,11 +128,6 @@ class CustomSystemMessage implements MessageInterface
                         break;
                     case 'synced_to_yotpo_collection':
                         $this->createCategoryAttribute->apply();
-                        break;
-                    case 'synced_to_yotpo_customer':
-                        if (method_exists($this->customCustomerAttribute, 'apply')) {
-                            $this->customCustomerAttribute->apply();
-                        }
                         break;
                     case 'yotpo_accepts_sms_marketing':
                         if (method_exists($this->customCustomerAttributeSmsMarketing, 'apply')) {
@@ -182,7 +168,7 @@ class CustomSystemMessage implements MessageInterface
     {
         if ($this->isEnabled('Yotpo_SmsBump')) {
             $this->attributeCodes =
-                array_merge($this->attributeCodes, ['synced_to_yotpo_customer', 'yotpo_accepts_sms_marketing']);
+                array_merge($this->attributeCodes, ['yotpo_accepts_sms_marketing']);
         }
         $this->attributeCodes = array_unique($this->attributeCodes);
         $collection = $this->attributeFactory->create();
