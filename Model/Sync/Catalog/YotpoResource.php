@@ -71,21 +71,13 @@ class YotpoResource
         $items = $connection->fetchAssoc($select, []);
 
         $yotpoData = [];
-        $parentData = [];
         if ($items) {
             foreach ($items as $item) {
                 $yotpoData[$item['product_id']] = $item;
-
-                if (in_array($item['product_id'], $parentIds)) {
-                    $parentData[$item['product_id']] = [
-                        'yotpo_id' => $item['yotpo_id']
-                    ];
-                }
             }
         }
 
         $return['yotpo_data'] = $yotpoData;
-        $return['parents_data'] = $parentData;
         return $return;
     }
 

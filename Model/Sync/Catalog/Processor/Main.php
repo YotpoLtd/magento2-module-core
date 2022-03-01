@@ -378,7 +378,6 @@ class Main extends AbstractJobs
      * @param int|string $productId
      * @param array<int, array> $yotpoData
      * @param array<int, int> $parentsIds
-     * @param array<int|string, mixed> $parentsData
      * @param boolean $isVisibleVariant
      * @return array<string, string>
      * @throws NoSuchEntityException
@@ -387,7 +386,6 @@ class Main extends AbstractJobs
         $productId,
         array $yotpoData,
         array $parentsIds,
-        array $parentsData,
         $isVisibleVariant
     ) {
         $apiUrl = $this->coreConfig->getEndpoint('products');
@@ -399,8 +397,8 @@ class Main extends AbstractJobs
             $yotpoIdKey = 'visible_variant_yotpo_id';
         } elseif (count($parentsIds) && isset($parentsIds[$productId])) {
             $parentId = $parentsIds[$productId];
-            if ($this->isProductParentYotpoIdFound($parentsData, $parentId)) {
-                $yotpoIdParent = $parentsData[$parentId]['yotpo_id'];
+            if ($this->isProductParentYotpoIdFound($yotpoData, $parentId)) {
+                $yotpoIdParent = $yotpoData[$parentId]['yotpo_id'];
 
                 $method = $this->coreConfig->getProductSyncMethod('createProductVariant');
                 $apiUrl = $this->coreConfig->getEndpoint(
@@ -687,13 +685,13 @@ class Main extends AbstractJobs
     }
 
     /**
-     * @param array <mixed> $parentData
+     * @param array <mixed> $yotpoData
      * @param integer $parentId
      * @return bool
      */
-    public function isProductParentYotpoIdFound($parentData, $parentId): bool
+    public function isProductParentYotpoIdFound($yotpoData, $parentId): bool
     {
-        return isset($parentData[$parentId]) && isset($parentData[$parentId]['yotpo_id']);
+        return isset($yotpoData[$parentId]) && isset($yotpoData[$parentId]['yotpo_id']);
     }
 
     /**
