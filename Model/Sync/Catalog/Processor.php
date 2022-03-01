@@ -236,7 +236,6 @@ class Processor extends Main
         $items = $this->getSyncItems($collectionItems, $isVisibleVariantsSync);
         $parentItemsIds = $items['parents_ids'];
         $yotpoSyncTableItemsData = $items['yotpo_data'];
-        $parentItemsData = $items['parents_data'];
 
         $syncTableRecordsUpdated = [];
         $externalIdsWithConflictResponse = [];
@@ -267,7 +266,6 @@ class Processor extends Main
                 $itemEntityId,
                 $yotpoSyncTableItemsData,
                 $parentItemsIds,
-                $parentItemsData,
                 $isVisibleVariantsSync
             );
 
@@ -339,10 +337,10 @@ class Processor extends Main
             //push to parentData array if parent product is
             // being the part of current collection
             if (!$isVisibleVariantsSync) {
-                $parentItemsData = $this->pushParentData(
+                $yotpoSyncTableItemsData = $this->pushParentData(
                     (int)$itemEntityId,
                     $processedSyncDataRecordToUpdate,
-                    $parentItemsData,
+                    $yotpoSyncTableItemsData,
                     $parentItemsIds
                 );
             }
@@ -366,7 +364,7 @@ class Processor extends Main
         if ($externalIdsWithConflictResponse) {
             $yotpoExistingProducts = $this->processExistData(
                 $externalIdsWithConflictResponse,
-                $parentItemsData,
+                $yotpoSyncTableItemsData,
                 $parentItemsIds,
                 $isVisibleVariantsSync
             );
@@ -535,16 +533,16 @@ class Processor extends Main
      * Push Yotpo Id to Parent data
      * @param int $productId
      * @param array<string, int|string> $tempSqlArray
-     * @param array<int|string, mixed> $parentsData
+     * @param array<int|string, mixed> $yotpoData
      * @param array<int, int> $parentsIds
      * @return array<int|string, mixed>
      */
-    protected function pushParentData($productId, $tempSqlArray, $parentsData, $parentsIds)
+    protected function pushParentData($productId, $tempSqlArray, $yotpoData, $parentsIds)
     {
         $yotpoId = 0;
         if (isset($tempSqlArray['yotpo_id'])
             && $tempSqlArray['yotpo_id']) {
-            if (!isset($parentsData[$productId])) {
+            if (!isset($yotpoData[$productId])) {
                 $parentId = $this->findParentId($productId, $parentsIds);
                 if ($parentId) {
                     $yotpoId = $tempSqlArray['yotpo_id'];
@@ -552,13 +550,13 @@ class Processor extends Main
             }
         }
         if ($yotpoId) {
-            $parentsData[$productId] = [
+            $yotpoData[$productId] = [
                 'product_id' => $productId,
                 'yotpo_id' => $yotpoId
             ];
         }
 
-        return $parentsData;
+        return $yotpoData;
     }
 
     /**
@@ -576,7 +574,7 @@ class Processor extends Main
      * Fetch Existing data and update the product_sync table
      *
      * @param array<int, int|string> $externalIds
-     * @param array<int|string, mixed> $parentsData
+     * @param array<mixed> $yotpoData
      * @param array<int, int> $parentsIds
      * @param boolean $visibleVariants
      * @return array<mixed>
@@ -584,7 +582,7 @@ class Processor extends Main
      */
     protected function processExistData(
         array $externalIds,
-        array $parentsData,
+        array $yotpoData,
         array $parentsIds,
         $visibleVariants = false
     ) {
@@ -592,9 +590,9 @@ class Processor extends Main
         if (count($externalIds) > 0) {
             foreach ($externalIds as $externalId) {
                 if (isset($parentsIds[$externalId]) && $parentsIds[$externalId] && !$visibleVariants) {
-                    if (isset($parentsData[$parentsIds[$externalId]]) &&
-                        isset($parentsData[$parentsIds[$externalId]]['yotpo_id']) &&
-                        $parentYotpoId = $parentsData[$parentsIds[$externalId]]['yotpo_id']) {
+                    if (isset($yotpoData[$parentsIds[$externalId]]) &&
+                        isset($yotpoData[$parentsIds[$externalId]]['yotpo_id']) &&
+                        $parentYotpoId = $yotpoData[$parentsIds[$externalId]]['yotpo_id']) {
                         $filters['variants'][$parentYotpoId][] = $externalId;
                     } else {
                         $filters['products'][] = $externalId;
