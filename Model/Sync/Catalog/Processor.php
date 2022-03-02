@@ -235,6 +235,7 @@ class Processor extends Main
         $parentItemsIds = $items['parents_ids'];
         $yotpoSyncTableItemsData = $items['yotpo_data'];
 
+        $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
         $syncTableRecordsUpdated = [];
         $externalIdsWithConflictResponse = [];
         $visibleVariantsData = $isVisibleVariantsSync ? [] : $items['visible_variants'];
@@ -288,7 +289,6 @@ class Processor extends Main
                 $hasFailedCreatingAnyProduct = true;
             }
 
-            $yotpoIdKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
             $yotpoIdValue = $apiRequestParams['yotpo_id'] ?: 0;
             $responseCode = $response->getData('status');
             $syncDataRecordToUpdate = $this->prepareSyncTableDataToUpdate(
@@ -389,11 +389,10 @@ class Processor extends Main
             }
         }
 
-        $reSyncYotpoKey = $isVisibleVariantsSync ? 'visible_variant_yotpo_id' : 'yotpo_id';
         if (isset($this->retryItems[$storeId]) && count($this->retryItems[$storeId]) > 0) {
             $this->update(
                 'yotpo_product_sync',
-                [$reSyncYotpoKey => 0, 'response_code' => coreConfig::CUSTOM_RESPONSE_DATA],
+                [$yotpoIdKey => 0, 'response_code' => coreConfig::CUSTOM_RESPONSE_DATA],
                 ['product_id' . ' IN (?)' => $this->retryItems[$storeId], 'store_id = ?' => $storeId]
             );
             $collection = $this->getCollectionForSync($this->retryItems[$storeId]);
