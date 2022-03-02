@@ -37,7 +37,7 @@ class Config
     const CUSTOM_RESPONSE_DATA = '000';
     const SUCCESS_RESPONSE_CODE = '200';
     const BAD_REQUEST_RESPONSE_CODE = 400;
-
+    const YOTPO_API_RESPONSE_PAGE_SIZE = 100;
     /**
      * @var mixed[]
      */

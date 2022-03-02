@@ -409,4 +409,20 @@ class Main extends AbstractJobs
     {
         return '409' == $response->getData('status');
     }
+
+    /**
+     * @param array<mixed> $response
+     * @return string|null
+     */
+    public function getPageInfoFromResponse($response)
+    {
+        $pageInfo = null;
+        if (array_key_exists('pagination', $response) &&
+            is_array($response['pagination']) &&
+            isset($response['pagination']['next_page_info'])
+        ) {
+            $pageInfo = $response['pagination']['next_page_info'];
+        }
+        return $pageInfo;
+    }
 }

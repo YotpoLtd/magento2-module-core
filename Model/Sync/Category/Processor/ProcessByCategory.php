@@ -277,41 +277,70 @@ class ProcessByCategory extends Main
     {
         $this->yotpoCoreCatalogLogger->info('Category Sync - delete categories start');
         $categoriesToDelete = $this->getCollectionsToDelete();
-        $catToUpdateAsDel = [];
         foreach ($categoriesToDelete as $cat) {
-            $products = $this->getProductsUnderCategory($cat['yotpo_id']);
-            $this->yotpoCoreCatalogLogger->info(
-                sprintf('Category Sync - delete categories - Category ID - %s', $cat['category_id'])
-            );
-            foreach ($products as $product) {
-                $success = $this->unAssignProductFromCollection($cat['yotpo_id'], $product['external_id']);
-                if ($success) {
-                    $this->updateYotpoTblForDeletedCategories($cat['category_id']);
-                    $this->yotpoCoreCatalogLogger->info(
-                        'Category Sync - Delete categories - Finished - Update Category ID -
-                    ' . $cat['category_id']
-                    );
-                }
-            }
+            $this->processCollectionUnAssignment($cat['yotpo_id'], $cat['category_id']);
         }
         $this->yotpoCoreCatalogLogger->info('Category Sync - delete categories complete');
     }
 
     /**
+     * @param int $yotpoCollectionId
+     * @param int $magentoCategoryId
+     * @return void
+     * @throws NoSuchEntityException
+     */
+    public function processCollectionUnAssignment($yotpoCollectionId, $magentoCategoryId)
+    {
+        $products = $this->getProductsUnderCategory($yotpoCollectionId);
+        if (!$products) {
+            return;
+        }
+        $this->yotpoCoreCatalogLogger->info(
+            sprintf('Category Sync - delete categories - Category ID - %s', $magentoCategoryId)
+        );
+        foreach ($products as $product) {
+            $success = $this->unAssignProductFromCollection($yotpoCollectionId, $product['external_id']);
+            if ($success) {
+                $this->yotpoCoreCatalogLogger->info(
+                    'Category Sync - Delete categories - Finished - Update Category ID -
+                    ' . $magentoCategoryId
+                );
+            }
+        }
+        $this->updateYotpoTblForDeletedCategories($magentoCategoryId);
+    }
+
+    /**
      * @param int $yotpoId
+     * @param string|null $pageInfo
+     * @param array<mixed> $productsUnderCollection
      * @return array<mixed>
      * @throws NoSuchEntityException
      */
-    public function getProductsUnderCategory(int $yotpoId): array
+    public function getProductsUnderCategory($yotpoId, $productsUnderCollection = [], $pageInfo = null): array
     {
+        $limit = Config::YOTPO_API_RESPONSE_PAGE_SIZE;
         $url = $this->config->getEndpoint('collections_product', ['{yotpo_collection_id}'], [$yotpoId]);
-        $data['entityLog'] = 'catalog';
+        $data = [
+            'entityLog' => 'catalog',
+            'limit' => $limit
+        ];
+        if ($pageInfo) {
+            $data['page_info'] = $pageInfo;
+        }
         $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
         $response = $response->getData('response');
         if (!$response) {
             return [];
         }
-        return array_key_exists('products', $response) ? $response['products'] : [];
+        if (is_array($response) && array_key_exists('products', $response)) {
+            $productsUnderCollection = array_merge($productsUnderCollection, $response['products']);
+        }
+        $pageInfo = $this->getPageInfoFromResponse($response);
+        if ($pageInfo) {
+            $productsUnderCollection = $this->getProductsUnderCategory($yotpoId, $productsUnderCollection, $pageInfo);
+        }
+        return $productsUnderCollection;
     }
 
     /**

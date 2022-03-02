@@ -228,40 +228,52 @@ class ProcessByProduct extends Main
 
     /**
      * @param string $yotpoProductId
+     * @param array<mixed> $returnCollection
+     * @param string|null $pageInfo
      * @return  array<mixed>
      * @throws NoSuchEntityException
      */
-    public function getYotpoCollectionsMap($yotpoProductId): array
+    public function getYotpoCollectionsMap($yotpoProductId, $returnCollection = [], $pageInfo = null)
     {
-        $return = [];
-        $data   = [];
-        if ($yotpoProductId) {
-            $url    =   $this->config->getEndpoint(
-                'collections_for_product',
-                ['{yotpo_product_id}'],
-                [$yotpoProductId]
-            );
-            $data['entityLog']  =   'catalog';
-            $collections        =   $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
-            $collections        =   $collections->getData('response');
-            if (!$collections) {
-                return $return;
-            }
-            $collections    =   is_array($collections) &&
-            isset($collections['collections']) ?
-                $collections['collections'] : '';
-            if ($collections) {
-                $count = count($collections);
-                for ($i=0; $i<$count; $i++) {
-                    $return[$collections[$i]['external_id']] = $collections[$i]['yotpo_id'];
-                    $this->prodCollExistYotpo[$collections[$i]['external_id']] = [
-                        'yotpo_id' => $collections[$i]['yotpo_id'],
-                        'name' => $collections[$i]['name']
-                    ];
-                }
+        if (!$yotpoProductId) {
+            return $returnCollection;
+        }
+        $limit = YotpoCoreConfig::YOTPO_API_RESPONSE_PAGE_SIZE;
+        $url    =   $this->config->getEndpoint(
+            'collections_for_product',
+            ['{yotpo_product_id}'],
+            [$yotpoProductId]
+        );
+        $data = [
+            'entityLog' => 'catalog',
+            'limit' => $limit
+        ];
+        if ($pageInfo) {
+            $data['page_info'] = $pageInfo;
+        }
+        $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
+        $responseData = $response->getData('response');
+        if (!$responseData) {
+            return $returnCollection;
+        }
+        $collections    =   is_array($responseData) &&
+        isset($responseData['collections']) ?
+            $responseData['collections'] : '';
+        if ($collections) {
+            $count = count($collections);
+            for ($i=0; $i<$count; $i++) {
+                $returnCollection[$collections[$i]['external_id']] = $collections[$i]['yotpo_id'];
+                $this->prodCollExistYotpo[$collections[$i]['external_id']] = [
+                    'yotpo_id' => $collections[$i]['yotpo_id'],
+                    'name' => $collections[$i]['name']
+                ];
             }
         }
-        return $return;
+        $pageInfo = $this->getPageInfoFromResponse($responseData);
+        if ($pageInfo) {
+            $returnCollection = $this->getYotpoCollectionsMap($yotpoProductId, $returnCollection, $pageInfo);
+        }
+        return $returnCollection;
     }
 
     /**
