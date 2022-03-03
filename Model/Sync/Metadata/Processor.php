@@ -34,7 +34,7 @@ class Processor extends AbstractJobs
     /**
      * @var ProductMetadataInterface
      */
-    protected $productMetadata;
+    protected $productMetadataInterface;
 
     /**
      * Processor constructor.
@@ -43,7 +43,7 @@ class Processor extends AbstractJobs
      * @param YotpoSyncMain $yotpoSyncMain
      * @param YotpoConfig $yotpoConfig
      * @param Logger $logger
-     * @param ProductMetadataInterface $productMetadata
+     * @param ProductMetadataInterface $productMetadataInterface
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -51,12 +51,12 @@ class Processor extends AbstractJobs
         YotpoSyncMain $yotpoSyncMain,
         YotpoConfig $yotpoConfig,
         Logger $logger,
-        ProductMetadataInterface $productMetadata
+        ProductMetadataInterface $productMetadataInterface
     ) {
         $this->yotpoSyncMain = $yotpoSyncMain;
         $this->yotpoConfig = $yotpoConfig;
         $this->logger = $logger;
-        $this->productMetadata = $productMetadata;
+        $this->productMetadataInterface = $productMetadataInterface;
         parent::__construct($appEmulation, $resourceConnection);
     }
 
@@ -147,7 +147,7 @@ class Processor extends AbstractJobs
      */
     private function getMagentoPlatformVersion()
     {
-        return $this->productMetadata->getVersion();
+        return $this->productMetadataInterface->getVersion();
     }
 
     /**
@@ -157,6 +157,6 @@ class Processor extends AbstractJobs
      */
     private function getMagentoPlatformEdition()
     {
-        return $this->productMetadata->getEdition();
+        return $this->productMetadataInterface->getEdition();
     }
 }
