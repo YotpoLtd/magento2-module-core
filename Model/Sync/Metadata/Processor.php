@@ -77,7 +77,7 @@ class Processor extends AbstractJobs
                 if (!$this->yotpoConfig->isEnabled()) {
                     $this->logger->info(
                         __(
-                            'Skipping Magento Store ID: %1, Name: %2 [Disabled]',
+                            'Updating Metadata is disabled. Skipping for Magento Store ID: %1, Name: %2',
                             $storeId,
                             $this->yotpoConfig->getStoreName($storeId)
                         )
@@ -86,7 +86,7 @@ class Processor extends AbstractJobs
                 }
                 $this->logger->info(
                     __(
-                        'Updating metadata for Magento Store ID: %1, Name: %2 [START]',
+                        'Starting updating Metadata for Magento Store ID: %1, Name: %2',
                         $storeId,
                         $this->yotpoConfig->getStoreName($storeId)
                     )
@@ -99,19 +99,19 @@ class Processor extends AbstractJobs
                 if ($response[$this::SYNC_RESPONSE_IS_SUCCESS_KEY]) {
                     $this->logger->info(
                         __(
-                            'Updating metadata for Magento Store ID: %1, Name: %2 [SUCCESS]',
+                            'Finished updating Metadata successfully for Magento Store ID: %1, Name: %2',
                             $storeId,
                             $this->yotpoConfig->getStoreName($storeId)
                         )
                     );
                 }
-            } catch (\Exception $e) {
+            } catch (\Exception $exception) {
                 $this->logger->info(
                     __(
-                        'Exception on Magento Store ID: %1, Name: %2, Reason: %3',
+                        'Error occurred when updating Metadata, got Exception on Magento Store ID: %1, Name: %2, Reason: %3',
                         $storeId,
                         $this->yotpoConfig->getStoreName($storeId),
-                        $e->getMessage()
+                        $exception->getMessage()
                     )
                 );
             }
