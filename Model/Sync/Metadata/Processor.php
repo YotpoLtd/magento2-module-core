@@ -88,10 +88,10 @@ class Processor extends AbstractJobs
                     )
                 );
 
-                $data = $this->prepareMetadata();
-                $data['entityLog'] = 'general';
-                $endPoint = $this->yotpoConfig->getEndpoint('metadata');
-                $response = $this->yotpoSyncMain->syncV1('POST', $endPoint, $data);
+                $metadataDataToSync = $this->prepareMetadata();
+                $metadataDataToSync['entityLog'] = 'general';
+                $metadataEndpoint = $this->yotpoConfig->getEndpoint('metadata');
+                $response = $this->yotpoSyncMain->syncV1('POST', $metadataEndpoint, $metadataDataToSync);
                 if ($response['is_success']) {
                     $this->logger->info(
                         __(
