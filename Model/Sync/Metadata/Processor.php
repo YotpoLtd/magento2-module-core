@@ -16,6 +16,10 @@ use Magento\Framework\App\ProductMetadataInterface;
  */
 class Processor extends AbstractJobs
 {
+    const ENTITY_LOG_FILE = 'entityLog';
+    const SYNC_RESPONSE_IS_SUCCESS_KEY = 'is_success';
+    const POST_METHOD_STRING = 'POST';
+
     /**
      * @var YotpoSyncMain
      */
@@ -89,10 +93,10 @@ class Processor extends AbstractJobs
                 );
 
                 $metadataDataToSync = $this->prepareMetadata();
-                $metadataDataToSync['entityLog'] = 'general';
+                $metadataDataToSync[$this::ENTITY_LOG_FILE] = 'general';
                 $metadataEndpoint = $this->yotpoConfig->getEndpoint('metadata');
-                $response = $this->yotpoSyncMain->syncV1('POST', $metadataEndpoint, $metadataDataToSync);
-                if ($response['is_success']) {
+                $response = $this->yotpoSyncMain->syncV1($this::POST_METHOD_STRING, $metadataEndpoint, $metadataDataToSync);
+                if ($response[$this::SYNC_RESPONSE_IS_SUCCESS_KEY]) {
                     $this->logger->info(
                         __(
                             'Updating metadata for Magento Store ID: %1, Name: %2 [SUCCESS]',
