@@ -911,10 +911,6 @@ class Processor extends Main
             $parentItemsData,
             false
         );
-        $method = $apiRequestParams['method'];
-        if (!$method) {
-            return null;
-        }
         /** @phpstan-ignore-next-line */
         $productData = $this->catalogData->attributeMapping(reset($parentProductsData));
         if (isset($productData['row_id'])) {
