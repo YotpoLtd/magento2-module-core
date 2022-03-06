@@ -114,8 +114,9 @@ class Processor extends AbstractJobs
                         $exception->getMessage()
                     )
                 );
+            } finally {
+                $this->stopEnvironmentEmulation();
             }
-            $this->stopEnvironmentEmulation();
         }
     }
 
