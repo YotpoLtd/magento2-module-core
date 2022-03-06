@@ -263,7 +263,7 @@ class Processor extends Main
             if (!$isVisibleVariantsSync && isset($parentItemsIds[$itemEntityId])) {
                 $parentItemId = $parentItemsIds[$itemEntityId];
 
-                if (!$this->isProductParentYotpoIdFound($parentItemsData, $parentItemId)) {
+                if (!$this->isProductParentYotpoIdFound($yotpoSyncTableItemsData, $parentItemId)) {
                     $this->yotpoCatalogLogger->info(
                         __(
                             'Start syncing parent product that does not exist in Yotpo -
@@ -277,13 +277,13 @@ class Processor extends Main
 
                     $parentProductYotpoId = $this->ensureEntityExistenceAsProductInYotpo(
                         $parentItemId,
-                        $parentItemsData,
                         $yotpoSyncTableItemsData,
+                        $parentItemsIds,
                         $yotpoFormatItemData
                     );
 
                     if ($parentProductYotpoId) {
-                        $parentItemsData[$parentItemId] = [
+                        $yotpoSyncTableItemsData[$parentItemId] = [
                             'product_id' => $parentItemId,
                             'yotpo_id' => $parentProductYotpoId
                         ];
@@ -325,7 +325,6 @@ class Processor extends Main
                     $this->coreConfig->getStoreName($storeId)
                 )
             );
-
             $response = $this->processRequest($apiRequestParams, $yotpoFormatItemData);
             if ($apiRequestParams['method'] == 'createProduct' && !$response->getData('is_success')) {
                 $hasFailedCreatingAnyProduct = true;
@@ -884,15 +883,15 @@ class Processor extends Main
 
     /**
      * @param int $parentId
-     * @param array <mixed> $parentItemsData
      * @param array <mixed> $yotpoSyncTableItemsData
+     * @param array <mixed> $parentItemsIds
      * @param array <mixed> $yotpoFormatItemData
      * @return string|null
      */
     private function ensureEntityExistenceAsProductInYotpo(
         $parentId,
-        $parentItemsData,
         $yotpoSyncTableItemsData,
+        $parentItemsIds,
         $yotpoFormatItemData
     ) {
         $parentProductsData = $this->getCollectionForSync([$parentId])->getItems();
@@ -902,8 +901,7 @@ class Processor extends Main
         $apiRequestParams = $this->getApiParams(
             $parentId,
             $yotpoSyncTableItemsData,
-            [],
-            $parentItemsData,
+            $parentItemsIds,
             false
         );
         /** @phpstan-ignore-next-line */
