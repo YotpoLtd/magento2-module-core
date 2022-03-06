@@ -287,7 +287,6 @@ class Processor extends Main
                             'product_id' => $parentItemId,
                             'yotpo_id' => $parentProductYotpoId
                         ];
-                        $yotpoSyncTableItemsData[$parentItemId]['yotpo_id'] = $parentProductYotpoId;
 
                         $this->yotpoCatalogLogger->info(
                             __(
