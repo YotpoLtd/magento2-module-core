@@ -56,8 +56,8 @@ class Save extends Main implements ObserverInterface
      * @param ReinitableConfigInterface $config
      * @param YotpoConfig $yotpoConfig
      * @param YotpoApi $yotpoApi
-     * CatalogMapping $catalogMapping
-     * CronFrequency $cronFrequency
+     * @param CatalogMapping $catalogMapping
+     * @param CronFrequency $cronFrequency
      */
     public function __construct(
         TypeListInterface $cacheTypeList,
