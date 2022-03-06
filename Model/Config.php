@@ -271,7 +271,7 @@ class Config
     /**
      * @param string $key
      * @param string $value
-     * @param string|null $scopeId
+     * @param string|int|null $scopeId
      * @param string|null $scope
      * @throws NoSuchEntityException
      * @return void
