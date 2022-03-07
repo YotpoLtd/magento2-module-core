@@ -140,7 +140,6 @@ class RetryYotpoSync extends Command
                 case self::YOTPO_ENTITY_CUSTOMERS:
                     if (method_exists($this->customersProcessor, 'retryCustomersSync')) {
                         $this->customersProcessor->retryCustomersSync();
-                        /** @phpstan-ignore-next-line */
                         $output->writeln('Entity ' . $yotpoEntity . ' resync completed');
                     } else {
                         $output->writeln('SmsBump module is not installed to process customers.');
@@ -158,10 +157,8 @@ class RetryYotpoSync extends Command
             }
             if ($yotpoEntity !== self::YOTPO_ENTITY_CUSTOMERS) {
                 if (in_array($yotpoEntity, $this->yotpoCoreEntities)) {
-                    /** @phpstan-ignore-next-line */
                     $output->writeln('Entity - ' . $yotpoEntity . ' resync completed');
                 } else {
-                    /** @phpstan-ignore-next-line */
                     $output->writeln('Entity - ' . $yotpoEntity . ' does not exist');
                 }
             }
