@@ -59,6 +59,7 @@ class ProcessByProduct extends Main
             /** @var Product $product **/
             $categoriesProduct[$product->getId()]   =   [];
             $productCategories                      =   $product->getCategoryIds();
+            $productCategories                      =   array_intersect(array_keys($categories), $productCategories);
             $existingProductsMap[$product->getId()] =   $this->getYotpoCollectionsMap($yotpoProductId);
             $addProductData                         =   $this->data->prepareProductData($product->getId());
 
@@ -281,15 +282,13 @@ class ProcessByProduct extends Main
         $categoryIds    =   array_unique(array_filter($categoryIds));
 
         if ($categoryIds) {
-            $collection =   $this->categoryCollectionFactory->create();
-            $collection->addNameToResult();
+            $collection =   $this->getStoreCategoryCollection();
             $collection->addIdFilter($categoryIds);
 
             foreach ($collection->getItems() as $category) {
                 $returnCategories[$category->getId()]   =   $category;
             }
         }
-
         $this->yotpoCoreCatalogLogger->info(
             'Category Sync - Process categories by product -
                     ' . implode(',', array_unique(array_keys($returnCategories))),

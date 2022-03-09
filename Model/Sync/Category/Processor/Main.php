@@ -3,6 +3,7 @@
 namespace Yotpo\Core\Model\Sync\Category\Processor;
 
 use Magento\Catalog\Model\Category;
+use Magento\Catalog\Model\ResourceModel\Category\Collection as CategoryCollection;
 use Magento\Framework\DataObject;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -15,6 +16,7 @@ use Yotpo\Core\Model\Sync\Category\Data;
 use Yotpo\Core\Model\Api\Sync as YotpoCoreApiSync;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
+use Magento\Store\Model\StoreManagerInterface;
 
 /**
  * Class Main - Manage Category sync
@@ -57,6 +59,11 @@ class Main extends AbstractJobs
     protected $entityIdFieldValue;
 
     /**
+     * @var StoreManagerInterface
+     */
+    protected $storeManager;
+
+    /**
      * Main constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -65,6 +72,7 @@ class Main extends AbstractJobs
      * @param YotpoCoreApiSync $yotpoCoreApiSync
      * @param CategoryCollectionFactory $categoryCollectionFactory
      * @param YotpoCoreCatalogLogger $yotpoCoreCatalogLogger
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -73,7 +81,8 @@ class Main extends AbstractJobs
         Data $data,
         YotpoCoreApiSync $yotpoCoreApiSync,
         CategoryCollectionFactory $categoryCollectionFactory,
-        YotpoCoreCatalogLogger $yotpoCoreCatalogLogger
+        YotpoCoreCatalogLogger $yotpoCoreCatalogLogger,
+        StoreManagerInterface $storeManager
     ) {
         $this->config   =   $config;
         $this->data   =   $data;
@@ -81,6 +90,7 @@ class Main extends AbstractJobs
         $this->categoryCollectionFactory    =   $categoryCollectionFactory;
         $this->yotpoCoreCatalogLogger       =   $yotpoCoreCatalogLogger;
         $this->entityIdFieldValue           =   $this->config->getEavRowIdFieldName();
+        $this->storeManager = $storeManager;
         parent::__construct($appEmulation, $resourceConnection);
     }
 
@@ -408,5 +418,25 @@ class Main extends AbstractJobs
     public function checkForCollectionExistsError(DataObject $response): bool
     {
         return '409' == $response->getData('status');
+    }
+
+    /**
+     * @return CategoryCollection<mixed>
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function getStoreCategoryCollection()
+    {
+        $currentStore = $this->storeManager->getStore();
+        $rootCategoryId = $currentStore->getRootCategoryId();
+        $collection = $this->categoryCollectionFactory->create();
+        $collection->addNameToResult();
+        $collection->addAttributeToFilter(
+            [
+                ['attribute' => 'path', 'like' => "1/{$rootCategoryId}/%"],
+                ['attribute' => 'path', 'eq' => "1/{$rootCategoryId}"]
+            ]
+        );
+        return $collection;
     }
 }

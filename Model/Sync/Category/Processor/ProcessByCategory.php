@@ -9,6 +9,7 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Webapi\Rest\Request;
 use Magento\Store\Model\App\Emulation as AppEmulation;
+use Magento\Store\Model\StoreManagerInterface;
 use Yotpo\Core\Model\Api\Sync as YotpoCoreApiSync;
 use Yotpo\Core\Model\Config;
 use Magento\Catalog\Helper\Category as CategoryHelper;
@@ -57,7 +58,8 @@ class ProcessByCategory extends Main
         CategoryCollectionFactory $categoryCollectionFactory,
         YotpoCoreCatalogLogger $yotpoCoreCatalogLogger,
         CategoryHelper $categoryHelper,
-        CategorySyncRepositoryInterface $categorySyncRepositoryInterface
+        CategorySyncRepositoryInterface $categorySyncRepositoryInterface,
+        StoreManagerInterface $storeManager
     ) {
         parent::__construct(
             $appEmulation,
@@ -66,7 +68,8 @@ class ProcessByCategory extends Main
             $data,
             $yotpoCoreApiSync,
             $categoryCollectionFactory,
-            $yotpoCoreCatalogLogger
+            $yotpoCoreCatalogLogger,
+            $storeManager
         );
         $this->categoryHelper = $categoryHelper;
         $this->categorySyncRepositoryInterface = $categorySyncRepositoryInterface;
@@ -140,27 +143,16 @@ class ProcessByCategory extends Main
         $currentTime = date('Y-m-d H:i:s');
         $batchSize = $this->config->getConfig('product_sync_limit');
         $existColls = [];
-        $attributeId = $this->data->getAttributeId(Config::CATEGORY_SYNC_ATTR_CODE);
-        $collection = $this->categoryCollectionFactory->create();
-        $collection->addAttributeToSelect('*');
-        $collection->addNameToResult();
-        if ($retryCategoryIds) {
-            $collection->getSelect()
-                ->where('e.entity_id in (?)', $retryCategoryIds);
-        }
-        $collection->getSelect()->joinLeft(
-            ['at' => $this->resourceConnection->getTableName('catalog_category_entity_int')],
-            'e.' . $this->entityIdFieldValue . ' = at.' . $this->entityIdFieldValue .
-            ' AND at.attribute_id = ' . $attributeId .
-            ' AND at.store_id=\'' . $this->config->getStoreId() . '\'',
-            null
-        );
+        $collection = $this->getStoreCategoryCollection();
         if (!$retryCategoryIds) {
-            $collection->getSelect()->where(
-                '(
-              at.value is null OR at.value=0
-            )'
+            $collection->addAttributeToFilter(
+                [
+                    ['attribute' => Config::CATEGORY_SYNC_ATTR_CODE, 'null' => true],
+                    ['attribute' => Config::CATEGORY_SYNC_ATTR_CODE, 'eq' => '0'],
+                ]
             );
+        } else {
+            $collection->addFieldToFilter('entity_id', ['in' => $retryCategoryIds]);
         }
         $collection->getSelect()->limit($batchSize);
         $magentoCategories = [];
