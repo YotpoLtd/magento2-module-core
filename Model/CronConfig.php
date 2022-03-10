@@ -82,11 +82,11 @@ class CronConfig extends Value
      */
     public function afterSave()
     {
-        $cronExprString = $this->getData('groups/sync_settings/groups/catalog_sync/fields/frequency/value');
+        $catalogCronExpressionString = $this->getData('groups/sync_settings/groups/catalog_sync/fields/frequency/value');
         try {
-            $this->configureCronProductsSync($cronExprString);
+            $this->configureCronProductsSync($catalogCronExpressionString);
 
-            $this->configureCronCategorySync($cronExprString);
+            $this->configureCronCategorySync($catalogCronExpressionString);
         } catch (\Exception $exception) {
             throw new CouldNotSaveException(
                 __('We can\'t save the cron expression.'),
@@ -98,17 +98,17 @@ class CronConfig extends Value
     }
 
     /**
-     * @param string $cronExprString
+     * @param string $catalogCronExpressionString
      * @return void
      */
-    private function configureCronProductsSync($cronExprString)
+    private function configureCronProductsSync($catalogCronExpressionString)
     {
         /** @phpstan-ignore-next-line */
         $this->configValueFactory->create()->load(
             self::CRON_STRING_PATH_PRODUCTS,
             'path'
         )->setValue(
-            $cronExprString
+            $catalogCronExpressionString
         )->setPath(
             self::CRON_STRING_PATH_PRODUCTS
         )->save();
@@ -124,17 +124,17 @@ class CronConfig extends Value
     }
 
     /**
-     * @param string $cronExprString
+     * @param string $catalogCronExpressionString
      * @return void
      */
-    private function configureCronCategorySync($cronExprString)
+    private function configureCronCategorySync($catalogCronExpressionString)
     {
         /** @phpstan-ignore-next-line */
         $this->configValueFactory->create()->load(
             self::CRON_STRING_PATH_CATEGORY,
             'path'
         )->setValue(
-            $cronExprString
+            $catalogCronExpressionString
         )->setPath(
             self::CRON_STRING_PATH_CATEGORY
         )->save();
