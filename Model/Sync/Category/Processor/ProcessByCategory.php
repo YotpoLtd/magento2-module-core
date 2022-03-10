@@ -38,11 +38,6 @@ class ProcessByCategory extends Main
     protected $isCommandLineSync = false;
 
     /**
-     * @var StoreManagerInterface
-     */
-    protected $storeManager;
-
-    /**
      * ProcessByCategory constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -53,7 +48,6 @@ class ProcessByCategory extends Main
      * @param YotpoCoreCatalogLogger $yotpoCoreCatalogLogger
      * @param CategoryHelper $categoryHelper
      * @param CategorySyncRepositoryInterface $categorySyncRepositoryInterface
-     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -74,11 +68,11 @@ class ProcessByCategory extends Main
             $data,
             $yotpoCoreApiSync,
             $categoryCollectionFactory,
-            $yotpoCoreCatalogLogger
+            $yotpoCoreCatalogLogger,
+            $storeManager
         );
         $this->categoryHelper = $categoryHelper;
         $this->categorySyncRepositoryInterface = $categorySyncRepositoryInterface;
-        $this->storeManager = $storeManager;
     }
 
     /**
@@ -149,11 +143,7 @@ class ProcessByCategory extends Main
         $currentTime = date('Y-m-d H:i:s');
         $batchSize = $this->config->getConfig('product_sync_limit');
         $existColls = [];
-        /** @var \Magento\Store\Model\Store  $currentStore**/
-        $currentStore = $this->storeManager->getStore();
-        $rootCategoryId = $currentStore->getRootCategoryId();
-        $collection = $this->categoryCollectionFactory->create();
-        $collection->addAttributeToFilter('path', ['like' => "1/{$rootCategoryId}/%"]);
+        $collection = $this->getStoreCategoryCollection();
         if (!$retryCategoryIds) {
             $collection->addAttributeToFilter(
                 [
