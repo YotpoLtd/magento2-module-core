@@ -19,12 +19,12 @@ class CronConfig extends Value
     /**
      * Cron expression configuration path
      */
-    const CRON_STRING_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync/schedule/cron_expr';
+    const CRON_STRING_PATH_PRODUCTS = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync/schedule/cron_expr';
 
     /**
      * Cron expression model path
      */
-    const CRON_MODEL_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync/run/model';
+    const CRON_MODEL_PATH_PRODUCTS = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync/run/model';
 
     /**
      * Cron expression configuration path
@@ -86,21 +86,21 @@ class CronConfig extends Value
         try {
             /** @phpstan-ignore-next-line */
             $this->configValueFactory->create()->load(
-                self::CRON_STRING_PATH,
+                self::CRON_STRING_PATH_PRODUCTS,
                 'path'
             )->setValue(
                 $cronExprString
             )->setPath(
-                self::CRON_STRING_PATH
+                self::CRON_STRING_PATH_PRODUCTS
             )->save();
             /** @phpstan-ignore-next-line */
             $this->configValueFactory->create()->load(
-                self::CRON_MODEL_PATH,
+                self::CRON_MODEL_PATH_PRODUCTS,
                 'path'
             )->setValue(
                 $this->runModelPath
             )->setPath(
-                self::CRON_MODEL_PATH
+                self::CRON_MODEL_PATH_PRODUCTS
             )->save();
 
             /** @phpstan-ignore-next-line */
