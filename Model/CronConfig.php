@@ -121,10 +121,10 @@ class CronConfig extends Value
             )->setPath(
                 self::CRON_MODEL_PATH_CATEGORY
             )->save();
-        } catch (\Exception $e) {
+        } catch (\Exception $exception) {
             throw new CouldNotSaveException(
                 __('We can\'t save the cron expression.'),
-                $e
+                $exception
             );
         }
 
