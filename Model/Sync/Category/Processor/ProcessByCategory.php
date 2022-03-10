@@ -9,6 +9,7 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Webapi\Rest\Request;
 use Magento\Store\Model\App\Emulation as AppEmulation;
+use Magento\Store\Model\StoreManagerInterface;
 use Yotpo\Core\Model\Api\Sync as YotpoCoreApiSync;
 use Yotpo\Core\Model\Config;
 use Magento\Catalog\Helper\Category as CategoryHelper;
@@ -37,6 +38,11 @@ class ProcessByCategory extends Main
     protected $isCommandLineSync = false;
 
     /**
+     * @var StoreManagerInterface
+     */
+    protected $storeManager;
+
+    /**
      * ProcessByCategory constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -47,6 +53,7 @@ class ProcessByCategory extends Main
      * @param YotpoCoreCatalogLogger $yotpoCoreCatalogLogger
      * @param CategoryHelper $categoryHelper
      * @param CategorySyncRepositoryInterface $categorySyncRepositoryInterface
+     * @param StoreManagerInterface $storeManager
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -57,7 +64,8 @@ class ProcessByCategory extends Main
         CategoryCollectionFactory $categoryCollectionFactory,
         YotpoCoreCatalogLogger $yotpoCoreCatalogLogger,
         CategoryHelper $categoryHelper,
-        CategorySyncRepositoryInterface $categorySyncRepositoryInterface
+        CategorySyncRepositoryInterface $categorySyncRepositoryInterface,
+        StoreManagerInterface $storeManager
     ) {
         parent::__construct(
             $appEmulation,
@@ -70,6 +78,7 @@ class ProcessByCategory extends Main
         );
         $this->categoryHelper = $categoryHelper;
         $this->categorySyncRepositoryInterface = $categorySyncRepositoryInterface;
+        $this->storeManager = $storeManager;
     }
 
     /**
@@ -140,24 +149,23 @@ class ProcessByCategory extends Main
         $currentTime = date('Y-m-d H:i:s');
         $batchSize = $this->config->getConfig('product_sync_limit');
         $existColls = [];
-        $collection = $this->categoryHelper->getStoreCategories(true, true);
-        if ($retryCategoryIds) {
-            /** @phpstan-ignore-next-line */
-            $collection->addFieldToFilter('entity_id', ['in' => $retryCategoryIds]);
-        }
+        /** @var \Magento\Store\Model\Store  $currentStore**/
+        $currentStore = $this->storeManager->getStore();
+        $rootCategoryId = $currentStore->getRootCategoryId();
+        $collection = $this->categoryCollectionFactory->create();
+        $collection->addAttributeToFilter('path', ['like' => "1/{$rootCategoryId}/%"]);
         if (!$retryCategoryIds) {
-            /** @phpstan-ignore-next-line */
             $collection->addAttributeToFilter(
                 [
                     ['attribute' => Config::CATEGORY_SYNC_ATTR_CODE, 'null' => true],
                     ['attribute' => Config::CATEGORY_SYNC_ATTR_CODE, 'eq' => '0'],
                 ]
             );
+        } else {
+            $collection->addFieldToFilter('entity_id', ['in' => $retryCategoryIds]);
         }
-        /** @phpstan-ignore-next-line */
         $collection->getSelect()->limit($batchSize);
         $magentoCategories = [];
-        /** @phpstan-ignore-next-line */
         foreach ($collection->getItems() as $category) {
             $magentoCategories[$category->getId()] = $category;
         }

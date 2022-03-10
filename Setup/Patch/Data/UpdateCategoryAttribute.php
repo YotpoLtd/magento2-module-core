@@ -2,16 +2,11 @@
 
 namespace Yotpo\Core\Setup\Patch\Data;
 
-use Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface;
 use Magento\Eav\Setup\EavSetupFactory;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
 
-/**
- * Class CreateCategoryAttribute - Create custom category attribute for yotpo
- */
-
-class CreateCategoryAttribute implements DataPatchInterface
+class UpdateCategoryAttribute implements DataPatchInterface
 {
     /**
      * @var ModuleDataSetupInterface
@@ -42,16 +37,12 @@ class CreateCategoryAttribute implements DataPatchInterface
     public function apply()
     {
         $eavSetup = $this->eavSetupFactory->create(['setup' => $this->moduleDataSetup]);
-        $eavSetup->addAttribute('catalog_category', 'synced_to_yotpo_collection', [
-            'type' => 'int',
-            'label' => 'Synced to Yotpo',
-            'source' => '',
-            'required' => false,//required for all customers
-            'visible' => false,
-            'system' => false,//to list the attribute in getCustomAttributes()
-            'backend' => '',
-            'global' => ScopedAttributeInterface::SCOPE_STORE,
-        ]);
+        $eavSetup->updateAttribute(
+            'catalog_category',
+            'synced_to_yotpo_collection',
+            'is_global',
+            0
+        );
         return $this;
     }
 
@@ -60,7 +51,7 @@ class CreateCategoryAttribute implements DataPatchInterface
      */
     public static function getDependencies()
     {
-        return [CreateCategoryAttribute::class];
+        return [];
     }
 
     /**
