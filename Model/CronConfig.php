@@ -84,43 +84,9 @@ class CronConfig extends Value
     {
         $cronExprString = $this->getData('groups/sync_settings/groups/catalog_sync/fields/frequency/value');
         try {
-            /** @phpstan-ignore-next-line */
-            $this->configValueFactory->create()->load(
-                self::CRON_STRING_PATH_PRODUCTS,
-                'path'
-            )->setValue(
-                $cronExprString
-            )->setPath(
-                self::CRON_STRING_PATH_PRODUCTS
-            )->save();
-            /** @phpstan-ignore-next-line */
-            $this->configValueFactory->create()->load(
-                self::CRON_MODEL_PATH_PRODUCTS,
-                'path'
-            )->setValue(
-                $this->runModelPath
-            )->setPath(
-                self::CRON_MODEL_PATH_PRODUCTS
-            )->save();
+            $this->configureCronProductsSync($cronExprString);
 
-            /** @phpstan-ignore-next-line */
-            $this->configValueFactory->create()->load(
-                self::CRON_STRING_PATH_CATEGORY,
-                'path'
-            )->setValue(
-                $cronExprString
-            )->setPath(
-                self::CRON_STRING_PATH_CATEGORY
-            )->save();
-            /** @phpstan-ignore-next-line */
-            $this->configValueFactory->create()->load(
-                self::CRON_MODEL_PATH_CATEGORY,
-                'path'
-            )->setValue(
-                $this->runModelPath
-            )->setPath(
-                self::CRON_MODEL_PATH_CATEGORY
-            )->save();
+            $this->configureCronCategorySync($cronExprString);
         } catch (\Exception $exception) {
             throw new CouldNotSaveException(
                 __('We can\'t save the cron expression.'),
@@ -129,5 +95,57 @@ class CronConfig extends Value
         }
 
         return parent::afterSave();
+    }
+
+    /**
+     * @param string $cronExprString
+     * @return void
+     */
+    private function configureCronProductsSync($cronExprString)
+    {
+        /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::CRON_STRING_PATH_PRODUCTS,
+            'path'
+        )->setValue(
+            $cronExprString
+        )->setPath(
+            self::CRON_STRING_PATH_PRODUCTS
+        )->save();
+         /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::CRON_MODEL_PATH_PRODUCTS,
+            'path'
+        )->setValue(
+            $this->runModelPath
+        )->setPath(
+            self::CRON_MODEL_PATH_PRODUCTS
+        )->save();
+    }
+
+    /**
+     * @param string $cronExprString
+     * @return void
+     */
+    private function configureCronCategorySync($cronExprString)
+    {
+        /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::CRON_STRING_PATH_CATEGORY,
+            'path'
+        )->setValue(
+            $cronExprString
+        )->setPath(
+            self::CRON_STRING_PATH_CATEGORY
+        )->save();
+        /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::CRON_MODEL_PATH_CATEGORY,
+            'path'
+        )->setValue(
+            $this->runModelPath
+        )->setPath(
+            self::CRON_MODEL_PATH_CATEGORY
+        )->save();
     }
 }
