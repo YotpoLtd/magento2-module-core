@@ -51,6 +51,7 @@ class CreateCategoryAttribute implements DataPatchInterface
             'system' => false,//to list the attribute in getCustomAttributes()
             'backend' => '',
             'global' => ScopedAttributeInterface::SCOPE_STORE,
+            'default' => 0
         ]);
         return $this;
     }
@@ -60,7 +61,7 @@ class CreateCategoryAttribute implements DataPatchInterface
      */
     public static function getDependencies()
     {
-        return [CreateCategoryAttribute::class];
+        return [];
     }
 
     /**

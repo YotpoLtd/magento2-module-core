@@ -2,6 +2,7 @@
 
 namespace Yotpo\Core\Setup\Patch\Data;
 
+use Magento\Eav\Model\Entity\Attribute\ScopedAttributeInterface;
 use Magento\Eav\Setup\EavSetupFactory;
 use Magento\Framework\Setup\ModuleDataSetupInterface;
 use Magento\Framework\Setup\Patch\DataPatchInterface;
@@ -41,7 +42,7 @@ class UpdateCategoryAttribute implements DataPatchInterface
             'catalog_category',
             'synced_to_yotpo_collection',
             'is_global',
-            0
+            ScopedAttributeInterface::SCOPE_STORE,
         );
         return $this;
     }
@@ -51,7 +52,7 @@ class UpdateCategoryAttribute implements DataPatchInterface
      */
     public static function getDependencies()
     {
-        return [];
+        return [CreateCategoryAttribute::class];
     }
 
     /**
