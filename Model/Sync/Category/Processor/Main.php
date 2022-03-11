@@ -432,7 +432,12 @@ class Main extends AbstractJobs
         $rootCategoryId = $currentStore->getRootCategoryId();
         $collection = $this->categoryCollectionFactory->create();
         $collection->addNameToResult();
-        $collection->addAttributeToFilter('path', ['like' => "1/{$rootCategoryId}/%"]);
+        $collection->addAttributeToFilter(
+            [
+                ['attribute' => 'path', 'like' => "1/{$rootCategoryId}/%"],
+                ['attribute' => 'path', 'eq' => "1/{$rootCategoryId}"]
+            ]
+        );
         return $collection;
     }
 }
