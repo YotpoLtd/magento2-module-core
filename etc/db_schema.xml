@@ -89,4 +89,33 @@
             <column name="entity_id"/>
         </index>
     </table>
+    <table name="yotpo_collections_products_sync" resource="default" engine="innodb" comment="Collections products sync to Yotpo">
+        <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
+        <column xsi:type="int" name="magento_store_id" unsigned="true" nullable="false" default="0" comment="Magento Store ID"/>/>
+        <column xsi:type="int" name="magento_category_id" unsigned="true" nullable="false" comment="Magento Category ID"/>
+        <column xsi:type="int" name="magento_product_id" unsigned="true" nullable="false" comment="Magento Product ID"/>
+        <column xsi:type="boolean" name="is_deleted_in_magento" nullable="false" comment="Is Deleted in Magento"/>
+        <column xsi:type="boolean" name="is_synced_to_yotpo" nullable="false" comment="Is Synced to Yotpo"/>
+        <column xsi:type="datetime" name="last_updated_at" nullable="false" comment="Last Updated at Time"/>
+        <constraint xsi:type="primary" referenceId="PRIMARY">
+            <column name="entity_id"/>
+        </constraint>
+        <constraint xsi:type="unique" referenceId="YOTPO_COLLECTIONS_PRODUCTS_SYNC_UNIQUE_KEY_MAGENTO_STORE_ID_MAGENTO_CATEGORY_ID_MAGENTO_PRODUCT_ID">
+            <column name="magento_store_id"/>
+            <column name="magento_category_id"/>
+            <column name="magento_product_id"/>
+        </constraint>
+        <index referenceId="MAGENTO_STORE_ID_ON_IS_SYNCED_TO_YOTPO" indexType="btree">
+            <column name="magento_store_id"/>
+            <column name="is_synced_to_yotpo"/>
+        </index>
+        <index referenceId="MAGENTO_STORE_ID_ON_MAGENTO_CATEGORY_ID" indexType="btree">
+            <column name="magento_store_id"/>
+            <column name="magento_category_id"/>
+        </index>
+        <index referenceId="MAGENTO_STORE_ID_ON_MAGENTO_PRODUCT_ID" indexType="btree">
+            <column name="magento_store_id"/>
+            <column name="magento_product_id"/>
+        </index>
+    </table>
 </schema>
