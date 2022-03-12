@@ -19,23 +19,23 @@ class CronConfig extends Value
     /**
      * Cron expression configuration path
      */
-    const CRON_STRING_PATH_PRODUCTS = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync/schedule/cron_expr';
+    const CRON_EXPRESSION_PATH = '/schedule/cron_expr';
 
     /**
      * Cron expression model path
      */
-    const CRON_MODEL_PATH_PRODUCTS = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync/run/model';
+    const CRON_MODEL_PATH = '/run/model';
 
     /**
-     * Cron expression configuration path
+     * Products sync Cron job path
      */
     // phpcs:ignore
-    const CRON_STRING_PATH_CATEGORY = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_category_sync/schedule/cron_expr';
+    const PRODUCTS_SYNC_CRON_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync';
 
     /**
-     * Cron expression model path
+     * Category sync Cron job path
      */
-    const CRON_MODEL_PATH_CATEGORY = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_category_sync/run/model';
+    const CATEGORY_SYNC_CRON_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_category_sync';
 
     /**
      * @var ValueFactory
@@ -105,21 +105,21 @@ class CronConfig extends Value
     {
         /** @phpstan-ignore-next-line */
         $this->configValueFactory->create()->load(
-            self::CRON_STRING_PATH_PRODUCTS,
+            self::PRODUCTS_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH,
             'path'
         )->setValue(
             $catalogCronExpressionString
         )->setPath(
-            self::CRON_STRING_PATH_PRODUCTS
+            self::PRODUCTS_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH
         )->save();
          /** @phpstan-ignore-next-line */
         $this->configValueFactory->create()->load(
-            self::CRON_MODEL_PATH_PRODUCTS,
+            self::PRODUCTS_SYNC_CRON_PATH . self::CRON_MODEL_PATH,
             'path'
         )->setValue(
             $this->runModelPath
         )->setPath(
-            self::CRON_MODEL_PATH_PRODUCTS
+            self::PRODUCTS_SYNC_CRON_PATH . self::CRON_MODEL_PATH
         )->save();
     }
 
@@ -131,21 +131,21 @@ class CronConfig extends Value
     {
         /** @phpstan-ignore-next-line */
         $this->configValueFactory->create()->load(
-            self::CRON_STRING_PATH_CATEGORY,
+            self::CATEGORY_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH,
             'path'
         )->setValue(
             $catalogCronExpressionString
         )->setPath(
-            self::CRON_STRING_PATH_CATEGORY
+            self::CATEGORY_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH
         )->save();
         /** @phpstan-ignore-next-line */
         $this->configValueFactory->create()->load(
-            self::CRON_MODEL_PATH_CATEGORY,
+            self::CATEGORY_SYNC_CRON_PATH . self::CRON_MODEL_PATH,
             'path'
         )->setValue(
             $this->runModelPath
         )->setPath(
-            self::CRON_MODEL_PATH_CATEGORY
+            self::CATEGORY_SYNC_CRON_PATH . self::CRON_MODEL_PATH
         )->save();
     }
 }
