@@ -269,7 +269,6 @@ class ProcessByCategory extends Main
     {
         $this->yotpoCoreCatalogLogger->info('Category Sync - delete categories start');
         $categoriesToDelete = $this->getCollectionsToDelete();
-        $catToUpdateAsDel = [];
         foreach ($categoriesToDelete as $cat) {
             $products = $this->getProductsUnderCategory($cat['yotpo_id']);
             $this->yotpoCoreCatalogLogger->info(
