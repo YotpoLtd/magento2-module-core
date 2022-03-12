@@ -78,6 +78,11 @@
                             <cron_expr>*/2 * * * *</cron_expr>
                         </schedule>
                     </yotpo_cron_core_category_sync>
+                    <yotpo_cron_core_collections_products_sync>
+                        <schedule>
+                            <cron_expr>*/2 * * * *</cron_expr>
+                        </schedule>
+                    </yotpo_cron_core_collections_products_sync>
                 </jobs>
             </yotpo_core_catalog_sync>
         </crontab>

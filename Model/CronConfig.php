@@ -38,6 +38,11 @@ class CronConfig extends Value
     const CATEGORY_SYNC_CRON_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_category_sync';
 
     /**
+     * Collections Products sync Cron job path
+     */
+    const COLLECTIONS_PRODUCTS_SYNC_CRON_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_collections_products_sync';
+
+    /**
      * @var ValueFactory
      */
     protected $configValueFactory;
@@ -87,6 +92,8 @@ class CronConfig extends Value
             $this->configureCronProductsSync($catalogCronExpressionString);
 
             $this->configureCronCategorySync($catalogCronExpressionString);
+
+            $this->configureCronCollectionsProductsSync($catalogCronExpressionString);
         } catch (\Exception $exception) {
             throw new CouldNotSaveException(
                 __('We can\'t save the cron expression.'),
@@ -146,6 +153,32 @@ class CronConfig extends Value
             $this->runModelPath
         )->setPath(
             self::CATEGORY_SYNC_CRON_PATH . self::CRON_MODEL_PATH
+        )->save();
+    }
+
+    /**
+     * @param string $catalogCronExpressionString
+     * @return void
+     */
+    private function configureCronCollectionsProductsSync($catalogCronExpressionString)
+    {
+        /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::COLLECTIONS_PRODUCTS_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH,
+            'path'
+        )->setValue(
+            $catalogCronExpressionString
+        )->setPath(
+            self::COLLECTIONS_PRODUCTS_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH
+        )->save();
+        /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::COLLECTIONS_PRODUCTS_SYNC_CRON_PATH . self::CRON_MODEL_PATH,
+            'path'
+        )->setValue(
+            $this->runModelPath
+        )->setPath(
+            self::COLLECTIONS_PRODUCTS_SYNC_CRON_PATH . self::CRON_MODEL_PATH
         )->save();
     }
 }
