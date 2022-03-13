@@ -427,6 +427,7 @@ class Main extends AbstractJobs
      */
     public function getStoreCategoryCollection()
     {
+        /** @var \Magento\Store\Model\Store $currentStore**/
         $currentStore = $this->storeManager->getStore();
         $rootCategoryId = $currentStore->getRootCategoryId();
         $collection = $this->categoryCollectionFactory->create();
