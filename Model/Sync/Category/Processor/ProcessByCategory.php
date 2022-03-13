@@ -140,6 +140,7 @@ class ProcessByCategory extends Main
      */
     public function processEntity($retryCategoryIds = [])
     {
+        $storeId = $this->config->getStoreId();
         $currentTime = date('Y-m-d H:i:s');
         $batchSize = $this->config->getConfig('product_sync_limit');
         $existColls = [];
@@ -217,7 +218,7 @@ class ProcessByCategory extends Main
                 ) {
                     $yotpoTableData['yotpo_id'] = $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'];
                 }
-                $yotpoTableData['store_id']         =   $this->config->getStoreId();
+                $yotpoTableData['store_id']         =   $storeId;
                 $yotpoTableData['category_id']      =   $magentoCategory->getId();
                 $yotpoTableData['synced_to_yotpo']  =   $currentTime;
                 $this->insertOrUpdateYotpoTableData($yotpoTableData);
@@ -239,7 +240,7 @@ class ProcessByCategory extends Main
             $data = [
                 'response_code' => '201',
                 'yotpo_id' => $yotpoId,
-                'store_id' => $this->config->getStoreId(),
+                'store_id' => $storeId,
                 'category_id' => $mageCatId,
                 'synced_to_yotpo' => $currentTime
             ];
@@ -254,8 +255,8 @@ class ProcessByCategory extends Main
         $this->yotpoCoreCatalogLogger->info(
             sprintf(
                 'Category Sync - sync completed - Magento Store ID: %s, Name: %s',
-                $this->config->getStoreId(),
-                $this->config->getStoreName($this->config->getStoreId())
+                $storeId,
+                $this->config->getStoreName($storeId)
             )
         );
     }
