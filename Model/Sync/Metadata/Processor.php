@@ -16,6 +16,10 @@ use Magento\Framework\App\ProductMetadataInterface;
  */
 class Processor extends AbstractJobs
 {
+    const ENTITY_LOG_FILE = 'entityLog';
+    const SYNC_RESPONSE_IS_SUCCESS_KEY = 'is_success';
+    const POST_METHOD_STRING = 'POST';
+
     /**
      * @var YotpoSyncMain
      */
@@ -67,55 +71,52 @@ class Processor extends AbstractJobs
      */
     public function process()
     {
-        try {
-            foreach ((array)$this->yotpoConfig->getAllStoreIds(false) as $storeId) {
-                try {
-                    $this->emulateFrontendArea($storeId);
-                    if (!$this->yotpoConfig->isEnabled()) {
-                        $this->logger->info(
-                            __(
-                                'Skipping Magento Store ID: %1, Name: %2 [Disabled]',
-                                $storeId,
-                                $this->yotpoConfig->getStoreName($storeId)
-                            )
-                        );
-                        continue;
-                    }
+        foreach ((array)$this->yotpoConfig->getAllStoreIds(false) as $storeId) {
+            try {
+                $this->emulateFrontendArea($storeId);
+                if (!$this->yotpoConfig->isEnabled()) {
                     $this->logger->info(
                         __(
-                            'Updating metadata for Magento Store ID: %1, Name: %2 [START]',
+                            'Updating Metadata is disabled. Skipping for Magento Store ID: %1, Name: %2',
                             $storeId,
                             $this->yotpoConfig->getStoreName($storeId)
                         )
                     );
+                    continue;
+                }
+                $this->logger->info(
+                    __(
+                        'Starting updating Metadata for Magento Store ID: %1, Name: %2',
+                        $storeId,
+                        $this->yotpoConfig->getStoreName($storeId)
+                    )
+                );
 
-                    $data = $this->prepareMetadata();
-                    $data['entityLog'] = 'general';
-                    $endPoint = $this->yotpoConfig->getEndpoint('metadata');
-                    $response = $this->yotpoSyncMain->syncV1('POST', $endPoint, $data);
-                    if ($response['is_success']) {
-                        $this->logger->info(
-                            __(
-                                'Updating metadata for Magento Store ID: %1, Name: %2 [SUCCESS]',
-                                $storeId,
-                                $this->yotpoConfig->getStoreName($storeId)
-                            )
-                        );
-                    }
-                } catch (\Exception $e) {
+                $metadataDataToSync = $this->prepareMetadata();
+                $metadataDataToSync[$this::ENTITY_LOG_FILE] = 'general';
+                $metadataEndpoint = $this->yotpoConfig->getEndpoint('metadata');
+                $response = $this->yotpoSyncMain->syncV1($this::POST_METHOD_STRING, $metadataEndpoint, $metadataDataToSync);
+                if ($response[$this::SYNC_RESPONSE_IS_SUCCESS_KEY]) {
                     $this->logger->info(
                         __(
-                            'Exception on Magento Store ID: %1, Name: %2, Reason: %3',
+                            'Finished updating Metadata successfully for Magento Store ID: %1, Name: %2',
                             $storeId,
-                            $this->yotpoConfig->getStoreName($storeId),
-                            $e->getMessage()
+                            $this->yotpoConfig->getStoreName($storeId)
                         )
                     );
                 }
+            } catch (\Exception $exception) {
+                $this->logger->info(
+                    __(
+                        'Error occurred when updating Metadata, got Exception on Magento Store ID: %1, Name: %2, Reason: %3',
+                        $storeId,
+                        $this->yotpoConfig->getStoreName($storeId),
+                        $exception->getMessage()
+                    )
+                );
+            } finally {
                 $this->stopEnvironmentEmulation();
             }
-        } catch (\Exception $e) {
-            $this->logger->info(__('Exception: %1', $e->getMessage()));
         }
     }
 
