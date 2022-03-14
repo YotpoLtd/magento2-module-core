@@ -185,37 +185,30 @@ class ProcessByCategory extends Main
             /** @var Category $magentoCategory */
             $magentoCategory->setData('nameWithPath', $this->getNameWithPath($magentoCategory, $categoriesByPath));
             $response = null;
-            if (!isset($yotpoSyncedCategories[$magentoCategory->getId()]) &&
-                !isset($existingCollections[$magentoCategory->getId()])
+            if (!$this->isCategoryWasEverSynced($yotpoSyncedCategories, $existingCollections, $magentoCategory)
+                || $this->isSyncedCategoryMissingYotpoId($yotpoSyncedCategories, $magentoCategory)
             ) {
                 $response = $this->syncAsNewCollection($magentoCategory);
+            } elseif ($this->canResync(
+                $yotpoSyncedCategories[$magentoCategory->getId()],
+                $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'],
+                $this->isCommandLineSync
+            )) {
+                $response = $this->syncExistingCollection(
+                    $magentoCategory,
+                    $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id']
+                );
             } else {
-                if (isset($yotpoSyncedCategories[$magentoCategory->getId()])) {
-                    if ($yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id']) {
-                        if ($this->canResync(
-                            $yotpoSyncedCategories[$magentoCategory->getId()],
-                            $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'],
-                            $this->isCommandLineSync
-                        )) {
-                            $response = $this->syncExistingCollection(
-                                $magentoCategory,
-                                $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id']
-                            );
-                        } else {
-                            $categoryIdToUpdate = $magentoCategory->getRowId() ?: $magentoCategory->getId();
-                            $this->updateCategoryAttribute($categoryIdToUpdate);
-                        }
-                    } else {
-                        $response = $this->syncAsNewCollection($magentoCategory);
-                    }
-                } elseif (isset($existingCollections[$magentoCategory->getId()])) {
-                    $response = $this->syncExistingCollection(
-                        $magentoCategory,
-                        $existingCollections[$magentoCategory->getId()]
-                    );
-                    if (!$response->getData('yotpo_id')) {
-                        $response->setData('yotpo_id', $existingCollections[$magentoCategory->getId()]);
-                    }
+                $categoryIdToUpdate = $magentoCategory->getRowId() ?: $magentoCategory->getId();
+                $this->updateCategoryAttribute($categoryIdToUpdate);
+            }
+            if (isset($existingCollections[$magentoCategory->getId()])) {
+                $response = $this->syncExistingCollection(
+                    $magentoCategory,
+                    $existingCollections[$magentoCategory->getId()]
+                );
+                if (!$response->getData('yotpo_id')) {
+                    $response->setData('yotpo_id', $existingCollections[$magentoCategory->getId()]);
                 }
             }
             if ($this->checkForCollectionExistsError($response)) {
@@ -393,5 +386,26 @@ class ProcessByCategory extends Main
             // phpcs:ignore
             echo 'No category data to process.' . PHP_EOL;
         }
+    }
+
+    /**
+     * @param array $yotpoSyncedCategories
+     * @param array $existingCollections
+     * @param Category $magentoCategory
+     * @return bool
+     */
+    private function isCategoryWasEverSynced(array $yotpoSyncedCategories, array $existingCollections, Category $magentoCategory)
+    {
+        return isset($yotpoSyncedCategories[$magentoCategory->getId()]) && isset($existingCollections[$magentoCategory->getId()]);
+    }
+
+    /**
+     * @param array $yotpoSyncedCategories
+     * @param Category $magentoCategory
+     * @return bool
+     */
+    private function isSyncedCategoryMissingYotpoId(array $yotpoSyncedCategories, Category $magentoCategory)
+    {
+        return isset($yotpoSyncedCategories[$magentoCategory->getId()]) && !$yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'];
     }
 }
