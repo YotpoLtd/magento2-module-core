@@ -14,6 +14,7 @@ use Magento\Framework\App\ResourceConnection;
 use Yotpo\Core\Model\Config;
 use Yotpo\Core\Model\Sync\Category\Data;
 use Yotpo\Core\Model\Api\Sync as YotpoCoreApiSync;
+use Yotpo\Core\Model\Sync\CollectionsProducts\Services\CollectionsProductsService;
 use Magento\Catalog\Model\ResourceModel\Category\CollectionFactory as CategoryCollectionFactory;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
 use Magento\Store\Model\StoreManagerInterface;
@@ -66,6 +67,11 @@ class Main extends AbstractJobs
     protected $storeManager;
 
     /**
+     * @var CollectionsProductsService
+     */
+    protected $collectionsProductsService;
+
+    /**
      * Main constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
@@ -75,6 +81,7 @@ class Main extends AbstractJobs
      * @param CategoryCollectionFactory $categoryCollectionFactory
      * @param YotpoCoreCatalogLogger $yotpoCoreCatalogLogger
      * @param StoreManagerInterface $storeManager
+     * @param CollectionsProductsService $collectionsProductsService
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -84,7 +91,8 @@ class Main extends AbstractJobs
         YotpoCoreApiSync $yotpoCoreApiSync,
         CategoryCollectionFactory $categoryCollectionFactory,
         YotpoCoreCatalogLogger $yotpoCoreCatalogLogger,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        CollectionsProductsService $collectionsProductsService
     ) {
         $this->config   =   $config;
         $this->data   =   $data;
@@ -93,6 +101,7 @@ class Main extends AbstractJobs
         $this->yotpoCoreCatalogLogger       =   $yotpoCoreCatalogLogger;
         $this->entityIdFieldValue           =   $this->config->getEavRowIdFieldName();
         $this->storeManager = $storeManager;
+        $this->collectionsProductsService = $collectionsProductsService;
         parent::__construct($appEmulation, $resourceConnection);
     }
 
@@ -495,5 +504,50 @@ class Main extends AbstractJobs
         }
 
         return $categoryIdsToYotpoIdsMap;
+    }
+
+    /**
+     * @param Category $category
+     * @return void
+     */
+    public function updateCategoryProductsForCollectionsProductsSync($category)
+    {
+        $categoryId = $category->getId();
+        $storeIdsSuccessfullySyncedWithCategory = $this->getStoresSuccessfullySyncedWithCategory($categoryId);
+        if ($storeIdsSuccessfullySyncedWithCategory) {
+            foreach ($storeIdsSuccessfullySyncedWithCategory as $storeId) {
+                if ($this->config->isCatalogSyncActive($storeId)) {
+                    $categoryProductsIds = [];
+                    $categoryProducts = $category->getProductCollection()->getItems();
+                    foreach ($categoryProducts as $categoryProduct) {
+                        $categoryProductsIds[] = $categoryProduct->getId();
+                    }
+
+                    $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync($categoryProductsIds, $storeId, $categoryId);
+                }
+            }
+        }
+    }
+
+    public function getStoresSuccessfullySyncedWithCategory($categoryId)
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $select = $connection->select()->from(
+            $this->resourceConnection->getTableName($this::YOTPO_CATEGORY_SYNC_TABLE_NAME),
+            [ 'store_id', 'response_code' ]
+        )->where(
+            'category_id = ?',
+            $categoryId
+        );
+        $storesSyncedWithCategory = $connection->fetchAssoc($select, 'store_id');
+
+        $storesSuccessfullySyncedWithCategory = [];
+        foreach($storesSyncedWithCategory as $storeId => $storeSyncedWithCategory) {
+            if (in_array($storeSyncedWithCategory['response_code'], $this->config->getSuccessfulResponseCodes())) {
+                $storesSuccessfullySyncedWithCategory[] = $storeId;
+            }
+        }
+
+        return $storesSuccessfullySyncedWithCategory;
     }
 }

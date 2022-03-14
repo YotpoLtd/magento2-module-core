@@ -44,6 +44,8 @@ class Config
     const NOT_FOUND_RESPONSE_CODE = 404;
     const CONFLICT_RESPONSE_CODE = 409;
 
+    const YOTPO_SYNC_RESPONSE_IS_SUCCESS_KEY = 'is_success';
+
     /**
      * @var mixed[]
      */
@@ -541,14 +543,14 @@ class Config
 
     /**
      * Check if Yotpo is enabled and if order sync is active.
-     *
+     * @param int|null $storeId
      * @return bool
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function isCatalogSyncActive()
+    public function isCatalogSyncActive($storeId = null)
     {
-        return ($this->isEnabled() && $this->getConfig('catalog_sync_enable'));
+        return ($this->isEnabled($storeId) && $this->getConfig('catalog_sync_enable', $storeId));
     }
 
     /**
@@ -596,6 +598,19 @@ class Config
     public function isSingleStoreMode()
     {
         return $this->storeManager->isSingleStoreMode();
+    }
+
+    /**
+     * @param mixed $response
+     * @return boolean
+     */
+    public function isResponseIndicatesSuccess($response)
+    {
+        if ($response && $response->getData($this::YOTPO_SYNC_RESPONSE_IS_SUCCESS_KEY)) {
+            return $response->getData($this::YOTPO_SYNC_RESPONSE_IS_SUCCESS_KEY);
+        }
+
+        return false;
     }
 
     /**
@@ -677,5 +692,9 @@ class Config
     public function getYotpoRetryAttemptsAmount(): int
     {
         return self::YOTPO_RETRY_ATTEMPTS_AMOUNT;
+    }
+
+    public function getSuccessfulResponseCodes() {
+        return $this->successfulResponseCodes;
     }
 }
