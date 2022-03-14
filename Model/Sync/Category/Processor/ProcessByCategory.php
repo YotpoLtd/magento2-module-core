@@ -15,6 +15,7 @@ use Yotpo\Core\Model\Config;
 use Magento\Catalog\Helper\Category as CategoryHelper;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
 use Yotpo\Core\Model\Sync\Category\Data;
+use Yotpo\Core\Model\Sync\CollectionsProducts\Services\CollectionsProductsService;
 use Yotpo\Core\Api\CategorySyncRepositoryInterface;
 
 /**
@@ -33,6 +34,11 @@ class ProcessByCategory extends Main
     protected $categorySyncRepositoryInterface;
 
     /**
+     * @var CollectionsProductsService
+     */
+    protected $collectionsProductsService;
+
+    /**
      * @var bool
      */
     protected $isCommandLineSync = false;
@@ -48,6 +54,7 @@ class ProcessByCategory extends Main
      * @param YotpoCoreCatalogLogger $yotpoCoreCatalogLogger
      * @param CategoryHelper $categoryHelper
      * @param CategorySyncRepositoryInterface $categorySyncRepositoryInterface
+     * @param CollectionsProductsService $collectionsProductsService
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -59,7 +66,8 @@ class ProcessByCategory extends Main
         YotpoCoreCatalogLogger $yotpoCoreCatalogLogger,
         CategoryHelper $categoryHelper,
         CategorySyncRepositoryInterface $categorySyncRepositoryInterface,
-        StoreManagerInterface $storeManager
+        StoreManagerInterface $storeManager,
+        CollectionsProductsService $collectionsProductsService
     ) {
         parent::__construct(
             $appEmulation,
@@ -73,6 +81,7 @@ class ProcessByCategory extends Main
         );
         $this->categoryHelper = $categoryHelper;
         $this->categorySyncRepositoryInterface = $categorySyncRepositoryInterface;
+        $this->collectionsProductsService = $collectionsProductsService;
     }
 
     /**
@@ -265,45 +274,48 @@ class ProcessByCategory extends Main
     }
 
     /**
+     * @param string $storeId
      * @return void
      * @throws NoSuchEntityException
      * @throws LocalizedException
      */
     public function deleteCollections()
     {
-        $this->yotpoCoreCatalogLogger->info('Category Sync - delete categories start');
+        $storeId = $this->config->getStoreId();
+        $this->yotpoCoreCatalogLogger->info(
+            __(
+                'Category Sync - Starting assigning deleted categories for store - Magento Store ID: %1, Name: %2',
+                $storeId,
+                $this->config->getStoreName($storeId)
+            )
+        );
         $categoriesToDelete = $this->getCollectionsToDelete();
         foreach ($categoriesToDelete as $category) {
-            $products = $this->getProductsUnderCategory($category['yotpo_id']);
+            $categoryId = $category['category_id'];
             $this->yotpoCoreCatalogLogger->info(
-                sprintf('Category Sync - delete categories - Category ID - %s', $category['category_id'])
+                __(
+                    'Category Sync - Deleting category - Magento Store ID: %1, Name: %2, Category ID - %3',
+                    $storeId,
+                    $this->config->getStoreName($storeId),
+                    $categoryId
+                )
             );
 
-            foreach ($products as $product) {
-                $this->unAssignProductFromCollection($category['yotpo_id'], $product['external_id']);
+            $categoryProductsIds = $this->collectionsProductsService->getCategoryProductsIdsFromSyncTable($categoryId);
+            if ($categoryProductsIds) {
+                $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync($categoryProductsIds, $storeId, $categoryId, true);
             }
 
-            $this->updateYotpoTblForDeletedCategories($category['category_id']);
+            $this->updateYotpoTblForDeletedCategories($categoryId);
         }
 
-        $this->yotpoCoreCatalogLogger->info('Category Sync - delete categories complete');
-    }
-
-    /**
-     * @param int $yotpoId
-     * @return array<mixed>
-     * @throws NoSuchEntityException
-     */
-    public function getProductsUnderCategory(int $yotpoId): array
-    {
-        $url = $this->config->getEndpoint('collections_product', ['{yotpo_collection_id}'], [$yotpoId]);
-        $data['entityLog'] = 'catalog';
-        $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
-        $response = $response->getData('response');
-        if (!$response) {
-            return [];
-        }
-        return array_key_exists('products', $response) ? $response['products'] : [];
+        $this->yotpoCoreCatalogLogger->info(
+            __(
+                'Category Sync - Finished assigning deleted categories for store - Magento Store ID: %1, Name: %2',
+                $storeId,
+                $this->config->getStoreName($storeId)
+            )
+        );
     }
 
     /**
