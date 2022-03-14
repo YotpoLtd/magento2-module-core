@@ -23,6 +23,8 @@ use Magento\Store\Model\StoreManagerInterface;
  */
 class Main extends AbstractJobs
 {
+    const YOTPO_CATEGORY_SYNC_TABLE_NAME = 'yotpo_category_sync';
+
     /**
      * @var CategoryCollectionFactory
      */
@@ -439,5 +441,59 @@ class Main extends AbstractJobs
             ]
         );
         return $collection;
+    }
+
+    /**
+     * @param string $categoryId
+     * @return string
+     */
+    public function getYotpoIdFromCategoriesSyncTableByCategoryId($categoryId)
+    {
+        $storeId = $this->config->getStoreId();
+        $connection = $this->resourceConnection->getConnection();
+        $categoryYotpoIdQuery = $connection->select(
+        )->from(
+            [ $this->resourceConnection->getTableName($this::YOTPO_CATEGORY_SYNC_TABLE_NAME) ],
+            ['yotpo_id']
+        )->where(
+            'category_id = ?',
+            $categoryId
+        )->where(
+            'store_id = ?',
+            $storeId
+        );
+
+        $categoryYotpoId = $connection->fetchOne($categoryYotpoIdQuery, 'yotpo_id');
+        return $categoryYotpoId;
+    }
+
+    /**
+     * @param array $categoryIds
+     * @return array<string>
+     */
+    public function getYotpoIdFromCategoriesSyncTableByCategoryIds(array $categoryIds)
+    {
+        $storeId = $this->config->getStoreId();
+        $connection = $this->resourceConnection->getConnection();
+        $categoryYotpoIdsQuery = $connection->select(
+        )->from(
+            [ $this->resourceConnection->getTableName($this::YOTPO_CATEGORY_SYNC_TABLE_NAME) ],
+            [ 'category_id', 'yotpo_id' ]
+        )->where(
+            'category_id IN (?)',
+            $categoryIds
+        )->where(
+            'store_id = ?',
+            $storeId
+        );
+
+        $categoriesSyncData = $connection->fetchAssoc($categoryYotpoIdsQuery, 'category_id');
+
+        $categoryIdsToYotpoIdsMap = [];
+        foreach ($categoriesSyncData as $categoryId => $categorySyncRecord) {
+            $categoryIdsToYotpoIdsMap[$categoryId] = $categorySyncRecord['yotpo_id'];
+        }
+
+        return $categoryIdsToYotpoIdsMap;
     }
 }

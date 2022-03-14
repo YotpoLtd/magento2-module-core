@@ -19,6 +19,8 @@ use Yotpo\Core\Model\Api\Sync as CoreSync;
  */
 class Main extends AbstractJobs
 {
+    const YOTPO_PRODUCT_SYNC_TABLE_NAME = 'yotpo_product_sync';
+
     /**
      * @var CoreConfig
      */
@@ -690,6 +692,59 @@ class Main extends AbstractJobs
     public function isProductParentYotpoIdFound($yotpoData, $parentId): bool
     {
         return isset($yotpoData[$parentId]) && isset($yotpoData[$parentId]['yotpo_id']);
+    }
+
+    /**
+     * @param string $productId
+     * @return string
+     */
+    public function getYotpoIdFromProductsSyncTableByProductId($productId) {
+        $storeId = $this->coreConfig->getStoreId();
+        $connection = $this->resourceConnection->getConnection();
+        $productYotpoIdQuery = $connection->select(
+        )->from(
+            [ $this->resourceConnection->getTableName($this::YOTPO_PRODUCT_SYNC_TABLE_NAME) ],
+            [ 'yotpo_id' ]
+        )->where(
+            'product_id = ?',
+            $productId
+        )->where(
+            'store_id = ?',
+            $storeId
+        );
+
+        $productYotpoId = $connection->fetchOne($productYotpoIdQuery, 'yotpo_id');
+        return $productYotpoId;
+    }
+
+    /**
+     * @param array $productsIds
+     * @return array<string>
+     */
+    public function getYotpoIdFromProductsSyncTableByProductIds(array $productsIds)
+    {
+        $storeId = $this->coreConfig->getStoreId();
+        $connection = $this->resourceConnection->getConnection();
+        $productsYotpoIdsQuery = $connection->select(
+        )->from(
+            [ $this->resourceConnection->getTableName($this::YOTPO_PRODUCT_SYNC_TABLE_NAME) ],
+            [ 'product_id' , 'yotpo_id' ]
+        )->where(
+            'product_id IN (?)',
+            $productsIds
+        )->where(
+            'store_id = ?',
+            $storeId
+        );
+
+        $productsSyncData = $connection->fetchAssoc($productsYotpoIdsQuery, 'product_id');
+
+        $productIdsToYotpoIdsMap = [];
+        foreach ($productsSyncData as $productId => $productSyncRecord) {
+            $productIdsToYotpoIdsMap[$productId] = $productSyncRecord['yotpo_id'];
+        }
+
+        return $productIdsToYotpoIdsMap;
     }
 
     /**
