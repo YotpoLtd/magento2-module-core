@@ -20,7 +20,8 @@ class YotpoRetry
      * Processor constructor.
      * @param Config $config
      */
-    public function __construct(Config $config) {
+    public function __construct(Config $config)
+    {
         $this->config = $config;
     }
 
@@ -39,6 +40,7 @@ class YotpoRetry
         while ($this->haveAdditionalAttempts($attemptsLeftCount)) {
             if (!$requestResult->getData(self::IS_SUCCESS_KEY)) {
                 if ($this->config->isNetworkRetriableResponse($requestResult->getData(self::STATUS_KEY))) {
+                    // phpcs:ignore Magento2.Functions.DiscouragedFunction
                     sleep(1);
                     $attemptsLeftCount--;
                     $requestResult = $request();
