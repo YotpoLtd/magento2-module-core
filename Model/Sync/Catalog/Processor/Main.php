@@ -109,11 +109,12 @@ class Main extends AbstractJobs
 
     /**
      * @param integer $itemEntityId
-     * @param array $yotpoItemData
-     * @param array $apiRequestParams
-     * @return array
+     * @param array<mixed> $yotpoItemData
+     * @param array<mixed> $apiRequestParams
+     * @return array<mixed>
      */
-    protected function handleRequest($itemEntityId, $yotpoItemData, $apiRequestParams) {
+    protected function handleRequest($itemEntityId, $yotpoItemData, $apiRequestParams)
+    {
         $syncMethod = $apiRequestParams['method'];
         $yotpoItemId = $apiRequestParams['yotpo_id'];
         $yotpoParentItemId = $apiRequestParams['yotpo_id_parent'];
@@ -128,7 +129,12 @@ class Main extends AbstractJobs
             case 'updateProductVariant':
             case 'deleteProductVariant':
             case 'unassignProductVariant':
-                return $this->catalogRequestHandler->handleVariantUpsert($itemEntityId, $yotpoItemData, $yotpoParentItemId, $yotpoItemId);
+                return $this->catalogRequestHandler->handleVariantUpsert(
+                    $itemEntityId,
+                    $yotpoItemData,
+                    $yotpoParentItemId,
+                    $yotpoItemId
+                );
             default:
                 $response = $this->coreSync->getEmptyResponse();
                 $storeId = $this->coreConfig->getStoreId();
@@ -172,7 +178,10 @@ class Main extends AbstractJobs
             case $this->coreConfig->getProductSyncMethod('createProductVariant'):
                 $yotpoIdkey = $visibleVariants ? 'visible_variant_yotpo_id' : 'yotpo_id';
                 if ($response->getData('is_success')) {
-                    $tempSqlArray[$yotpoIdkey] = $this->catalogRequestHandler->getYotpoIdFromResponse($response, $apiParam['method']);
+                    $tempSqlArray[$yotpoIdkey] = $this->catalogRequestHandler->getYotpoIdFromResponse(
+                        $response,
+                        $apiParam['method']
+                    );
                     $this->writeSuccessLog($apiParam['method'], $storeId);
                 } else {
                     if ($response->getStatus() == '409') {
