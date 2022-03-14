@@ -93,11 +93,12 @@ class SaveAfter implements ObserverInterface
             $storeIdsToUpdate[] = $currentStoreId;
         }
 
+        $productId = $product->getId();
         if ($product->hasDataChanges()) {
-            $this->updateProductAttribute([$product->getRowId() ?: $product->getId()], $storeIdsToUpdate);
+            $this->updateProductAttribute([$product->getRowId() ?: $productId], $storeIdsToUpdate);
             $this->updateIsDeleted($product);
             $tableData = ['response_code' => Config::CUSTOM_RESPONSE_DATA];
-            $this->updateYotpoSyncTable($tableData, $storeIdsToUpdate, [$product->getId()]);
+            $this->updateYotpoSyncTable($tableData, $storeIdsToUpdate, [$productId]);
         }
 
         $this->unassignProductChildrensForSync($product);
