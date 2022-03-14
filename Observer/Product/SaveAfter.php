@@ -3,11 +3,13 @@ namespace Yotpo\Core\Observer\Product;
 
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer as EventObserver;
+use Magento\Store\Model\App\Emulation as AppEmulation;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\ResourceConnection;
 use Yotpo\Core\Model\Config;
 use Yotpo\Core\Model\Sync\Data\Main;
+use Yotpo\Core\Model\Sync\CollectionsProducts\Services\CollectionsProductsService;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Session as CatalogSession;
 use Magento\Store\Api\StoreRepositoryInterface;
@@ -15,7 +17,7 @@ use Magento\Store\Api\StoreRepositoryInterface;
 /**
  * Class SaveAfter - Update yotpo attribute value when product updated
  */
-class SaveAfter implements ObserverInterface
+class SaveAfter extends Data implements ObserverInterface
 {
     /**
      * @var StoreManagerInterface
@@ -23,9 +25,14 @@ class SaveAfter implements ObserverInterface
     protected $storeManager;
 
     /**
-     * @var ResourceConnection
+     * @var AppEmulation
      */
     protected $resourceConnection;
+
+    /**
+     * @var ResourceConnection
+     */
+    protected $appEmulation;
 
     /**
      * @var Main
@@ -48,28 +55,40 @@ class SaveAfter implements ObserverInterface
     protected $config;
 
     /**
+     * @var CollectionsProductsService
+     */
+    protected $collectionsProductsService;
+
+    /**
      * SaveAfter constructor.
      * @param StoreManagerInterface $storeManager
      * @param ResourceConnection $resourceConnection
+     * @param AppEmulation $appEmulation
      * @param Main $main
      * @param CatalogSession $catalogSession
      * @param StoreRepositoryInterface $storeRepository
      * @param Config $config
+     * @param CollectionsProductsService $collectionsProductsService
      */
     public function __construct(
         StoreManagerInterface $storeManager,
         ResourceConnection $resourceConnection,
+        AppEmulation $appEmulation,
         Main $main,
         CatalogSession $catalogSession,
         StoreRepositoryInterface $storeRepository,
-        Config $config
+        Config $config,
+        CollectionsProductsService $collectionsProductsService
     ) {
         $this->storeManager = $storeManager;
         $this->resourceConnection = $resourceConnection;
+        $this->appEmulation = $appEmulation;
         $this->main = $main;
         $this->catalogSession = $catalogSession;
         $this->storeRepository = $storeRepository;
         $this->config = $config;
+        $this->collectionsProductsService = $collectionsProductsService;
+        parent::__construct($resourceConnection, $appEmulation);
     }
 
     /**
@@ -102,6 +121,8 @@ class SaveAfter implements ObserverInterface
         }
 
         $this->unassignProductChildrensForSync($product);
+        $this->assignProductCategoriesForCollectionsProductsSync($productId, $storeIdsToUpdate);
+        $this->assignDeletedProductCategoriesForCollectionsProductsSync($productId, $storeIdsToUpdate);
     }
 
     /**
@@ -312,5 +333,43 @@ class SaveAfter implements ObserverInterface
         }
 
         return $result;
+    }
+
+    /**
+     * @param string $productId
+     * @param array $storeIdsToUpdate
+     * @return void
+     */
+    private function assignProductCategoriesForCollectionsProductsSync($productId, $storeIdsToUpdate)
+    {
+        $productCategoriesBeforeSave = $this->catalogSession->getProductCategoriesIds();
+        foreach($storeIdsToUpdate as $storeId) {
+            if (!$this->config->isCatalogSyncActive($storeId)) {
+                continue;
+            }
+
+            $productCategories = $this->getProductCategoriesIdsFromCategoryProductsTable($productId);
+            $categoriesIdsForSync = $this->findDiffBetweenArrays($productCategories, $productCategoriesBeforeSave);
+            $this->collectionsProductsService->assignProductCategoriesForCollectionsProductsSync($categoriesIdsForSync, $storeId, $productId);
+        }
+    }
+
+    /**
+     * @param string $productId
+     * @param array $storeIdsToUpdate
+     * @return void
+     */
+    private function assignDeletedProductCategoriesForCollectionsProductsSync($productId, $storeIdsToUpdate)
+    {
+        $productCategoriesBeforeSave = $this->catalogSession->getProductCategoriesIds();
+        foreach($storeIdsToUpdate as $storeId) {
+            if (!$this->config->isCatalogSyncActive($storeId)) {
+                continue;
+            }
+
+            $productCategories = $this->getProductCategoriesIdsFromCategoryProductsTable($productId);
+            $categoriesIdsForSync = $this->findDiffBetweenArrays($productCategoriesBeforeSave, $productCategories);
+            $this->collectionsProductsService->assignProductCategoriesForCollectionsProductsSync($categoriesIdsForSync, $storeId, $productId, true);
+        }
     }
 }

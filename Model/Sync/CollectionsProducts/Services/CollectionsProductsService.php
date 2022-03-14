@@ -123,6 +123,31 @@ class CollectionsProductsService extends AbstractJobs
     }
 
     /**
+     * @param array $productsCategoriesIds
+     * @param string $storeId
+     * @param string $productId
+     * @param boolean $isDeletedInMagento
+     * @return void
+     */
+    public function assignProductCategoriesForCollectionsProductsSync(array $productsCategoriesIds, $storeId, $productId, $isDeletedInMagento = false)
+    {
+        $collectionsProductsSyncData = [];
+        $currentDatetime = date('Y-m-d H:i:s');
+        foreach ($productsCategoriesIds as $categoryId) {
+            $collectionsProductsSyncData[] = [
+                'magento_store_id' => $storeId,
+                'magento_category_id' => $categoryId,
+                'magento_product_id' => $productId,
+                'is_deleted_in_magento' => $isDeletedInMagento,
+                'is_synced_to_yotpo' => false,
+                'last_updated_at' => $currentDatetime
+            ];
+        }
+
+        $this->insertOnDuplicate($this::YOTPO_COLLECTIONS_PRODUCTS_SYNC_TABLE_NAME, $collectionsProductsSyncData);
+    }
+
+    /**
      * @param string $storeId
      * @param array $collectionProductEntityToSync
      * @return void
