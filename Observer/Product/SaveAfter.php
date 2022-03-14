@@ -100,10 +100,7 @@ class SaveAfter implements ObserverInterface
             $this->updateYotpoSyncTable($tableData, $storeIdsToUpdate, [$product->getId()]);
         }
 
-        $productChildrenIdsBeforeSave = $this->catalogSession->getChildrenIds();
-        $productChildrenIds = $product->getTypeInstance()->getChildrenIds($product->getId());
-        $this->manageUnAssign($productChildrenIdsBeforeSave, $productChildrenIds, $product);
-        $this->catalogSession->unsChildrenIds();
+        $this->unassignProductChildrensForSync($product);
     }
 
     /**
@@ -301,5 +298,17 @@ class SaveAfter implements ObserverInterface
         }
 
         return $returnArray;
+    }
+
+    /**
+     * @param $product
+     * @return void
+     */
+    private function unassignProductChildrensForSync($product)
+    {
+        $productChildrenIdsBeforeSave = $this->catalogSession->getChildrenIds();
+        $productChildrenIds = $product->getTypeInstance()->getChildrenIds($product->getId());
+        $this->manageUnAssign($productChildrenIdsBeforeSave, $productChildrenIds, $product);
+        $this->catalogSession->unsChildrenIds();
     }
 }
