@@ -3,13 +3,26 @@ namespace Yotpo\Core\Observer\Product;
 
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer as EventObserver;
+use Magento\Framework\App\ResourceConnection;
+use Magento\Store\Model\App\Emulation as AppEmulation;
 use Magento\Catalog\Model\Session as CatalogSession;
 
 /**
  * Class SaveBefore - Save childIds in session
  */
-class SaveBefore implements ObserverInterface
+class SaveBefore extends Data implements ObserverInterface
 {
+
+    /**
+     * @var AppEmulation
+     */
+    protected $appEmulation;
+
+    /**
+     * @var ResourceConnection
+     */
+    protected $resourceConnection;
+
     /**
      * @var CatalogSession
      */
@@ -17,12 +30,17 @@ class SaveBefore implements ObserverInterface
 
     /**
      * SaveBefore constructor.
+     * @param ResourceConnection $resourceConnection
+     * @param AppEmulation $appEmulation
      * @param CatalogSession $catalogSession
      */
     public function __construct(
+        ResourceConnection $resourceConnection,
+        AppEmulation $appEmulation,
         CatalogSession $catalogSession
     ) {
         $this->catalogSession = $catalogSession;
+        parent::__construct($resourceConnection, $appEmulation);
     }
 
     /**
@@ -36,8 +54,11 @@ class SaveBefore implements ObserverInterface
         $product = $observer->getEvent()->getProduct();
 
         if ($product->hasDataChanges()) {
-            $childrenIds = $product->getTypeInstance()->getChildrenIds($product->getId());
+            $productId = $product->getId();
+            $childrenIds = $product->getTypeInstance()->getChildrenIds($productId);
             $this->catalogSession->setChildrenIds($childrenIds);
+            $productCategoriesIds = $this->getCategoryIdsFromCategoryProductsTableByProductId($productId);
+            $this->catalogSession->setProductCategoriesIds($productCategoriesIds);
         }
     }
 }
