@@ -77,7 +77,8 @@ class ProcessByCategory extends Main
             $yotpoCoreApiSync,
             $categoryCollectionFactory,
             $yotpoCoreCatalogLogger,
-            $storeManager
+            $storeManager,
+            $collectionsProductsService
         );
         $this->categoryHelper = $categoryHelper;
         $this->categorySyncRepositoryInterface = $categorySyncRepositoryInterface;
@@ -190,6 +191,10 @@ class ProcessByCategory extends Main
                 || $this->isSyncedCategoryMissingYotpoId($yotpoSyncedCategories, $magentoCategory)
             ) {
                 $response = $this->syncAsNewCollection($magentoCategory);
+                $isCategorySyncedSuccessfully = $this->config->isResponseIndicatesSuccess($response);
+                if ($isCategorySyncedSuccessfully) {
+                    $this->updateCategoryProductsForCollectionsProductsSync($magentoCategory);
+                }
             } elseif ($this->canResync(
                 $yotpoSyncedCategories[$categoryId],
                 $yotpoSyncedCategories[$categoryId]['yotpo_id'],
@@ -257,6 +262,7 @@ class ProcessByCategory extends Main
                 $this->updateCategoryAttribute($categoryIdToUpdate);
             }
         }
+
         $this->deleteCollections();
         $this->yotpoCoreCatalogLogger->info(
             sprintf(
