@@ -138,9 +138,12 @@ class ProcessByCategory extends Main
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function processEntity($retryCategoryIds = [])
+    public function processEntity($retryCategoryIds = [], $storeId = null)
     {
-        $storeId = $this->config->getStoreId();
+        if (!$storeId) {
+            $storeId = $this->config->getStoreId();
+        }
+
         $currentTime = date('Y-m-d H:i:s');
         $batchSize = $this->config->getConfig('product_sync_limit');
         $existColls = [];
