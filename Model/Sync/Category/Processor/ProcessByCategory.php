@@ -184,59 +184,60 @@ class ProcessByCategory extends Main
         foreach ($magentoCategories as $magentoCategory) {
             /** @var Category $magentoCategory */
             $magentoCategory->setData('nameWithPath', $this->getNameWithPath($magentoCategory, $categoriesByPath));
+            $categoryId = $magentoCategory->getId();
             $response = null;
             if (!$this->isCategoryWasEverSynced($yotpoSyncedCategories, $existingCollections, $magentoCategory)
                 || $this->isSyncedCategoryMissingYotpoId($yotpoSyncedCategories, $magentoCategory)
             ) {
                 $response = $this->syncAsNewCollection($magentoCategory);
             } elseif ($this->canResync(
-                $yotpoSyncedCategories[$magentoCategory->getId()],
-                $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'],
+                $yotpoSyncedCategories[$categoryId],
+                $yotpoSyncedCategories[$categoryId]['yotpo_id'],
                 $this->isCommandLineSync
             )) {
                 $response = $this->syncExistingCollection(
                     $magentoCategory,
-                    $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id']
+                    $yotpoSyncedCategories[$categoryId]['yotpo_id']
                 );
             } else {
-                $categoryIdToUpdate = $magentoCategory->getRowId() ?: $magentoCategory->getId();
+                $categoryIdToUpdate = $magentoCategory->getRowId() ?: $categoryId;
                 $this->updateCategoryAttribute($categoryIdToUpdate);
             }
-            if (isset($existingCollections[$magentoCategory->getId()])) {
+            if (isset($existingCollections[$categoryId])) {
                 $response = $this->syncExistingCollection(
                     $magentoCategory,
-                    $existingCollections[$magentoCategory->getId()]
+                    $existingCollections[$categoryId]
                 );
                 if (!$response->getData('yotpo_id')) {
-                    $response->setData('yotpo_id', $existingCollections[$magentoCategory->getId()]);
+                    $response->setData('yotpo_id', $existingCollections[$categoryId]);
                 }
             }
             if ($this->checkForCollectionExistsError($response)) {
                 $response = false;
-                $existColls[] = $magentoCategory->getId();
+                $existColls[] = $categoryId;
             }
             $yotpoTableData = $response ? $this->prepareYotpoTableData($response) : [];
             if ($yotpoTableData) {
                 if (array_key_exists('yotpo_id', $yotpoTableData) &&
                     !$yotpoTableData['yotpo_id']
-                    && array_key_exists($magentoCategory->getId(), $yotpoSyncedCategories)
+                    && array_key_exists($categoryId, $yotpoSyncedCategories)
                 ) {
-                    $yotpoTableData['yotpo_id'] = $yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'];
+                    $yotpoTableData['yotpo_id'] = $yotpoSyncedCategories[$categoryId]['yotpo_id'];
                 }
-                $yotpoTableData['store_id']         =   $storeId;
-                $yotpoTableData['category_id']      =   $magentoCategory->getId();
-                $yotpoTableData['synced_to_yotpo']  =   $currentTime;
+                $yotpoTableData['store_id'] = $storeId;
+                $yotpoTableData['category_id'] = $categoryId;
+                $yotpoTableData['synced_to_yotpo'] = $currentTime;
                 $this->insertOrUpdateYotpoTableData($yotpoTableData);
                 if ($this->config->canUpdateCustomAttribute($yotpoTableData['response_code'])) {
-                    $categoryIdToUpdate = $magentoCategory->getRowId() ?: $magentoCategory->getId();
+                    $categoryIdToUpdate = $magentoCategory->getRowId() ?: $categoryId;
                     $this->updateCategoryAttribute($categoryIdToUpdate);
                 }
                 $this->yotpoCoreCatalogLogger->info(
-                    sprintf('Category Sync - sync success - Category ID: %s', $magentoCategory->getId())
+                    sprintf('Category Sync - sync success - Category ID: %s', $categoryId)
                 );
                 if ($this->isCommandLineSync) {
                     // phpcs:ignore
-                    echo 'Category process completed for categoryId - ' . $magentoCategory->getId() . PHP_EOL;
+                    echo 'Category process completed for categoryId - ' . $categoryId . PHP_EOL;
                 }
             }
         }
