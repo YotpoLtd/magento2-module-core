@@ -26,7 +26,7 @@ class YotpoRetry
 
     /**
      * Yotpo retry requests mechanism
-     *
+     * @param \Closure $request
      * @return DataObject
      */
     public function executeRequest($request)
@@ -52,7 +52,7 @@ class YotpoRetry
     }
 
     /**
-     * @param $attemptsLeftCount
+     * @param int $attemptsLeftCount
      * @return bool
      */
     private function haveAdditionalAttempts($attemptsLeftCount)

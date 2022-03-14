@@ -63,6 +63,7 @@ class Request
      * @param string $endPoint
      * @param array<mixed> $data
      * @param string $baseUrlKey
+     * @param boolean $shouldRetry
      * @return DataObject
      * @throws NoSuchEntityException|LocalizedException
      */

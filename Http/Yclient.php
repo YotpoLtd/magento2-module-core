@@ -136,6 +136,7 @@ class Yclient
      * @param string $baseUrl
      * @param string $uriEndpoint
      * @param array<mixed> $options
+     * @param boolean $shouldRetry
      * @return mixed
      */
     public function send(
@@ -195,7 +196,7 @@ class Yclient
     /**
      * @param string $baseUrl
      * @param string $uriEndpoint
-     * @param array $options
+     * @param array<mixed> $options
      * @param string $method
      * @return \Closure
      */
