@@ -139,7 +139,7 @@ class SaveAfter implements ObserverInterface
         $existingIds = $product->getOrigData('website_ids');
         $newIds = $product->getData('website_ids');
 
-        $removedWebsite = $this->findDifferentArray($existingIds, $newIds);
+        $removedWebsite = $this->findAndRetrieveDifferenceBetweenArrays($existingIds, $newIds);
         if (count($removedWebsite) > 0) {
             $storeIds = $this->collectStoreIds($removedWebsite);
             $tableData = [
@@ -150,7 +150,7 @@ class SaveAfter implements ObserverInterface
             $this->updateYotpoSyncTable($tableData, $storeIds, [$product->getId()]);
         }
 
-        $newWebsite = $this->findDifferentArray($newIds, $existingIds);
+        $newWebsite = $this->findAndRetrieveDifferenceBetweenArrays($newIds, $existingIds);
         if (count($newWebsite) > 0) {
             $storeIds = $this->collectStoreIds($newWebsite);
 
@@ -205,7 +205,7 @@ class SaveAfter implements ObserverInterface
             $this->updateUnAssign($result, $product);
         }
 
-        $result = $this->findDifferentArray($productChildrenIds, $productChildrenIdsBeforeSave);
+        $result = $this->findAndRetrieveDifferenceBetweenArrays($productChildrenIds, $productChildrenIdsBeforeSave);
         if (count($result) > 0) {
             $this->updateProductAttribute($result, [$product->getStoreId()]);
             $tableData = ['response_code' => Config::CUSTOM_RESPONSE_DATA];
@@ -240,20 +240,6 @@ class SaveAfter implements ObserverInterface
             $data,
             $cond
         );
-    }
-
-    /**
-     * @param array<int, int>|int $firstArray
-     * @param array<int, int>|int $secondArray
-     * @return array<int, int>
-     */
-    public function findDifferentArray($firstArray, $secondArray)
-    {
-        $result = [];
-        if (is_array($firstArray) && is_array($secondArray)) {
-            $result = array_diff($firstArray, $secondArray);
-        }
-        return $result;
     }
 
     /**
@@ -311,5 +297,20 @@ class SaveAfter implements ObserverInterface
         $productChildrenIds = $product->getTypeInstance()->getChildrenIds($product->getId());
         $this->manageUnAssign($productChildrenIdsBeforeSave, $productChildrenIds, $product);
         $this->catalogSession->unsChildrenIds();
+    }
+
+    /**
+     * @param array<int, int>|int $firstArray
+     * @param array<int, int>|int $secondArray
+     * @return array<int, int>
+     */
+    private function findAndRetrieveDifferenceBetweenArrays($firstArray, $secondArray)
+    {
+        $result = [];
+        if (is_array($firstArray) && is_array($secondArray)) {
+            $result = array_diff($firstArray, $secondArray);
+        }
+
+        return $result;
     }
 }
