@@ -81,21 +81,23 @@ class SaveAfter implements ObserverInterface
      */
     public function execute(EventObserver $observer)
     {
-        $storeIds = [];
+        $storeIdsToUpdate = [];
         $product = $observer->getEvent()->getProduct();
         $currentStoreId = $product->getStoreId();
         if ($currentStoreId == 0) {
             $stores = $this->storeRepository->getList();
             foreach ($stores as $store) {
-                $storeIds[] = $store->getId();
+                $storeIdsToUpdate[] = $store->getId();
             }
+        } else {
+            $storeIdsToUpdate[] = $currentStoreId;
         }
-        $storeIdsToUpdate  = $currentStoreId == 0 ? $storeIds : [$product->getStoreId()];
+
         if ($product->hasDataChanges()) {
             $this->updateProductAttribute([$product->getRowId() ?: $product->getId()], $storeIdsToUpdate);
             $this->updateIsDeleted($product);
             $tableData = ['response_code' => Config::CUSTOM_RESPONSE_DATA];
-            $this->updateYotpoSyncTable($tableData, $storeIds, [$product->getId()]);
+            $this->updateYotpoSyncTable($tableData, $storeIdsToUpdate, [$product->getId()]);
         }
 
         $oldChildIds = $this->catalogSession->getChildrenIds();
