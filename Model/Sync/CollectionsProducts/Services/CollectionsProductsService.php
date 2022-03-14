@@ -73,6 +73,56 @@ class CollectionsProductsService extends AbstractJobs
     }
 
     /**
+     * @param string $categoryId
+     * @return array<string>
+     */
+    public function getCategoryProductsIdsFromSyncTable($categoryId) {
+        $connection = $this->resourceConnection->getConnection();
+        $categoryProductsQuery = $connection->select(
+        )->from(
+            ['entity' => $this->resourceConnection->getTableName($this::YOTPO_COLLECTIONS_PRODUCTS_SYNC_TABLE_NAME)],
+            ['magento_product_id']
+        )->where(
+            'magento_category_id = ?',
+            $categoryId
+        );
+
+        $categoryProductsIdsMap = $connection->fetchAssoc($categoryProductsQuery, 'magento_product_id');
+
+        $categoryProductsIds = [];
+        foreach ($categoryProductsIdsMap as $categoryProductsIdMap) {
+            $categoryProductsIds[] = $categoryProductsIdMap['magento_product_id'];
+        }
+
+        return $categoryProductsIds;
+    }
+
+    /**
+     * @param array $categoryProductsIds
+     * @param string $storeId
+     * @param string $categoryId
+     * @param boolean $isDeletedInMagento
+     * @return void
+     */
+    public function assignCategoryProductsForCollectionsProductsSync(array $categoryProductsIds, $storeId, $categoryId, $isDeletedInMagento = false)
+    {
+        $collectionsProductsSyncData = [];
+        $currentDatetime = date('Y-m-d H:i:s');
+        foreach ($categoryProductsIds as $productId) {
+            $collectionsProductsSyncData[] = [
+                'magento_store_id' => $storeId,
+                'magento_category_id' => $categoryId,
+                'magento_product_id' => $productId,
+                'is_deleted_in_magento' => $isDeletedInMagento,
+                'is_synced_to_yotpo' => false,
+                'last_updated_at' => $currentDatetime
+            ];
+        }
+
+        $this->insertOnDuplicate($this::YOTPO_COLLECTIONS_PRODUCTS_SYNC_TABLE_NAME, $collectionsProductsSyncData);
+    }
+
+    /**
      * @param string $storeId
      * @param array $collectionProductEntityToSync
      * @return void
