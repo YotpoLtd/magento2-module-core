@@ -100,9 +100,9 @@ class SaveAfter implements ObserverInterface
             $this->updateYotpoSyncTable($tableData, $storeIdsToUpdate, [$product->getId()]);
         }
 
-        $oldChildIds = $this->catalogSession->getChildrenIds();
-        $newChildIds = $product->getTypeInstance()->getChildrenIds($product->getId());
-        $this->manageUnAssign($oldChildIds, $newChildIds, $product);
+        $productChildrenIdsBeforeSave = $this->catalogSession->getChildrenIds();
+        $productChildrenIds = $product->getTypeInstance()->getChildrenIds($product->getId());
+        $this->manageUnAssign($productChildrenIdsBeforeSave, $productChildrenIds, $product);
         $this->catalogSession->unsChildrenIds();
     }
 
@@ -185,29 +185,29 @@ class SaveAfter implements ObserverInterface
     }
 
     /**
-     * @param array<int, int> $oldChild
-     * @param array<int, int> $newChild
+     * @param array<int, int> $productChildrenIdsBeforeSave
+     * @param array<int, int> $productChildrenIds
      * @param Product $product
      * @return void
      */
-    protected function manageUnAssign($oldChild, $newChild, $product)
+    protected function manageUnAssign($productChildrenIdsBeforeSave, $productChildrenIds, $product)
     {
-        if (isset($oldChild[0])) {
-            $oldChild = (array)$oldChild[0];
+        if (isset($productChildrenIdsBeforeSave[0])) {
+            $productChildrenIdsBeforeSave = (array)$productChildrenIdsBeforeSave[0];
         }
-        if (isset($newChild[0])) {
-            $newChild = (array)$newChild[0];
+        if (isset($productChildrenIds[0])) {
+            $productChildrenIds = (array)$productChildrenIds[0];
         }
 
-        $oldChild = $this->checkIfMultiDimensional($oldChild);
-        $newChild = $this->checkIfMultiDimensional($newChild);
+        $productChildrenIdsBeforeSave = $this->checkIfMultiDimensional($productChildrenIdsBeforeSave);
+        $productChildrenIds = $this->checkIfMultiDimensional($productChildrenIds);
 
-        $result = array_merge(array_diff($oldChild, $newChild), array_diff($newChild, $oldChild));
+        $result = array_merge(array_diff($productChildrenIdsBeforeSave, $productChildrenIds), array_diff($productChildrenIds, $productChildrenIdsBeforeSave));
         if (count($result) > 0) {
             $this->updateUnAssign($result, $product);
         }
 
-        $result = $this->findDifferentArray($newChild, $oldChild);
+        $result = $this->findDifferentArray($productChildrenIds, $productChildrenIdsBeforeSave);
         if (count($result) > 0) {
             $this->updateProductAttribute($result, [$product->getStoreId()]);
             $tableData = ['response_code' => Config::CUSTOM_RESPONSE_DATA];
