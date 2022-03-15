@@ -116,7 +116,7 @@ class ProcessByCategory extends Main
                     )
                 );
                 $retryCategoryIds = $retryCategories[$storeId] ?? $retryCategories;
-                $this->processEntity($retryCategoryIds);
+                $this->processEntities($retryCategoryIds);
                 $this->stopEnvironmentEmulation();
                 $this->yotpoCoreCatalogLogger->info(
                     sprintf(
@@ -147,7 +147,7 @@ class ProcessByCategory extends Main
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function processEntity($retryCategoryIds = [], $storeId = null)
+    public function processEntities($retryCategoryIds = [], $storeId = null)
     {
         if (!$storeId) {
             $storeId = $this->config->getStoreId();
