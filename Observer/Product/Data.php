@@ -13,7 +13,6 @@ use Yotpo\Core\Model\AbstractJobs;
 class Data extends AbstractJobs
 {
 
-    const YOTPO_COLLECTIONS_PRODUCTS_SYNC_TABLE_NAME = 'yotpo_collections_products_sync';
     const CATALOG_CATEGORY_PRODUCT_TABLE = 'catalog_category_product';
 
     /**
