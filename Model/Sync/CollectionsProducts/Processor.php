@@ -209,7 +209,7 @@ class Processor extends AbstractJobs
      */
     private function syncCollectionAndGetCreatedYotpoId($magentoCategoryId, $storeId)
     {
-        $this->yotpoCategoryProcessor->processEntity($magentoCategoryId, $storeId);
+        $this->yotpoCategoryProcessor->processEntities($magentoCategoryId, $storeId);
         $collectionYotpoId = $this->yotpoCategoryProcessorMain->getYotpoIdFromCategoriesSyncTableByCategoryId($magentoCategoryId);
         if (!$collectionYotpoId) {
             return null;
