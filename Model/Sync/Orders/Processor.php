@@ -427,6 +427,13 @@ class Processor extends Main
         $incrementId = $order->getIncrementId();
         $orderId = $order->getEntityId();
         $dataType = $isYotpoSyncedOrder ? 'update' : 'create';
+        $this->yotpoOrdersLogger->info(
+            __(
+                'Orders sync, starting sync - Order ID: %1, Increment ID: %2',
+                $orderId,
+                $incrementId
+            )
+        );
         $orderData = $this->data->prepareData($order, $dataType, $yotpoSyncedOrders);
         if (!$orderData) {
             $this->yotpoOrdersLogger->info('Orders sync - no new data to sync', []);
