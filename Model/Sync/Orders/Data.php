@@ -144,12 +144,18 @@ class Data extends AbstractData
         $shippingAddress = $order->getShippingAddress();
         $orderStatus = $order->getStatus();
         $mappedYotpoOrderStatus = $this->getYotpoOrderStatus($orderStatus);
+        $payment = $order->getPayment();
+        $paymentMethod = null;
+        if ($payment !== null) {
+            $paymentMethod = $payment->getMethodInstance()->getTitle();
+        }
+
         $data = [
             'order' => [
                 'order_date' => $this->coreHelper->formatDate($order->getCreatedAt()),
                 'checkout_token' => $order->getQuoteId(),
                 /** @phpstan-ignore-next-line */
-                'payment_method' => $order->getPayment()->getMethodInstance()->getTitle(),
+                'payment_method' => $paymentMethod,
                 'total_price' => $order->getGrandTotal(),
                 'subtotal_price' => $order->getSubtotal() + $order->getDiscountAmount(),
                 'currency' => $order->getOrderCurrencyCode(),
