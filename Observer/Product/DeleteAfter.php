@@ -45,17 +45,27 @@ class DeleteAfter implements ObserverInterface
     {
         $connection = $this->resourceConnection->getConnection();
         $product = $observer->getEvent()->getProduct();
-        $productChildrenIdsForDeletion = $this->catalogSession->getDeleteYotpoIds();
-
-        if (isset($productChildrenIdsForDeletion[0])) {
-            $productChildrenIdsForDeletion = $productChildrenIdsForDeletion[0];
-        }
 
         $connection->update(
             $this->resourceConnection->getTableName('yotpo_product_sync'),
             ['is_deleted' => 1, 'is_deleted_at_yotpo' => 0, 'response_code' => YotpoCoreConfig::CUSTOM_RESPONSE_DATA],
             $connection->quoteInto('product_id = ?', $product->getId())
         );
+
+        $this->unassignProductChildrenForSync();
+    }
+
+    /**
+     * @return void
+     */
+    private function unassignProductChildrenForSync()
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $productChildrenIdsForDeletion = $this->catalogSession->getDeleteYotpoIds();
+
+        if (isset($productChildrenIdsForDeletion[0])) {
+            $productChildrenIdsForDeletion = $productChildrenIdsForDeletion[0];
+        }
 
         if ($productChildrenIdsForDeletion) {
             $condition = [
