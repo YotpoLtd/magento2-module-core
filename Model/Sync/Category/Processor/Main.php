@@ -508,9 +508,10 @@ class Main extends AbstractJobs
 
     /**
      * @param Category $category
+     * @param boolean $isDeletedInMagento
      * @return void
      */
-    public function updateCategoryProductsForCollectionsProductsSync($category)
+    public function updateCategoryProductsForCollectionsProductsSync($category, $isDeletedInMagento = false)
     {
         $categoryId = $category->getId();
         $storeIdsSuccessfullySyncedWithCategory = $this->getStoresSuccessfullySyncedWithCategory($categoryId);
@@ -523,7 +524,7 @@ class Main extends AbstractJobs
                         $categoryProductsIds[] = $categoryProduct->getId();
                     }
 
-                    $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync($categoryProductsIds, $storeId, $categoryId);
+                    $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync($categoryProductsIds, $storeId, $categoryId, $isDeletedInMagento);
                 }
             }
         }
