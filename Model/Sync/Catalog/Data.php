@@ -10,6 +10,7 @@ use Magento\Framework\UrlInterface;
 use Magento\Catalog\Model\Product;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\Catalog\Model\ProductRepository;
+use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
 use Yotpo\Core\Model\Sync\Data\Main;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
@@ -160,6 +161,11 @@ class Data extends Main
     protected $stockRegistry;
 
     /**
+     * @var YotpoCoreCatalogLogger
+     */
+    protected $logger;
+
+    /**
      * Data constructor.
      * @param YotpoCoreConfig $yotpoCoreConfig
      * @param YotpoResource $yotpoResource
@@ -168,6 +174,7 @@ class Data extends Main
      * @param ResourceConnection $resourceConnection
      * @param CollectionFactory $collectionFactory
      * @param StockRegistry $stockRegistry
+     * @param YotpoCoreCatalogLogger $yotpoCatalogLogger
      */
     public function __construct(
         YotpoCoreConfig $yotpoCoreConfig,
@@ -176,7 +183,8 @@ class Data extends Main
         ProductRepository $productRepository,
         ResourceConnection $resourceConnection,
         CollectionFactory $collectionFactory,
-        StockRegistry $stockRegistry
+        StockRegistry $stockRegistry,
+        YotpoCoreCatalogLogger $yotpoCatalogLogger
     ) {
         $this->yotpoCoreConfig = $yotpoCoreConfig;
         $this->yotpoResource = $yotpoResource;
@@ -185,6 +193,7 @@ class Data extends Main
         $this->collectionFactory = $collectionFactory;
         $this->stockRegistry = $stockRegistry;
         $this->mappingAttributes['row_id']['attr_code'] = $this->yotpoCoreConfig->getEavRowIdFieldName();
+        $this->logger = $yotpoCatalogLogger;
         parent::__construct($resourceConnection);
     }
 
@@ -268,6 +277,12 @@ class Data extends Main
      */
     protected function getChildOptions($parentProduct)
     {
+        $this->logger->info(
+            __(
+                'Executing getChildOptions for product ID %1',
+                $parentProduct->getId()
+            )
+        );
         if (!isset($this->parentOptions[$parentProduct->getId()])) {
             $options = $parentProduct->getTypeInstance()->getConfigurableAttributesAsArray($parentProduct);
             $this->parentOptions[$parentProduct->getId()] = $this->arrangeConfigOptions($options);
