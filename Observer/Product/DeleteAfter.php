@@ -45,10 +45,10 @@ class DeleteAfter implements ObserverInterface
     {
         $connection = $this->resourceConnection->getConnection();
         $product = $observer->getEvent()->getProduct();
-        $childIds = $this->catalogSession->getDeleteYotpoIds();
+        $productChildrenIdsForDeletion = $this->catalogSession->getDeleteYotpoIds();
 
-        if (isset($childIds[0])) {
-            $childIds = $childIds[0];
+        if (isset($productChildrenIdsForDeletion[0])) {
+            $productChildrenIdsForDeletion = $productChildrenIdsForDeletion[0];
         }
 
         $connection->update(
@@ -57,12 +57,12 @@ class DeleteAfter implements ObserverInterface
             $connection->quoteInto('product_id = ?', $product->getId())
         );
 
-        if ($childIds) {
-            $cond = [
-                'product_id IN (?) ' => $childIds,
+        if ($productChildrenIdsForDeletion) {
+            $condition = [
+                'product_id IN (?) ' => $productChildrenIdsForDeletion,
                 'yotpo_id != 0'
             ];
-            $data = [
+            $dataToUpdate = [
                 'yotpo_id_unassign' => new \Zend_Db_Expr('yotpo_id'),
                 'yotpo_id' => '0',
                 'response_code' => YotpoCoreConfig::CUSTOM_RESPONSE_DATA
@@ -70,8 +70,8 @@ class DeleteAfter implements ObserverInterface
 
             $connection->update(
                 $this->resourceConnection->getTableName('yotpo_product_sync'),
-                $data,
-                $cond
+                $dataToUpdate,
+                $condition
             );
         }
     }
