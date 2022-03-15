@@ -217,14 +217,14 @@ class Data extends Main
             $syncItems[$entityId] = $this->attributeMapping($item);
         }
         $visibleVariantsData = [];
-        $parentIds = [];
+        $productIdsToParentIdsMap = [];
         if (!$isVariantsDataIncluded) {
-            $configIdsToCheck = $this->yotpoResource->getConfigProductIds($productsId);
-            $configIds = $this->filterNotConfigurableProducts($configIdsToCheck);
-            $syncItems = $this->mergeProductOptions($syncItems, $configIds, $productsObject);
-            $groupIds = $this->yotpoResource->getGroupProductIds($productsId);
-            $parentIds = $configIds + $groupIds;
-            foreach ($parentIds as $simpleId => $parentId) {
+            $productIdsToConfigurableIdsMapToCheck = $this->yotpoResource->getConfigProductIds($productsId);
+            $productIdsToConfigurableIdsMap = $this->filterNotConfigurableProducts($productIdsToConfigurableIdsMapToCheck);
+            $syncItems = $this->mergeProductOptions($syncItems, $productIdsToConfigurableIdsMap, $productsObject);
+            $productIdsToGroupIdsMap = $this->yotpoResource->getGroupProductIds($productsId);
+            $productIdsToParentIdsMap = $productIdsToConfigurableIdsMap + $productIdsToGroupIdsMap;
+            foreach ($productIdsToParentIdsMap as $simpleId => $parentId) {
                 $simpleProductObj = $productsObject[$simpleId];
                 if ($simpleProductObj->isVisibleInSiteVisibility()) {
                     $visibleVariantsData[$simpleProductObj->getId()] = $simpleProductObj;
@@ -232,8 +232,8 @@ class Data extends Main
             }
         }
         $return['sync_data'] = $syncItems;
-        $return['parents_ids'] = $parentIds;
-        $yotpoData = $this->fetchYotpoData($productsId, $parentIds);
+        $return['parents_ids'] = $productIdsToParentIdsMap;
+        $yotpoData = $this->fetchYotpoData($productsId, $productIdsToParentIdsMap);
         $return['yotpo_data'] = $yotpoData['yotpo_data'];
         $return['visible_variants'] = $visibleVariantsData;
         return $return;
