@@ -702,6 +702,19 @@ class Main extends AbstractJobs
     }
 
     /**
+     * @param integer $itemEntityId
+     * @param integer $parentItemId
+     * @param array <mixed> $yotpoSyncTableItemsData
+     * @return bool
+     */
+    public function isProductParentYotpoIdChanged($itemEntityId, $parentItemId, $yotpoSyncTableItemsData)
+    {
+        return array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
+            && array_key_exists($parentItemId, $yotpoSyncTableItemsData)
+            && $yotpoSyncTableItemsData[$itemEntityId]['yotpo_id_parent'] != $yotpoSyncTableItemsData[$parentItemId]['yotpo_id'];
+    }
+
+    /**
      * @return boolean
      */
     protected function isSyncingAsMainEntity()

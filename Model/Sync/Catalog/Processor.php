@@ -324,6 +324,19 @@ class Processor extends Main
 
                         continue;
                     }
+                } elseif ($this->isProductParentYotpoIdChanged($itemEntityId, $parentItemId, $yotpoSyncTableItemsData)) {
+                    $parentProductYotpoId = $yotpoSyncTableItemsData[$parentItemId]['yotpo_id'];
+                    $yotpoSyncTableItemsData[$itemEntityId]['yotpo_id_parent'] = $parentProductYotpoId;
+
+                    $this->yotpoCatalogLogger->info(
+                        __(
+                            'Yotpo ID of parent product changed - Store ID: %1, Store Name: %2, Parent Entity ID: %3, New Yotpo ID: %4',
+                            $storeId,
+                            $this->coreConfig->getStoreName($storeId),
+                            $parentItemId,
+                            $parentProductYotpoId
+                        )
+                    );
                 }
             }
 
