@@ -95,7 +95,11 @@ class Processor extends AbstractJobs
                 $metadataDataToSync = $this->prepareMetadata();
                 $metadataDataToSync[$this::ENTITY_LOG_FILE] = 'general';
                 $metadataEndpoint = $this->yotpoConfig->getEndpoint('metadata');
-                $response = $this->yotpoSyncMain->syncV1($this::POST_METHOD_STRING, $metadataEndpoint, $metadataDataToSync);
+                $response = $this->yotpoSyncMain->syncV1(
+                    $this::POST_METHOD_STRING,
+                    $metadataEndpoint,
+                    $metadataDataToSync
+                );
                 if ($response[$this::SYNC_RESPONSE_IS_SUCCESS_KEY]) {
                     $this->logger->info(
                         __(
@@ -108,7 +112,10 @@ class Processor extends AbstractJobs
             } catch (\Exception $exception) {
                 $this->logger->info(
                     __(
-                        'Error occurred when updating Metadata, got Exception on Magento Store ID: %1, Name: %2, Reason: %3',
+                        'Error occurred when updating Metadata,
+                        got Exception on Magento Store ID: %1,
+                        Name: %2,
+                        Reason: %3',
                         $storeId,
                         $this->yotpoConfig->getStoreName($storeId),
                         $exception->getMessage()
