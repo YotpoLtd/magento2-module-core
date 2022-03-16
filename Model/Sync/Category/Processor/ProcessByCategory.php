@@ -200,7 +200,7 @@ class ProcessByCategory extends Main
                 $yotpoSyncedCategories[$categoryId]['yotpo_id'],
                 $this->isCommandLineSync
             )) {
-                $response = $this->syncExistingCollection(
+                $response = $this->syncExistingOrNewCollection(
                     $magentoCategory,
                     $yotpoSyncedCategories[$categoryId]['yotpo_id']
                 );
@@ -209,7 +209,7 @@ class ProcessByCategory extends Main
                 $this->updateCategoryAttribute($categoryIdToUpdate);
             }
             if (isset($existingCollections[$categoryId])) {
-                $response = $this->syncExistingCollection(
+                $response = $this->syncExistingOrNewCollection(
                     $magentoCategory,
                     $existingCollections[$categoryId]
                 );
