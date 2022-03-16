@@ -230,6 +230,9 @@ class Main extends AbstractJobs
             $existingCollection = $this->getExistingCollectionIds([$categoryId]);
             if (!$existingCollection) {
                 $response = $this->syncAsNewCollection($category);
+                if ($this->config->isResponseIndicatesSuccess($response)) {
+                    $this->updateCategoryProductsForCollectionsProductsSync($category);
+                }
             } else {
                 $yotpoId = array_key_exists($categoryId, $existingCollection) ?
                     $existingCollection[$categoryId] : 0;
