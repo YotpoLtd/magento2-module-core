@@ -61,7 +61,6 @@ class ProcessByProduct extends Main
             $productCategories = $product->getCategoryIds();
             $productCategories = array_intersect(array_keys($categories), $productCategories);
             $existingProductsToCollectionsMap[$product->getId()] = $this->getYotpoCollectionsMap($yotpoProductId);
-            $addProductData = $this->data->prepareProductData($product->getId());
 
             foreach ($productCategories as $categoryId) {
                 $productIdsToCategoriesIdsMap[$product->getId()][] = $categoryId;
@@ -91,15 +90,7 @@ class ProcessByProduct extends Main
                         $existingProductsToCollectionsMap,
                         $product->getId()
                     )) {
-                    $yotpoCollectionId = $this->addProductsToCollection(
-                        $yotpoCollectionId,
-                        $addProductData,
-                        $product,
-                        $categoryId,
-                        $categories,
-                        $existingProductsToCollectionsMap
-                    );
-                    $existingProductsToCollectionsMap[$product->getId()][$categoryId] = $yotpoCollectionId ?: 0;
+                    $this->assignProductCategoryForCollectionsProductsSync($product, $categoryId);
                 }
             }
             $existingProductsToCollectionsMap[$product->getId()] = array_filter($existingProductsToCollectionsMap[$product->getId()]);
@@ -110,7 +101,8 @@ class ProcessByProduct extends Main
                     ' . implode(',', array_unique($deletedCategoriesIds)),
                 []
             );
-            $this->unAssignProducts($deletedCategoriesIds, $product->getId(), $existingProductsToCollectionsMap[$product->getId()]);
+
+            $this->assignProductCategoriesForCollectionsProductsSyncAsDeleted($product, $deletedCategoriesIds);
         }
         $this->yotpoCoreCatalogLogger->info(
             'Category Sync by product -  Finished - Category ID - ' . implode(',', array_unique($newCollectionsToLog)),
@@ -139,58 +131,15 @@ class ProcessByProduct extends Main
     }
 
     /**
-     * @param int|null|string $yotpoCollectionId
-     * @param array<mixed> $addProductData
      * @param Product $product
      * @param int $categoryId
-     * @param array<mixed> $categories
-     * @param array<mixed> $existingProductsMap
-     * @return int|null|string
-     * @throws NoSuchEntityException
-     * @throws LocalizedException
+     * @return void
      */
-    public function addProductsToCollection(
-        $yotpoCollectionId,
-        $addProductData,
-        Product $product,
-        $categoryId,
-        $categories,
-        $existingProductsMap
-    ) {
-        $yotpoCollectionIdReturn = $yotpoCollectionId;
-        $addProductUrl = $this->config->getEndpoint(
-            'collections_product',
-            ['{yotpo_collection_id}'],
-            [$yotpoCollectionId]
-        );
-        $addProductData['entityLog'] = 'catalog';
-        $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $addProductUrl, $addProductData);
-        $storeId = $product->getStoreId();
-        if ($this->isImmediateRetry($response, $this->entity, $categoryId, $storeId)) {
-            $this->setImmediateRetryAlreadyDone($this->entity, $categoryId, $storeId);
-            $collectionData = $this->data->prepareData($categories[$categoryId]);
-            $yotpoCollectionIdNew = $this->createOrUpdateCollection($collectionData, $categoryId, $categories);
-            if ($yotpoCollectionIdNew) {
-                if ($this->canAddProductToCollection(
-                    $yotpoCollectionIdNew,
-                    $categoryId,
-                    $existingProductsMap,
-                    $product->getId()
-                )) {
-                    $yotpoCollectionIdReturn = $this->addProductsToCollection(
-                        $yotpoCollectionIdNew,
-                        $addProductData,
-                        $product,
-                        $categoryId,
-                        $categories,
-                        $existingProductsMap
-                    );
-                }
-            } else {
-                $yotpoCollectionIdReturn = '';
-            }
-        }
-        return $yotpoCollectionIdReturn;
+    public function assignProductCategoryForCollectionsProductsSync(Product $product, $categoryId)
+    {
+        $productId = $product->getId();
+        $productStoreId =$product->getStoreId();
+        $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync([$productId], $productStoreId, $categoryId);
     }
 
     /**
@@ -298,6 +247,20 @@ class ProcessByProduct extends Main
     }
 
     /**
+     * @param Product $product
+     * @param array $deletedCategoriesIds
+     * @return void
+     */
+    public function assignProductCategoriesForCollectionsProductsSyncAsDeleted(Product $product, array $deletedCategoriesIds)
+    {
+        $productId = $product->getId();
+        $productStoreId = $product->getStoreId();
+        foreach ($deletedCategoriesIds as $deletedCategoryId) {
+            $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync([$productId], $productStoreId, $deletedCategoryId, true);
+        }
+    }
+
+    /**
      * @param array<mixed> $newCollections
      * @return void
      * @throws NoSuchEntityException
@@ -313,20 +276,6 @@ class ProcessByProduct extends Main
                 'store_id' => $this->config->getStoreId()
             ];
             $this->insertOrUpdateYotpoTableData($finalData);
-        }
-    }
-
-    /**
-     * @param array<mixed> $deletedCategoriesIds
-     * @param int $productId
-     * @param array<mixed> $existingProductsToCollectionsMap
-     * @return void
-     */
-    public function unAssignProducts(array $deletedCategoriesIds, int $productId, array $existingProductsToCollectionsMap)
-    {
-        foreach ($deletedCategoriesIds as $deletedCategory) {
-            $yotpoId = $existingProductsToCollectionsMap[$deletedCategory];
-            $this->unAssignProductFromCollection($yotpoId, $productId);
         }
     }
 
