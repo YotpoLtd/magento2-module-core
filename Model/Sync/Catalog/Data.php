@@ -217,13 +217,14 @@ class Data extends Main
             $syncItems[$entityId] = $this->attributeMapping($item);
         }
         $visibleVariantsData = [];
-        $parentIds = [];
+        $productIdsToParentIdsMap = [];
         if (!$isVariantsDataIncluded) {
-            $configIds = $this->yotpoResource->getConfigProductIds($productsId);
-            $syncItems = $this->mergeProductOptions($syncItems, $configIds, $productsObject);
-            $groupIds = $this->yotpoResource->getGroupProductIds($productsId);
-            $parentIds = $configIds + $groupIds;
-            foreach ($parentIds as $simpleId => $parentId) {
+            $productIdsToConfigurableIdsMapToCheck = $this->yotpoResource->getConfigProductIds($productsId);
+            $productIdsToConfigurableIdsMap = $this->filterNotConfigurableProducts($productIdsToConfigurableIdsMapToCheck);
+            $syncItems = $this->mergeProductOptions($syncItems, $productIdsToConfigurableIdsMap, $productsObject);
+            $productIdsToGroupIdsMap = $this->yotpoResource->getGroupProductIds($productsId);
+            $productIdsToParentIdsMap = $productIdsToConfigurableIdsMap + $productIdsToGroupIdsMap;
+            foreach ($productIdsToParentIdsMap as $simpleId => $parentId) {
                 $simpleProductObj = $productsObject[$simpleId];
                 if ($simpleProductObj->isVisibleInSiteVisibility()) {
                     $visibleVariantsData[$simpleProductObj->getId()] = $simpleProductObj;
@@ -231,8 +232,8 @@ class Data extends Main
             }
         }
         $return['sync_data'] = $syncItems;
-        $return['parents_ids'] = $parentIds;
-        $yotpoData = $this->fetchYotpoData($productsId, $parentIds);
+        $return['parents_ids'] = $productIdsToParentIdsMap;
+        $yotpoData = $this->fetchYotpoData($productsId, $productIdsToParentIdsMap);
         $return['yotpo_data'] = $yotpoData['yotpo_data'];
         $return['visible_variants'] = $visibleVariantsData;
         return $return;
@@ -277,12 +278,6 @@ class Data extends Main
      */
     protected function getChildOptions($parentProduct)
     {
-        $this->logger->info(
-            __(
-                'Executing getChildOptions for product ID %1',
-                $parentProduct->getId()
-            )
-        );
         if (!isset($this->parentOptions[$parentProduct->getId()])) {
             $options = $parentProduct->getTypeInstance()->getConfigurableAttributesAsArray($parentProduct);
             $this->parentOptions[$parentProduct->getId()] = $this->arrangeConfigOptions($options);
@@ -545,5 +540,41 @@ class Data extends Main
     {
         $externalId = $yotpoItemData['external_id'];
         return ['external_id' => $externalId];
+    }
+
+    /**
+     * @param array<string, integer> $productIds
+     * @return array<string, integer>
+     */
+    private function filterNotConfigurableProducts($productIds) {
+        if (!$productIds) {
+            return [];
+        }
+
+        $filteredProductIds = $productIds;
+        $configurableProductTypeCode = \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE;
+
+        $productCollection = $this->collectionFactory->create();
+        $productCollection->addAttributeToSelect('*');
+        $productCollection->addAttributeToFilter('entity_id', ['in' => $filteredProductIds]);
+        $products = $productCollection->getItems();
+
+        foreach ($products as $product) {
+            if ($product->getTypeId() != $configurableProductTypeCode) {
+                $keysToDeleteFromMap = array_keys($filteredProductIds, $product->getId());
+                foreach ($keysToDeleteFromMap as $keyToDeleteFromMap) {
+                    $this->logger->info(
+                        __(
+                            'A non-configurable product is being filtered - Key: %1, Product ID: %2',
+                            $keyToDeleteFromMap,
+                            $productIds[$keyToDeleteFromMap]
+                        )
+                    );
+                    unset($filteredProductIds[$keyToDeleteFromMap]);
+                }
+            }
+        }
+
+        return $filteredProductIds;
     }
 }
