@@ -388,7 +388,7 @@ class Main extends AbstractJobs
      * @param DataObject|null $response
      * @return int|string|null
      */
-    public function getYotpoIdFromResponse($response)
+    public function getYotpoIdFromCreateCollectionResponse($response)
     {
         if (!$response) {
             return 0;

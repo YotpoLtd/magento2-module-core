@@ -209,7 +209,7 @@ class ProcessByProduct extends Main
         $yotpoTableData['synced_to_yotpo'] = $currentTime;
         if (!$existingCollection) {
             $response = $this->syncAsNewCollection($category);
-            $yotpoId = $this->getYotpoIdFromResponse($response);
+            $yotpoId = $this->getYotpoIdFromCreateCollectionResponse($response);
             $yotpoTableRespData = $response ? $this->prepareYotpoTableData($response) : [];
             if ($yotpoTableRespData && is_array($yotpoTableRespData)) {
                 $yotpoTableData = array_merge($yotpoTableData, $yotpoTableRespData);
@@ -375,7 +375,7 @@ class ProcessByProduct extends Main
                         ?: $categories[$categoryId]->getId();
                 }
             } else {
-                $yotpoIdToReturn = $this->getYotpoIdFromResponse($newCollectionResponse);
+                $yotpoIdToReturn = $this->getYotpoIdFromCreateCollectionResponse($newCollectionResponse);
                 $newCollections = [];
                 $newCollections[$categoryId] = [
                     'yotpo_id' => $yotpoIdToReturn,
@@ -413,7 +413,7 @@ class ProcessByProduct extends Main
                     $categories[$categoryId],
                     $existingProdCollYotpo[$categoryId]['yotpo_id']
                 );
-                $yotpoIdToReturn = $this->getYotpoIdFromResponse($response);
+                $yotpoIdToReturn = $this->getYotpoIdFromCreateCollectionResponse($response);
             } else {
                 $yotpoIdToReturn = $existingProdCollYotpo[$categoryId]['yotpo_id'];
             }
