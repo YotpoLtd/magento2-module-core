@@ -363,8 +363,7 @@ class ProcessByProduct extends Main
                 return $yotpoIdToReturn;
             }
             if ($this->checkForCollectionExistsError($newCollectionResponse)) {
-                $existColls = [$categoryId];
-                $existingCollections = $this->getExistingCollection($existColls);
+                $existingCollections = $this->getExistingCollection([$categoryId]);
                 $yotpoIdToReturn = $this->updateIfNameIsDifferent($existingCollections, $categories, $categoryId);
                 if ($yotpoIdToReturn) {
                     $newCollections = [];
