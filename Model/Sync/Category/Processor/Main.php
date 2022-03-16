@@ -94,12 +94,12 @@ class Main extends AbstractJobs
         StoreManagerInterface $storeManager,
         CollectionsProductsService $collectionsProductsService
     ) {
-        $this->config   =   $config;
-        $this->data   =   $data;
-        $this->yotpoCoreApiSync             =   $yotpoCoreApiSync;
-        $this->categoryCollectionFactory    =   $categoryCollectionFactory;
-        $this->yotpoCoreCatalogLogger       =   $yotpoCoreCatalogLogger;
-        $this->entityIdFieldValue           =   $this->config->getEavRowIdFieldName();
+        $this->config = $config;
+        $this->data = $data;
+        $this->yotpoCoreApiSync = $yotpoCoreApiSync;
+        $this->categoryCollectionFactory = $categoryCollectionFactory;
+        $this->yotpoCoreCatalogLogger = $yotpoCoreCatalogLogger;
+        $this->entityIdFieldValue = $this->config->getEavRowIdFieldName();
         $this->storeManager = $storeManager;
         $this->collectionsProductsService = $collectionsProductsService;
         parent::__construct($appEmulation, $resourceConnection);
@@ -115,19 +115,19 @@ class Main extends AbstractJobs
         if (!$magentoCategories) {
             return [];
         }
-        $return     =   [];
-        $connection =   $this->resourceConnection->getConnection();
-        $storeId    =   $this->config->getStoreId();
-        $table      =   $this->resourceConnection->getTableName('yotpo_category_sync');
-        $categories =   $connection->select()
+        $return = [];
+        $connection = $this->resourceConnection->getConnection();
+        $storeId = $this->config->getStoreId();
+        $table = $this->resourceConnection->getTableName('yotpo_category_sync');
+        $categories = $connection->select()
             ->from($table)
             ->where('category_id IN(?) ', $magentoCategories)
             ->where('store_id=(?)', $storeId)
             ->where('yotpo_id > 0');
 
-        $categories =   $connection->fetchAssoc($categories, []);
+        $categories = $connection->fetchAssoc($categories, []);
         foreach ($categories as $cat) {
-            $return[$cat['category_id']]  =   $cat;
+            $return[$cat['category_id']] = $cat;
         }
         return $return;
     }
@@ -144,24 +144,24 @@ class Main extends AbstractJobs
             return [];
         }
         $yotpoCollections = [];
-        $categoryIds    =   array_chunk($categoryIds, 100);
+        $categoryIds = array_chunk($categoryIds, 100);
         foreach ($categoryIds as $chunk) {
-            $url                =   $this->config->getEndpoint('collections');
-            $data               =   ['external_ids' => implode(',', $chunk)];
-            $data['entityLog']  =   'catalog';
-            $response           =   $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
-            $response           =   $response->getData('response');
+            $url = $this->config->getEndpoint('collections');
+            $data = ['external_ids' => implode(',', $chunk)];
+            $data['entityLog'] = 'catalog';
+            $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
+            $response = $response->getData('response');
             if (!$response) {
                 continue;
             }
-            $collections    =   is_array($response) && isset($response['collections']) ? $response['collections'] : [];
+            $collections = is_array($response) && isset($response['collections']) ? $response['collections'] : [];
             $count = count($collections);
-            for ($i=0; $i<$count; $i++) {
+            for ($i = 0; $i < $count; $i++) {
                 if (is_array($collections[$i])
                     && isset($collections[$i]['external_id'])
                     && isset($collections[$i]['yotpo_id'])
                 ) {
-                    $yotpoCollections[$collections[$i]['external_id']]  =   $collections[$i]['yotpo_id'];
+                    $yotpoCollections[$collections[$i]['external_id']] = $collections[$i]['yotpo_id'];
                 }
             }
         }
@@ -180,24 +180,24 @@ class Main extends AbstractJobs
             return [];
         }
         $yotpoCollections = [];
-        $categoryIds    =   array_chunk($categoryIds, 100);
+        $categoryIds = array_chunk($categoryIds, 100);
         foreach ($categoryIds as $chunk) {
-            $url                =   $this->config->getEndpoint('collections');
-            $data               =   ['external_ids' => implode(',', $chunk)];
-            $data['entityLog']  =   'catalog';
-            $response           =   $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
-            $response           =   $response->getData('response');
+            $url = $this->config->getEndpoint('collections');
+            $data = ['external_ids' => implode(',', $chunk)];
+            $data['entityLog'] = 'catalog';
+            $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
+            $response = $response->getData('response');
             if (!$response) {
                 continue;
             }
-            $collections    =   is_array($response) && isset($response['collections']) ? $response['collections'] : [];
+            $collections = is_array($response) && isset($response['collections']) ? $response['collections'] : [];
             $count = count($collections);
-            for ($i=0; $i<$count; $i++) {
+            for ($i = 0; $i < $count; $i++) {
                 if (is_array($collections[$i])
                     && isset($collections[$i]['external_id'])
                     && isset($collections[$i]['yotpo_id'])
                 ) {
-                    $yotpoCollections[$collections[$i]['external_id']]  =   [
+                    $yotpoCollections[$collections[$i]['external_id']] = [
                         'yotpo_id' => $collections[$i]['yotpo_id'],
                         'name' => $collections[$i]['name']
                     ];
@@ -217,12 +217,12 @@ class Main extends AbstractJobs
     public function syncExistingCollection(Category $category, int $yotpoId)
     {
         if (!$yotpoId) {
-            return ;
+            return;
         }
-        $collectionData                 =   $this->data->prepareData($category);
-        $collectionData['entityLog']    = 'catalog';
-        $url    =   $this->config->getEndpoint('collections_update', ['{yotpo_collection_id}'], [$yotpoId]);
-        $response =  $this->yotpoCoreApiSync->sync(\Zend_Http_Client::PATCH, $url, $collectionData);
+        $collectionData = $this->data->prepareData($category);
+        $collectionData['entityLog'] = 'catalog';
+        $url = $this->config->getEndpoint('collections_update', ['{yotpo_collection_id}'], [$yotpoId]);
+        $response = $this->yotpoCoreApiSync->sync(\Zend_Http_Client::PATCH, $url, $collectionData);
         $categoryId = $category->getId();
         $storeId = $category->getStoreId();
         if ($this->isImmediateRetry($response, $this->entity, $categoryId, $storeId)) {
@@ -232,7 +232,7 @@ class Main extends AbstractJobs
                 $response = $this->syncAsNewCollection($category);
             } else {
                 $yotpoId = array_key_exists($categoryId, $existingCollection) ?
-                    $existingCollection[$categoryId]  : 0;
+                    $existingCollection[$categoryId] : 0;
                 if ($yotpoId) {
                     $response = $this->syncExistingCollection($category, $yotpoId);
                 }
@@ -254,16 +254,16 @@ class Main extends AbstractJobs
             return [];
         }
         $data = [
-            'response_code' =>  $response->getData('status'),
+            'response_code' => $response->getData('status'),
         ];
-        $responseData   =   $response->getData('response');
-        $data['yotpo_id']   =   null;
+        $responseData = $response->getData('response');
+        $data['yotpo_id'] = null;
         if ($response->getData('yotpo_id')) {
-            $data['yotpo_id']   =   $response->getData('yotpo_id');
+            $data['yotpo_id'] = $response->getData('yotpo_id');
         } elseif ($responseData && is_array($responseData) &&
             array_key_exists('collection', $responseData) && $responseData['collection']
         ) {
-            $data['yotpo_id']   =   $responseData['collection']['yotpo_id'];
+            $data['yotpo_id'] = $responseData['collection']['yotpo_id'];
         }
         return $data;
     }
@@ -276,11 +276,11 @@ class Main extends AbstractJobs
     {
         $finalData = [];
         $finalData[] = [
-            'category_id'        =>  $data['category_id'],
-            'synced_to_yotpo'    =>  $data['synced_to_yotpo'],
-            'response_code'      =>  $data['response_code'],
-            'yotpo_id'           =>  $data['yotpo_id'],
-            'store_id'           =>  $data['store_id'],
+            'category_id' => $data['category_id'],
+            'synced_to_yotpo' => $data['synced_to_yotpo'],
+            'response_code' => $data['response_code'],
+            'yotpo_id' => $data['yotpo_id'],
+            'store_id' => $data['store_id'],
         ];
         $this->insertOnDuplicate('yotpo_category_sync', $finalData);
     }
@@ -303,10 +303,10 @@ class Main extends AbstractJobs
     public function unAssignProductFromCollection(int $yotpoCollectionId, int $productId): bool
     {
 
-        $url    =   $this->config->getEndpoint('collections_product', ['{yotpo_collection_id}'], [$yotpoCollectionId]);
-        $data               =   $this->data->prepareProductData($productId);
-        $data['entityLog']  =   'catalog';
-        $response           =   $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_DELETE, $url, $data);
+        $url = $this->config->getEndpoint('collections_product', ['{yotpo_collection_id}'], [$yotpoCollectionId]);
+        $data = $this->data->prepareProductData($productId);
+        $data['entityLog'] = 'catalog';
+        $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_DELETE, $url, $data);
         $responseCode = $response && $response->getData('status') ? $response->getData('status') : null;
         return ($response && $response->getData('is_success')) || $responseCode == '404';
     }
@@ -320,23 +320,23 @@ class Main extends AbstractJobs
         if (!$categories) {
             return [];
         }
-        $magentoCategories  =   [];
-        $categoryPathIds    =   [];
-        $categoriesByPath   =   [];
+        $magentoCategories = [];
+        $categoryPathIds = [];
+        $categoriesByPath = [];
         foreach ($categories as $category) {
-            $path   =   explode('/', $category->getPath());
+            $path = explode('/', $category->getPath());
             array_shift($path);
             $categoryPathIds[] = $path;
-            $magentoCategories[$category->getId()]  =   $category;
+            $magentoCategories[$category->getId()] = $category;
         }
         $categoryPathIds = array_merge(...$categoryPathIds);
-        $categoryPathIds    =   array_filter(array_unique($categoryPathIds));
-        $existingInMagentoCategories    =   array_intersect($categoryPathIds, array_keys($magentoCategories));
+        $categoryPathIds = array_filter(array_unique($categoryPathIds));
+        $existingInMagentoCategories = array_intersect($categoryPathIds, array_keys($magentoCategories));
         foreach ($existingInMagentoCategories as $exMageCatId) {
-            $categoriesByPath[$exMageCatId] =   $magentoCategories[$exMageCatId];
+            $categoriesByPath[$exMageCatId] = $magentoCategories[$exMageCatId];
         }
-        $nonExistingInMagentoCategories    =   array_diff($categoryPathIds, array_keys($magentoCategories));
-        $catCollectionOth   =   $this->categoryCollectionFactory->create();
+        $nonExistingInMagentoCategories = array_diff($categoryPathIds, array_keys($magentoCategories));
+        $catCollectionOth = $this->categoryCollectionFactory->create();
         $catCollectionOth->addNameToResult();
         $catCollectionOth->addFieldToFilter(
             'entity_id',
@@ -344,7 +344,7 @@ class Main extends AbstractJobs
         );
 
         foreach ($catCollectionOth->getItems() as $collectionOthCatItem) {
-            $categoriesByPath[$collectionOthCatItem->getId()] =   $collectionOthCatItem;
+            $categoriesByPath[$collectionOthCatItem->getId()] = $collectionOthCatItem;
         }
 
         return $categoriesByPath;
@@ -357,7 +357,7 @@ class Main extends AbstractJobs
      */
     public function getNameWithPath(Category $singleCategory, array $categories)
     {
-        $singleCatPath   =   explode('/', (string) $singleCategory->getPath());
+        $singleCatPath = explode('/', (string)$singleCategory->getPath());
         array_shift($singleCatPath);
         if (!$singleCatPath) {
             return;
@@ -365,7 +365,7 @@ class Main extends AbstractJobs
         $singleCatNames = [];
 
         foreach ($singleCatPath as $singleCatId) {
-            $singleCatNames[]   =   $categories[$singleCatId]->getName();
+            $singleCatNames[] = $categories[$singleCatId]->getName();
         }
 
         return implode('/', $singleCatNames);
@@ -378,9 +378,9 @@ class Main extends AbstractJobs
      */
     public function syncAsNewCollection(Category $category)
     {
-        $collectionData                 =   $this->data->prepareData($category);
-        $collectionData['entityLog']    = 'catalog';
-        $url                            =   $this->config->getEndpoint('collections');
+        $collectionData = $this->data->prepareData($category);
+        $collectionData['entityLog'] = 'catalog';
+        $url = $this->config->getEndpoint('collections');
         return $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $url, $collectionData);
     }
 
@@ -412,13 +412,13 @@ class Main extends AbstractJobs
     public function updateCategoryAttribute($categoryRowId)
     {
         $dataToInsertOrUpdate = [];
-        $data   =   [
-            'attribute_id'  =>  $this->data->getAttributeId('synced_to_yotpo_collection'),
-            'store_id'      =>  $this->config->getStoreid(),
+        $data = [
+            'attribute_id' => $this->data->getAttributeId('synced_to_yotpo_collection'),
+            'store_id' => $this->config->getStoreid(),
             $this->entityIdFieldValue => $categoryRowId,
-            'value'         =>  1
+            'value' => 1
         ];
-        $dataToInsertOrUpdate[] =   $data;
+        $dataToInsertOrUpdate[] = $data;
         $this->insertOnDuplicate('catalog_category_entity_int', $dataToInsertOrUpdate);
     }
 
@@ -438,7 +438,7 @@ class Main extends AbstractJobs
      */
     public function getStoreCategoryCollection()
     {
-        /** @var \Magento\Store\Model\Store $currentStore**/
+        /** @var \Magento\Store\Model\Store $currentStore **/
         $currentStore = $this->storeManager->getStore();
         $rootCategoryId = $currentStore->getRootCategoryId();
         $collection = $this->categoryCollectionFactory->create();
@@ -460,8 +460,7 @@ class Main extends AbstractJobs
     {
         $storeId = $this->config->getStoreId();
         $connection = $this->resourceConnection->getConnection();
-        $categoryYotpoIdQuery = $connection->select(
-        )->from(
+        $categoryYotpoIdQuery = $connection->select()->from(
             [ $this->resourceConnection->getTableName($this::YOTPO_CATEGORY_SYNC_TABLE_NAME) ],
             ['yotpo_id']
         )->where(
