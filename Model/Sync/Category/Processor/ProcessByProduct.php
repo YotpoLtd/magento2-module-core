@@ -52,19 +52,19 @@ class ProcessByProduct extends Main
             }
         }
         $categoriesByPath = $this->getCategoriesFromPathNames(array_values($categories));
-        $existingProductsMap = [];
-        $categoriesProduct = [];
+        $existingProductsToCollectionsMap = [];
+        $productIdsToCategoriesIdsMap = [];
 
         foreach ($products as $yotpoProductId => $product) {
             /** @var Product $product * */
-            $categoriesProduct[$product->getId()] = [];
+            $productIdsToCategoriesIdsMap[$product->getId()] = [];
             $productCategories = $product->getCategoryIds();
             $productCategories = array_intersect(array_keys($categories), $productCategories);
-            $existingProductsMap[$product->getId()] = $this->getYotpoCollectionsMap($yotpoProductId);
+            $existingProductsToCollectionsMap[$product->getId()] = $this->getYotpoCollectionsMap($yotpoProductId);
             $addProductData = $this->data->prepareProductData($product->getId());
 
             foreach ($productCategories as $categoryId) {
-                $categoriesProduct[$product->getId()][] = $categoryId;
+                $productIdsToCategoriesIdsMap[$product->getId()][] = $categoryId;
                 $categories[$categoryId]->setData(
                     'nameWithPath',
                     $this->getNameWithPath($categories[$categoryId], $categoriesByPath)
@@ -88,7 +88,7 @@ class ProcessByProduct extends Main
                     && $this->canAddProductToCollection(
                         $yotpoCollectionId,
                         $categoryId,
-                        $existingProductsMap,
+                        $existingProductsToCollectionsMap,
                         $product->getId()
                     )) {
                     $yotpoCollectionId = $this->addProductsToCollection(
@@ -97,20 +97,20 @@ class ProcessByProduct extends Main
                         $product,
                         $categoryId,
                         $categories,
-                        $existingProductsMap
+                        $existingProductsToCollectionsMap
                     );
-                    $existingProductsMap[$product->getId()][$categoryId] = $yotpoCollectionId ?: 0;
+                    $existingProductsToCollectionsMap[$product->getId()][$categoryId] = $yotpoCollectionId ?: 0;
                 }
             }
-            $existingProductsMap[$product->getId()] = array_filter($existingProductsMap[$product->getId()]);
-            $currentMap = array_keys($existingProductsMap[$product->getId()]);
-            $catUnmap = array_diff($currentMap, $categoriesProduct[$product->getId()]);
+            $existingProductsToCollectionsMap[$product->getId()] = array_filter($existingProductsToCollectionsMap[$product->getId()]);
+            $existingCategoriesIds = array_keys($existingProductsToCollectionsMap[$product->getId()]);
+            $deletedCategoriesIds = array_diff($existingCategoriesIds, $productIdsToCategoriesIdsMap[$product->getId()]);
             $this->yotpoCoreCatalogLogger->info(
                 'Category Sync by product -  unassign products - Category IDs -
-                    ' . implode(',', array_unique($catUnmap)),
+                    ' . implode(',', array_unique($deletedCategoriesIds)),
                 []
             );
-            $this->unAssignProducts($catUnmap, $product->getId(), $existingProductsMap[$product->getId()]);
+            $this->unAssignProducts($deletedCategoriesIds, $product->getId(), $existingProductsToCollectionsMap[$product->getId()]);
         }
         $this->yotpoCoreCatalogLogger->info(
             'Category Sync by product -  Finished - Category ID - ' . implode(',', array_unique($newCollectionsToLog)),
@@ -317,15 +317,15 @@ class ProcessByProduct extends Main
     }
 
     /**
-     * @param array<mixed> $catUnmap
+     * @param array<mixed> $deletedCategoriesIds
      * @param int $productId
-     * @param array<mixed> $existingProductsMap
+     * @param array<mixed> $existingProductsToCollectionsMap
      * @return void
      */
-    public function unAssignProducts(array $catUnmap, int $productId, array $existingProductsMap)
+    public function unAssignProducts(array $deletedCategoriesIds, int $productId, array $existingProductsToCollectionsMap)
     {
-        foreach ($catUnmap as $catId) {
-            $yotpoId = $existingProductsMap[$catId];
+        foreach ($deletedCategoriesIds as $deletedCategory) {
+            $yotpoId = $existingProductsToCollectionsMap[$deletedCategory];
             $this->unAssignProductFromCollection($yotpoId, $productId);
         }
     }
