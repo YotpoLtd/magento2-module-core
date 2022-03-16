@@ -354,15 +354,15 @@ class ProcessByProduct extends Main
             $categoryIdToUpdate = $categories[$categoryId]->getRowId()
                 ?: $categories[$categoryId]->getId();
         } else {
-            $createCollection = $this->yotpoCoreApiSync->sync(
+            $newCollectionResponse = $this->yotpoCoreApiSync->sync(
                 Request::HTTP_METHOD_POST,
                 $url,
                 $collectionData
             );
-            if (!$createCollection) {
+            if (!$newCollectionResponse) {
                 return $yotpoIdToReturn;
             }
-            if ($this->checkForCollectionExistsError($createCollection)) {
+            if ($this->checkForCollectionExistsError($newCollectionResponse)) {
                 $existColls = [$categoryId];
                 $existingCollections = $this->getExistingCollection($existColls);
                 $yotpoIdToReturn = $this->updateIfNameIsDifferent($existingCollections, $categories, $categoryId);
@@ -376,7 +376,7 @@ class ProcessByProduct extends Main
                         ?: $categories[$categoryId]->getId();
                 }
             } else {
-                $yotpoIdToReturn = $this->getYotpoIdFromResponse($createCollection);
+                $yotpoIdToReturn = $this->getYotpoIdFromResponse($newCollectionResponse);
                 $newCollections = [];
                 $newCollections[$categoryId] = [
                     'yotpo_id' => $yotpoIdToReturn,
