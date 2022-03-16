@@ -409,7 +409,7 @@ class ProcessByProduct extends Main
             $nameWithPath = $categories[$categoryId]->getData('nameWithPath');
             if ($existingProdCollYotpo[$categoryId]['name'] != $nameWithPath) {
                 //update the collection
-                $response = $this->syncExistingCollection(
+                $response = $this->syncExistingOrNewCollection(
                     $categories[$categoryId],
                     $existingProdCollYotpo[$categoryId]['yotpo_id']
                 );

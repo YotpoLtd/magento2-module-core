@@ -214,7 +214,7 @@ class Main extends AbstractJobs
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function syncExistingCollection(Category $category, int $yotpoId)
+    public function syncExistingOrNewCollection(Category $category, int $yotpoId)
     {
         if (!$yotpoId) {
             return;
@@ -234,7 +234,7 @@ class Main extends AbstractJobs
                 $yotpoId = array_key_exists($categoryId, $existingCollection) ?
                     $existingCollection[$categoryId] : 0;
                 if ($yotpoId) {
-                    $response = $this->syncExistingCollection($category, $yotpoId);
+                    $response = $this->syncExistingOrNewCollection($category, $yotpoId);
                 }
             }
         }
