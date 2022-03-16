@@ -28,7 +28,7 @@ class ProcessByProduct extends Main
     /**
      * @var array <mixed>
      */
-    protected $prodCollExistYotpo = [];
+    protected $existingCollectionsInYotpo = [];
 
     /**
      * @param array<mixed> $products
@@ -255,7 +255,7 @@ class ProcessByProduct extends Main
                 $count = count($collections);
                 for ($i = 0; $i < $count; $i++) {
                     $return[$collections[$i]['external_id']] = $collections[$i]['yotpo_id'];
-                    $this->prodCollExistYotpo[$collections[$i]['external_id']] = [
+                    $this->existingCollectionsInYotpo[$collections[$i]['external_id']] = [
                         'yotpo_id' => $collections[$i]['yotpo_id'],
                         'name' => $collections[$i]['name']
                     ];
@@ -344,7 +344,7 @@ class ProcessByProduct extends Main
         $categoryIdToUpdate = null;
         $currentTime = date('Y-m-d H:i:s');
         $url = $this->config->getEndpoint('collections');
-        $yotpoIdToReturn = $this->updateIfNameIsDifferent($this->prodCollExistYotpo, $categories, $categoryId);
+        $yotpoIdToReturn = $this->updateIfNameIsDifferent($this->existingCollectionsInYotpo, $categories, $categoryId);
         if ($yotpoIdToReturn) {
             $newCollections = [];
             $newCollections[$categoryId] = [
