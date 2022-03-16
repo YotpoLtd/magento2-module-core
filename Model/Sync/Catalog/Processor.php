@@ -363,6 +363,7 @@ class Processor extends Main
                 )
             );
 
+            $currentItemYotpoId = $apiRequestParams['yotpo_id'];
             $responseObject = $this->handleRequest($itemEntityId, $yotpoFormatItemData, $apiRequestParams);
             $response = $responseObject['response'];
             $apiRequestParams['method'] = $responseObject['method'];
@@ -436,6 +437,25 @@ class Processor extends Main
             if ($processedSyncDataRecordToUpdate) {
                 $this->updateSyncTable($processedSyncDataRecordToUpdate);
                 $syncTableRecordsUpdated[] = $processedSyncDataRecordToUpdate;
+
+                if (!$isVisibleVariantsSync
+                    && $this->isProductUpsertSyncMethod($apiRequestParams['method'])
+                    && $response->getData('is_success')
+                    && $this->isItemYotpoIdChanged($currentItemYotpoId, $apiRequestParams['yotpo_id'])
+                ) {
+                    $updatedItemYotpoId = $apiRequestParams['yotpo_id'];
+                    $this->yotpoCatalogLogger->info(
+                        __(
+                            'Yotpo Product ID changed. Store ID: %1, Entity ID: %2, Current Yotpo ID: %3, Updated Yotpo ID: %4',
+                            $storeId,
+                            $itemEntityId,
+                            $currentItemYotpoId,
+                            $updatedItemYotpoId
+                        )
+                    );
+
+                    $this->forceVariantsResyncWithUpdatedParentYotpoId($storeId, $currentItemYotpoId, $updatedItemYotpoId, $syncedToYotpoProductAttributeId);
+                }
             }
 
             if ($this->isCommandLineSync && !$this->isImmediateRetry) {
@@ -914,10 +934,116 @@ class Processor extends Main
             return false;
         }
 
-        if (!in_array($apiRequestParams['method'], ['createProduct', 'updateProduct'])) {
+        if (!$this->isProductUpsertSyncMethod($apiRequestParams['method'])) {
             return false;
         }
 
         return true;
+    }
+
+    /**
+     * @param string $method
+     * @return boolean
+     */
+    private function isProductUpsertSyncMethod($method) {
+        return in_array($method, ['createProduct', 'updateProduct']);
+    }
+
+    /**
+     * @param integer $currentItemYotpoId
+     * @param integer $returnedItemYotpoId
+     * @return boolean
+     */
+    private function isItemYotpoIdChanged($currentItemYotpoId, $returnedItemYotpoId)
+    {
+        return $currentItemYotpoId && $returnedItemYotpoId && $currentItemYotpoId != $returnedItemYotpoId;
+    }
+
+    /**
+     * @param integer $storeId
+     * @param integer $currentParentYotpoId
+     * @param integer $updatedParentYotpoId
+     * @return void
+     */
+    private function forceVariantsResyncWithUpdatedParentYotpoId($storeId, $currentParentYotpoId, $updatedParentYotpoId, $syncedToYotpoProductAttributeId)
+    {
+        $variantIds = $this->getProductIdsFromSyncTableByStoreIdAndParentYotpoId($storeId, $currentParentYotpoId);
+        if (!$variantIds) {
+            return;
+        }
+
+        $this->updateYotpoIdParentInSyncTableByStoreIdAndVariantIds($storeId, $variantIds, $updatedParentYotpoId);
+        $this->updateProductSyncAttributeByStoreIdAndProductIds($storeId, $variantIds, $syncedToYotpoProductAttributeId);
+    }
+
+    /**
+     * @param integer $storeId
+     * @param integer $parentYotpoId
+     * @return array
+     */
+    private function getProductIdsFromSyncTableByStoreIdAndParentYotpoId($storeId, $parentYotpoId)
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $select = $connection->select(
+        )->from(
+            [$this->resourceConnection->getTableName('yotpo_product_sync')],
+            ['product_id']
+        )->where(
+            'store_id = ?',
+            $storeId
+        )->where(
+            'yotpo_id_parent = ?',
+            $parentYotpoId
+        )->where(
+            'is_deleted = ?',
+            0
+        );
+        $items = $connection->fetchAssoc($select, 'product_id');
+        return array_keys($items);
+    }
+
+    /**
+     * @param integer $storeId
+     * @param array $variantIds
+     * @param integer $yotpoIdParentToBeUpdated
+     * @return void
+     */
+    private function updateYotpoIdParentInSyncTableByStoreIdAndVariantIds($storeId, $variantIds, $yotpoIdParentToBeUpdated)
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $condition = [
+            'store_id = ?' => $storeId,
+            'product_id IN (?)' => $variantIds
+        ];
+        $data = [
+            'yotpo_id_parent' => $yotpoIdParentToBeUpdated,
+            'response_code' => CoreConfig::CUSTOM_RESPONSE_DATA
+        ];
+        $connection->update(
+            $this->resourceConnection->getTableName('yotpo_product_sync'),
+            $data,
+            $condition
+        );
+    }
+
+    /**
+     * @param integer $storeId
+     * @param array $productIds
+     * @param integer $syncedToYotpoProductAttributeId
+     * @return void
+     */
+    private function updateProductSyncAttributeByStoreIdAndProductIds($storeId, $productIds, $syncedToYotpoProductAttributeId)
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $condition = [
+            'store_id = ?' => $storeId,
+            'attribute_id = ?' => $syncedToYotpoProductAttributeId,
+            $this->entityIdFieldValue . ' IN (?)' => $productIds
+        ];
+        $connection->update(
+            $this->resourceConnection->getTableName('catalog_product_entity_int'),
+            ['value' => 0],
+            $condition
+        );
     }
 }
