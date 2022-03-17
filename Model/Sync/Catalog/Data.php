@@ -318,9 +318,14 @@ class Data extends Main
             if (isset($this->parentOptions[$id])
                 && $options = $this->parentOptions[$id]) {
                 foreach ($options as $attribute_code => $option) {
+                    $simpleProductAttributeCode = $productObjects[$key]->getData($attribute_code);
+                    if ($simpleProductAttributeCode === null) {
+                        continue;
+                    }
+
                     $configOptions[] = [
                         'name' => $option['label'],
-                        'value' => $option[$productObjects[$key]->getData($attribute_code)]
+                        'value' => $option[$simpleProductAttributeCode]
                     ];
                 }
                 $syncItems[$key]['options'] = $configOptions;
