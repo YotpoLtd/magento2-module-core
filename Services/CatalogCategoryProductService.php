@@ -56,4 +56,22 @@ class CatalogCategoryProductService extends AbstractJobs
         $productCategoriesIdsMap = $connection->fetchAssoc($categoryProductsQuery, 'category_id');
         return array_keys($productCategoriesIdsMap);
     }
+
+    /**
+     * @param string $categoryId
+     * @return array<string>
+     */
+    public function getProductIdsFromCategoryProductsTableByCategoryId($categoryId) {
+        $connection = $this->resourceConnection->getConnection();
+        $select = $connection->select()->from(
+            $this->resourceConnection->getTableName($this::CATALOG_CATEGORY_PRODUCT_TABLE),
+            [ 'product_id' ]
+        )->where(
+            'category_id = ?',
+            $categoryId
+        );
+
+        $currentProductsInCategory = $connection->fetchAssoc($select, 'product_id');
+        return array_keys($currentProductsInCategory);
+    }
 }
