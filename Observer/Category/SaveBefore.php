@@ -6,22 +6,19 @@ use Magento\Framework\Event\Observer;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\App\ResourceConnection;
 use Yotpo\Core\Model\Config;
-use Yotpo\Core\Model\Sync\Data\Main;
+use Yotpo\Core\Model\Sync\Category\Processor\Main as CategoryProcessorMain;
+use Yotpo\Core\Model\Sync\CollectionsProducts\Services\CollectionsProductsService;
 
 /**
  * Class SaveBefore - Update yotpo attribute
  */
 class SaveBefore implements ObserverInterface
 {
+
     /**
      * @var ResourceConnection
      */
     private $resourceConnection;
-
-    /**
-     * @var Main
-     */
-    private $main;
 
     /**
      * @var RequestInterface
@@ -34,70 +31,81 @@ class SaveBefore implements ObserverInterface
     protected $config;
 
     /**
+     * @var CategoryProcessorMain
+     */
+    protected $categoryProcessorMain;
+
+    /**
+     * @var CollectionsProductsService
+     */
+    protected $collectionsProductsService;
+
+    /**
      * SaveBefore constructor.
      * @param ResourceConnection $resourceConnection
-     * @param Main $main
      * @param RequestInterface $request
+     * @param Config $config
+     * @param CategoryProcessorMain $categoryProcessorMain
+     * @param CollectionsProductsService $collectionsProductsService
      */
     public function __construct(
         ResourceConnection $resourceConnection,
-        Main $main,
         RequestInterface $request,
-        Config $config
+        Config $config,
+        CategoryProcessorMain $categoryProcessorMain,
+        CollectionsProductsService $collectionsProductsService
     ) {
         $this->resourceConnection = $resourceConnection;
-        $this->main = $main;
         $this->request = $request;
         $this->config = $config;
+        $this->categoryProcessorMain = $categoryProcessorMain;
+        $this->collectionsProductsService = $collectionsProductsService;
     }
 
     /**
-     * Set synced_to_yotpo_collection = 0 in catalog_category_entity_int table
-     *
      * @param Observer $observer
      * @return void
      */
     public function execute(Observer $observer)
     {
+        $categoryId = $this->request->getParam('entity_id');
+        if (!$categoryId) {
+            return;
+        }
+
+        $currentProductIdsInCategory = $this->getCurrentProductIdsInCategory($categoryId);
+        $productIdToPositionInCategoryMapBeforeSave = json_decode($this->request->getParam('vm_category_products'), true);
+        $productIdsInCategoryBeforeSave = array_keys($productIdToPositionInCategoryMapBeforeSave);
+
+        $productsAddedToCategory = array_diff($productIdsInCategoryBeforeSave, $currentProductIdsInCategory);
+        $productsDeletedFromCategory = array_diff($currentProductIdsInCategory, $productIdsInCategoryBeforeSave);
+        $storeIdsSuccessfullySyncedWithCategory = $this->categoryProcessorMain->getStoresSuccessfullySyncedWithCategory($categoryId);
+
+        if ($storeIdsSuccessfullySyncedWithCategory) {
+            foreach ($storeIdsSuccessfullySyncedWithCategory as $storeId) {
+                if ($this->config->isCatalogSyncActive($storeId)) {
+                    if ($productsAddedToCategory) {
+                        $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync($productsAddedToCategory, $storeId, $categoryId);
+                    }
+
+                    if ($productsDeletedFromCategory) {
+                        $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync($productsDeletedFromCategory, $storeId, $categoryId, true);
+                    }
+                }
+            }
+        }
+    }
+
+    private function getCurrentProductIdsInCategory($categoryId) {
         $connection = $this->resourceConnection->getConnection();
-
-        $vmCategories = $this->request->getParam('vm_category_products');
-        $entityId = $this->request->getParam('entity_id');
-        $diffProducts = [];
-
-        if ($vmCategories && $entityId) {
-            $vmCategories = json_decode($vmCategories, true);
-
-            $select = $connection->select()->from(
-                ['e' => $this->resourceConnection->getTableName('catalog_category_product')],
-                ['product_id']
-            )->where(
-                'e.category_id =?',
-                $entityId
-            );
-            $categoryProducts = $connection->fetchAssoc($select, 'product_id');
-
-            $diffProducts = array_merge(
-                array_diff(array_keys($vmCategories), array_keys($categoryProducts)),
-                array_diff(array_keys($categoryProducts), array_keys($vmCategories))
-            );
-
-        } elseif ($vmCategories && !$entityId) {
-            $vmCategories = json_decode($vmCategories, true);
-            $diffProducts = array_keys($vmCategories);
-        }
-
-        if ($diffProducts) {
-            $cond = [
-                $this->config->getEavRowIdFieldName() . ' IN (?)' => $diffProducts,
-                'attribute_id = ? ' => $this->main->getAttributeId(Config::CATALOG_SYNC_ATTR_CODE)
-            ];
-
-            $connection->update(
-                $this->resourceConnection->getTableName('catalog_product_entity_int'),
-                ['value' => 0],
-                $cond
-            );
-        }
+        $select = $connection->select()->from(
+            $this->resourceConnection->getTableName('catalog_category_product'),
+            ['product_id']
+        )->where(
+            'category_id = ?',
+            $categoryId
+        );
+        $currentProductsInCategory = $connection->fetchAssoc($select, 'product_id');
+        return array_keys($currentProductsInCategory);
     }
 }
