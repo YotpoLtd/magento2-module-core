@@ -219,6 +219,7 @@ class Main extends AbstractJobs
         if (!$yotpoId) {
             return;
         }
+
         $collectionData = $this->data->prepareData($category);
         $collectionData['entityLog'] = 'catalog';
         $url = $this->config->getEndpoint('collections_update', ['{yotpo_collection_id}'], [$yotpoId]);
@@ -230,9 +231,6 @@ class Main extends AbstractJobs
             $existingCollection = $this->getExistingCollectionIds([$categoryId]);
             if (!$existingCollection) {
                 $response = $this->syncAsNewCollection($category);
-                if ($this->config->isResponseIndicatesSuccess($response)) {
-                    $this->updateCategoryProductsForCollectionsProductsSync($category);
-                }
             } else {
                 $yotpoId = array_key_exists($categoryId, $existingCollection) ?
                     $existingCollection[$categoryId] : 0;
@@ -241,9 +239,11 @@ class Main extends AbstractJobs
                 }
             }
         }
+
         if ($yotpoId) {
             $response->setData('yotpo_id', $yotpoId);
         }
+
         return $response;
     }
 
