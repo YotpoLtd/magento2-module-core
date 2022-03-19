@@ -186,7 +186,9 @@ class ProcessByCategory extends Main
             /** @var Category $magentoCategory */
             $magentoCategory->setData('nameWithPath', $this->getNameWithPath($magentoCategory, $categoriesByPath));
             $categoryId = $magentoCategory->getId();
+            $currentCategoryYotpoId = $yotpoSyncedCategories[$categoryId]['yotpo_id'] ?? 0;
             $response = null;
+
             if (!$this->isCategoryWasEverSynced($yotpoSyncedCategories, $existingCollections, $magentoCategory)
                 || $this->isSyncedCategoryMissingYotpoId($yotpoSyncedCategories, $magentoCategory)
             ) {
@@ -197,12 +199,12 @@ class ProcessByCategory extends Main
                 }
             } elseif ($this->canResync(
                 $yotpoSyncedCategories[$categoryId],
-                $yotpoSyncedCategories[$categoryId]['yotpo_id'],
+                $currentCategoryYotpoId,
                 $this->isCommandLineSync
             )) {
                 $response = $this->syncExistingOrNewCollection(
                     $magentoCategory,
-                    $yotpoSyncedCategories[$categoryId]['yotpo_id']
+                    $currentCategoryYotpoId
                 );
             } else {
                 $categoryIdToUpdate = $magentoCategory->getRowId() ?: $categoryId;
@@ -223,12 +225,21 @@ class ProcessByCategory extends Main
             }
             $yotpoTableData = $response ? $this->prepareYotpoTableData($response) : [];
             if ($yotpoTableData) {
-                if (array_key_exists('yotpo_id', $yotpoTableData) &&
-                    !$yotpoTableData['yotpo_id']
+                if (array_key_exists('yotpo_id', $yotpoTableData)
+                    && !$yotpoTableData['yotpo_id']
                     && array_key_exists($categoryId, $yotpoSyncedCategories)
                 ) {
-                    $yotpoTableData['yotpo_id'] = $yotpoSyncedCategories[$categoryId]['yotpo_id'];
+                    $yotpoTableData['yotpo_id'] = $currentCategoryYotpoId;
                 }
+
+                if ($currentCategoryYotpoId
+                    && array_key_exists('yotpo_id', $yotpoTableData)
+                    && $yotpoTableData['yotpo_id']
+                    && $currentCategoryYotpoId != $yotpoTableData['yotpo_id']
+                ) {
+                    $this->updateCategoryProductsForCollectionsProductsSync($categoryId);
+                }
+
                 $yotpoTableData['store_id'] = $storeId;
                 $yotpoTableData['category_id'] = $categoryId;
                 $yotpoTableData['synced_to_yotpo'] = $currentTime;
