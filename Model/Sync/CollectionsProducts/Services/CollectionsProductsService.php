@@ -92,6 +92,25 @@ class CollectionsProductsService extends AbstractJobs
     }
 
     /**
+     * @param string $productId
+     * @return array<string>
+     */
+    public function getCategoryIdsFromSyncTableByProductId($productId) {
+        $connection = $this->resourceConnection->getConnection();
+        $categoryProductsQuery = $connection->select(
+        )->from(
+            [ $this->resourceConnection->getTableName($this::YOTPO_COLLECTIONS_PRODUCTS_SYNC_TABLE_NAME) ],
+            [ 'magento_category_id' ]
+        )->where(
+            'magento_product_id = ?',
+            $productId
+        );
+
+        $categoryProductsIdsMap = $connection->fetchAssoc($categoryProductsQuery, 'magento_category_id');
+        return array_keys($categoryProductsIdsMap);
+    }
+
+    /**
      * @param array $productsIds
      * @param string $storeId
      * @param string $categoryId
