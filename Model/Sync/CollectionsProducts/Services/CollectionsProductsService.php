@@ -7,11 +7,17 @@ use Magento\Framework\App\ResourceConnection;
 use Magento\Store\Model\App\Emulation as AppEmulation;
 use Yotpo\Core\Model\Config as CoreConfig;
 use Yotpo\Core\Model\Sync\Catalog\YotpoResource;
+use Magento\ConfigurableProduct\Model\Product\Type\Configurable as ProductTypeConfigurable;
 
 class CollectionsProductsService extends AbstractJobs
 {
     const PRODUCT_SYNC_LIMIT_CONFIG_KEY = 'product_sync_limit';
     const YOTPO_COLLECTIONS_PRODUCTS_SYNC_TABLE_NAME = 'yotpo_collections_products_sync';
+
+    /**
+     * @var ProductTypeConfigurable
+     */
+    protected $productTypeConfigurable;
 
     /**
      * @var CoreConfig
@@ -34,15 +40,18 @@ class CollectionsProductsService extends AbstractJobs
      * @param ResourceConnection $resourceConnection
      * @param CoreConfig $coreConfig
      * @param YotpoResource $yotpoResource
+     * @param ProductTypeConfigurable $productTypeConfigurable
      **/
     public function __construct(
         AppEmulation $appEmulation,
         ResourceConnection $resourceConnection,
         CoreConfig $coreConfig,
-        YotpoResource $yotpoResource
+        YotpoResource $yotpoResource,
+        ProductTypeConfigurable $productTypeConfigurable
     ) {
         $this->coreConfig = $coreConfig;
         $this->yotpoResource = $yotpoResource;
+        $this->productTypeConfigurable = $productTypeConfigurable;
         $this->collectionsProductsSyncBatchSize = $this->coreConfig->getConfig($this::PRODUCT_SYNC_LIMIT_CONFIG_KEY);
         parent::__construct($appEmulation, $resourceConnection);
     }
@@ -119,9 +128,17 @@ class CollectionsProductsService extends AbstractJobs
      */
     public function assignCategoryProductsForCollectionsProductsSync(array $productsIds, $storeId, $categoryId, $isDeletedInMagento = false)
     {
+        $productIdsEligibleForSync = array_filter($productsIds, function ($productId) {
+            return $this->isProductEligibleForProductsCollectionsSync($productId);
+        });
+
+        if (!$productIdsEligibleForSync) {
+            return;
+        }
+
         $collectionsProductsSyncData = [];
         $currentDatetime = date('Y-m-d H:i:s');
-        foreach ($productsIds as $productId) {
+        foreach ($productIdsEligibleForSync as $productId) {
             $collectionsProductsSyncData[] = [
                 'magento_store_id' => $storeId,
                 'magento_category_id' => $categoryId,
@@ -144,6 +161,10 @@ class CollectionsProductsService extends AbstractJobs
      */
     public function assignProductCategoriesForCollectionsProductsSync(array $categoriesIds, $storeId, $productId, $isDeletedInMagento = false)
     {
+        if (!$this->isProductEligibleForProductsCollectionsSync($productId)) {
+            return;
+        }
+
         $collectionsProductsSyncData = [];
         $currentDatetime = date('Y-m-d H:i:s');
         foreach ($categoriesIds as $categoryId) {
@@ -178,5 +199,14 @@ class CollectionsProductsService extends AbstractJobs
         ];
 
         $this->insertOnDuplicate($this::YOTPO_COLLECTIONS_PRODUCTS_SYNC_TABLE_NAME, [$collectionsProductsSyncData]);
+    }
+
+    private function isProductEligibleForProductsCollectionsSync($productId) {
+        $parentProduct = $this->productTypeConfigurable->getParentIdsByChild($productId);
+        if (!$parentProduct) {
+            return true;
+        }
+
+        return false;
     }
 }
