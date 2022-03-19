@@ -300,21 +300,6 @@ class Main extends AbstractJobs
     }
 
     /**
-     * @param int $yotpoCollectionId
-     * @param int $productId
-     */
-    public function unAssignProductFromCollection(int $yotpoCollectionId, int $productId): bool
-    {
-
-        $url = $this->config->getEndpoint('collections_product', ['{yotpo_collection_id}'], [$yotpoCollectionId]);
-        $data = $this->data->prepareProductData($productId);
-        $data['entityLog'] = 'catalog';
-        $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_DELETE, $url, $data);
-        $responseCode = $response && $response->getData('status') ? $response->getData('status') : null;
-        return ($response && $response->getData('is_success')) || $responseCode == '404';
-    }
-
-    /**
      * @param array<mixed> $categories
      * @return array<mixed>
      */
@@ -385,26 +370,6 @@ class Main extends AbstractJobs
         $collectionData['entityLog'] = 'catalog';
         $url = $this->config->getEndpoint('collections');
         return $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $url, $collectionData);
-    }
-
-    /**
-     * @param DataObject|null $response
-     * @return int|string|null
-     */
-    public function getYotpoIdFromCreateCollectionResponse($response)
-    {
-        if (!$response) {
-            return 0;
-        }
-        $responseData   =   $response->getData('response');
-        $yotpoId = null;
-        if ($response->getData('yotpo_id')) {
-            $yotpoId   =   $response->getData('yotpo_id');
-        } elseif ($responseData && is_array($responseData) && isset($responseData['collection'])) {
-            $yotpoId   =   is_array($responseData['collection']) && isset($responseData['collection']['yotpo_id']) ?
-                $responseData['collection']['yotpo_id'] : 0;
-        }
-        return $yotpoId;
     }
 
     /**
