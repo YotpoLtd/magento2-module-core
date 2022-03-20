@@ -689,7 +689,7 @@ class Main extends AbstractJobs
      */
     public function isProductParentYotpoIdFound($yotpoData, $parentId): bool
     {
-        return isset($yotpoData[$parentId]) && isset($yotpoData[$parentId]['yotpo_id']);
+        return isset($yotpoData[$parentId]) && isset($yotpoData[$parentId]['yotpo_id']) && $yotpoData[$parentId]['yotpo_id'];
     }
 
     /**
