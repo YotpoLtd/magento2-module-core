@@ -7,6 +7,7 @@ use Magento\Catalog\Model\Product;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Framework\Webapi\Rest\Request;
+use Yotpo\Core\Model\Sync\CollectionsProducts\Services\CollectionsProductsService;
 
 /**
  * Class ProcessByProduct - Process category sync
@@ -67,5 +68,25 @@ class ProcessByProduct extends Main
         foreach ($deletedCategoriesIds as $deletedCategoryId) {
             $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync([$productId], $productStoreId, $deletedCategoryId, true);
         }
+    }
+
+    /**
+     * @param string $storeId
+     * @param string $productId
+     * @return void
+     */
+    public function forceProductCollectionsResync($storeId, $productId) {
+        $connection = $this->resourceConnection->getConnection();
+        $updateCondition = [
+            'magento_store_id = ?' => $storeId,
+            'magento_product_id = ?' => $productId
+        ];
+        $currentDatetime = date('Y-m-d H:i:s');
+
+        $connection->update(
+            $this->resourceConnection->getTableName(CollectionsProductsService::YOTPO_COLLECTIONS_PRODUCTS_SYNC_TABLE_NAME),
+            ['is_synced_to_yotpo' => 1, 'last_updated_at' => $currentDatetime],
+            $updateCondition
+        );
     }
 }

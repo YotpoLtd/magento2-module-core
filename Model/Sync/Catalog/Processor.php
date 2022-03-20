@@ -372,8 +372,6 @@ class Processor extends Main
                 }
             }
 
-            //push to parentData array if parent product is
-            // being the part of current collection
             if (!$isVisibleVariantsSync) {
                 $yotpoSyncTableItemsData = $this->pushParentData(
                     (int)$itemEntityId,
@@ -381,6 +379,10 @@ class Processor extends Main
                     $yotpoSyncTableItemsData,
                     $parentItemsIds
                 );
+
+                if ($this->shouldForceProductCollectionsResync($itemEntityId, $response, $apiRequestParams, $yotpoSyncTableItemsData)) {
+                    $this->categorySyncProcessor->forceProductCollectionsResync($storeId, $itemRowId);
+                }
             }
 
             if ($processedSyncDataRecordToUpdate) {
@@ -941,5 +943,21 @@ class Processor extends Main
         $processedSyncDataRecordToUpdate = $returnResponse['temp_sql'];
         $this->updateSyncTable($processedSyncDataRecordToUpdate);
         return $processedSyncDataRecordToUpdate['yotpo_id'];
+    }
+
+    /**
+     * @param array<mixed> $response
+     * @param string $apiRequestMethod
+     * @return boolean
+     */
+    private function shouldForceProductCollectionsResync($itemEntityId, $response, $apiRequestParams, $yotpoSyncTableItemsData)
+    {
+        return $this->isImmediateRetry
+            && $apiRequestParams['method'] == 'createProduct'
+            && $response->getData('is_success')
+            && $yotpoSyncTableItemsData
+            && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
+            && $yotpoSyncTableItemsData[$itemEntityId]['yotpo_id'] == 0
+            && $yotpoSyncTableItemsData[$itemEntityId]['response_code'] == CoreConfig::CUSTOM_RESPONSE_DATA;
     }
 }
