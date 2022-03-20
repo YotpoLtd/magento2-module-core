@@ -4,7 +4,6 @@ namespace Yotpo\Core\Observer\Product;
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\App\ResourceConnection;
-use Magento\Store\Model\App\Emulation as AppEmulation;
 use Magento\Catalog\Model\Session as CatalogSession;
 use Yotpo\Core\Model\Config as YotpoCoreConfig;
 use Yotpo\Core\Model\Sync\CollectionsProducts\Services\CollectionsProductsService;
@@ -13,13 +12,8 @@ use Yotpo\Core\Model\Sync\Category\Processor\Main as YotpoCategoryProcessorMain;
 /**
  * Class DeleteAfter - Update yotpo is_delete attribute
  */
-class DeleteAfter extends Data implements ObserverInterface
+class DeleteAfter implements ObserverInterface
 {
-    /**
-     * @var AppEmulation
-     */
-    protected $appEmulation;
-
     /**
      * @var ResourceConnection
      */
@@ -48,7 +42,6 @@ class DeleteAfter extends Data implements ObserverInterface
     /**
      * DeleteAfter constructor.
      * @param ResourceConnection $resourceConnection
-     * @param AppEmulation $appEmulation
      * @param CatalogSession $catalogSession
      * @param YotpoCoreConfig $yotpoCoreConfig
      * @param CollectionsProductsService $collectionsProductsService
@@ -56,7 +49,6 @@ class DeleteAfter extends Data implements ObserverInterface
      */
     public function __construct(
         ResourceConnection $resourceConnection,
-        AppEmulation $appEmulation,
         CatalogSession $catalogSession,
         YotpoCoreConfig $yotpoCoreConfig,
         CollectionsProductsService $collectionsProductsService,
@@ -67,7 +59,6 @@ class DeleteAfter extends Data implements ObserverInterface
         $this->yotpoCoreConfig = $yotpoCoreConfig;
         $this->collectionsProductsService = $collectionsProductsService;
         $this->yotpoCategoryProcessorMain = $yotpoCategoryProcessorMain;
-        parent::__construct($resourceConnection, $appEmulation);
     }
 
     /**

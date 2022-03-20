@@ -3,21 +3,15 @@ namespace Yotpo\Core\Observer\Product;
 
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer as EventObserver;
-use Magento\Framework\App\ResourceConnection;
-use Magento\Store\Model\App\Emulation as AppEmulation;
 use Magento\Catalog\Model\Session as CatalogSession;
+use Magento\Framework\App\ResourceConnection;
+use Yotpo\Core\Services\CatalogCategoryProductService;
 
 /**
  * Class SaveBefore - Save childIds in session
  */
-class SaveBefore extends Data implements ObserverInterface
+class SaveBefore implements ObserverInterface
 {
-
-    /**
-     * @var AppEmulation
-     */
-    protected $appEmulation;
-
     /**
      * @var ResourceConnection
      */
@@ -29,18 +23,24 @@ class SaveBefore extends Data implements ObserverInterface
     protected $catalogSession;
 
     /**
+     * @var CatalogCategoryProductService
+     */
+    protected $catalogCategoryProductService;
+
+    /**
      * SaveBefore constructor.
      * @param ResourceConnection $resourceConnection
-     * @param AppEmulation $appEmulation
      * @param CatalogSession $catalogSession
+     * @param CatalogCategoryProductService $catalogCategoryProductService
      */
     public function __construct(
         ResourceConnection $resourceConnection,
-        AppEmulation $appEmulation,
-        CatalogSession $catalogSession
+        CatalogSession $catalogSession,
+        CatalogCategoryProductService $catalogCategoryProductService
     ) {
+        $this->resourceConnection = $resourceConnection;
         $this->catalogSession = $catalogSession;
-        parent::__construct($resourceConnection, $appEmulation);
+        $this->catalogCategoryProductService = $catalogCategoryProductService;
     }
 
     /**
@@ -57,7 +57,7 @@ class SaveBefore extends Data implements ObserverInterface
             $productId = $product->getId();
             $childrenIds = $product->getTypeInstance()->getChildrenIds($productId);
             $this->catalogSession->setChildrenIds($childrenIds);
-            $productCategoriesIds = $this->getCategoryIdsFromCategoryProductsTableByProductId($productId);
+            $productCategoriesIds = $this->catalogCategoryProductService->getCategoryIdsFromCategoryProductsTableByProductId($productId);
             $this->catalogSession->setProductCategoriesIds($productCategoriesIds);
         }
     }

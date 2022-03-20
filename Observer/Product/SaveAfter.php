@@ -3,13 +3,13 @@ namespace Yotpo\Core\Observer\Product;
 
 use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\Event\Observer as EventObserver;
-use Magento\Store\Model\App\Emulation as AppEmulation;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\ResourceConnection;
 use Yotpo\Core\Model\Config;
 use Yotpo\Core\Model\Sync\Data\Main;
 use Yotpo\Core\Model\Sync\CollectionsProducts\Services\CollectionsProductsService;
+use Yotpo\Core\Services\CatalogCategoryProductService;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Session as CatalogSession;
 use Magento\Store\Api\StoreRepositoryInterface;
@@ -17,7 +17,7 @@ use Magento\Store\Api\StoreRepositoryInterface;
 /**
  * Class SaveAfter - Update yotpo attribute value when product updated
  */
-class SaveAfter extends Data implements ObserverInterface
+class SaveAfter implements ObserverInterface
 {
     /**
      * @var StoreManagerInterface
@@ -60,35 +60,39 @@ class SaveAfter extends Data implements ObserverInterface
     protected $collectionsProductsService;
 
     /**
+     * @var CatalogCategoryProductService
+     */
+    protected $catalogCategoryProductService;
+
+    /**
      * SaveAfter constructor.
      * @param StoreManagerInterface $storeManager
      * @param ResourceConnection $resourceConnection
-     * @param AppEmulation $appEmulation
      * @param Main $main
      * @param CatalogSession $catalogSession
      * @param StoreRepositoryInterface $storeRepository
      * @param Config $config
      * @param CollectionsProductsService $collectionsProductsService
+     * @param CatalogCategoryProductService $catalogCategoryProductService
      */
     public function __construct(
         StoreManagerInterface $storeManager,
         ResourceConnection $resourceConnection,
-        AppEmulation $appEmulation,
         Main $main,
         CatalogSession $catalogSession,
         StoreRepositoryInterface $storeRepository,
         Config $config,
-        CollectionsProductsService $collectionsProductsService
+        CollectionsProductsService $collectionsProductsService,
+        CatalogCategoryProductService $catalogCategoryProductService
     ) {
         $this->storeManager = $storeManager;
         $this->resourceConnection = $resourceConnection;
-        $this->appEmulation = $appEmulation;
         $this->main = $main;
         $this->catalogSession = $catalogSession;
         $this->storeRepository = $storeRepository;
         $this->config = $config;
         $this->collectionsProductsService = $collectionsProductsService;
-        parent::__construct($resourceConnection, $appEmulation);
+        $this->catalogCategoryProductService = $catalogCategoryProductService;
     }
 
     /**
@@ -123,7 +127,7 @@ class SaveAfter extends Data implements ObserverInterface
         $this->unassignProductChildrensForSync($product);
 
         $productCategoriesBeforeSave = $this->catalogSession->getProductCategoriesIds();
-        $productCategories = $this->getCategoryIdsFromCategoryProductsTableByProductId($productId);
+        $productCategories = $this->catalogCategoryProductService->getCategoryIdsFromCategoryProductsTableByProductId($productId);
         foreach($storeIdsToUpdate as $storeId) {
             if (!$this->config->isCatalogSyncActive($storeId)) {
                 continue;

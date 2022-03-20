@@ -1,16 +1,15 @@
 <?php
 
-namespace Yotpo\Core\Observer\Product;
+namespace Yotpo\Core\Services;
 
-use Magento\Framework\Event\ObserverInterface;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Store\Model\App\Emulation as AppEmulation;
 use Yotpo\Core\Model\AbstractJobs;
 
 /**
- * Class Data - Product changes related data requests
+ * Class CatalogCategoryProductService - Used for read operations on catalog_category_product table
  */
-class Data extends AbstractJobs
+class CatalogCategoryProductService extends AbstractJobs
 {
 
     const CATALOG_CATEGORY_PRODUCT_TABLE = 'catalog_category_product';
@@ -43,20 +42,18 @@ class Data extends AbstractJobs
      * @param string $productId
      * @return array<string>
      */
-    public function getCategoryIdsFromCategoryProductsTableByProductId($productId) {
+    public function getCategoryIdsFromCategoryProductsTableByProductId($productId)
+    {
         $connection = $this->resourceConnection->getConnection();
-        $categoryProductsQuery = $connection->select(
-        )->from(
-            ['entity' => $this->resourceConnection->getTableName($this::CATALOG_CATEGORY_PRODUCT_TABLE)],
-            ['category_id']
+        $categoryProductsQuery = $connection->select()->from(
+            [ $this->resourceConnection->getTableName($this::CATALOG_CATEGORY_PRODUCT_TABLE) ],
+            [ 'category_id' ]
         )->where(
             'product_id = ?',
             $productId
         );
 
         $productCategoriesIdsMap = $connection->fetchAssoc($categoryProductsQuery, 'category_id');
-
-        $categoryIds = array_keys($productCategoriesIdsMap);
-        return $categoryIds;
+        return array_keys($productCategoriesIdsMap);
     }
 }
