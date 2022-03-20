@@ -298,6 +298,19 @@ class Processor extends Main
                                 $parentProductYotpoId
                             )
                         );
+                    } else {
+                        $this->yotpoCatalogLogger->info(
+                            __(
+                                'Failed creating parent product for a variant, skipping variant sync -
+                                Store ID: %1, Store Name: %2, Parent Entity ID: %3, Yotpo ID: %4',
+                                $storeId,
+                                $this->coreConfig->getStoreName($storeId),
+                                $parentItemId,
+                                $parentProductYotpoId
+                            )
+                        );
+
+                        continue;
                     }
                 }
             }
