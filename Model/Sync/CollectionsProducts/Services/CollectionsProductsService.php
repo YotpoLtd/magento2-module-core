@@ -202,6 +202,29 @@ class CollectionsProductsService extends AbstractJobs
     }
 
     /**
+     * @param string $categoryId
+     * @return void
+     */
+    public function updateCollectionProductsSyncDataAsDeletedInYotpo($categoryId) {
+        $currentDatetime = date('Y-m-d H:i:s');
+        $connection = $this->resourceConnection->getConnection();
+        $updateCondition = [
+            'magento_category_id = ?' => $categoryId,
+            'is_deleted_in_magento = ?' => 0
+        ];
+        $dataToUpdate = [
+            'is_synced_to_yotpo' => 0,
+            'is_deleted_in_magento' => 1,
+            'last_updated_at' => $currentDatetime
+        ];
+        $connection->update(
+            $this->resourceConnection->getTableName($this::YOTPO_COLLECTIONS_PRODUCTS_SYNC_TABLE_NAME),
+            $dataToUpdate,
+            $updateCondition
+        );
+    }
+
+    /**
      * @param string $storeId
      * @param string $productId
      * @return void
