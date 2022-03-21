@@ -144,6 +144,7 @@ class Data extends AbstractData
         $shippingAddress = $order->getShippingAddress();
         $orderStatus = $order->getStatus();
         $mappedYotpoOrderStatus = $this->getYotpoOrderStatus($orderStatus);
+        /** @var \Magento\Sales\Model\Order\Payment $payment **/
         $payment = $order->getPayment();
         $paymentMethod = null;
         if ($payment !== null) {
@@ -154,7 +155,6 @@ class Data extends AbstractData
             'order' => [
                 'order_date' => $this->coreHelper->formatDate($order->getCreatedAt()),
                 'checkout_token' => $order->getQuoteId(),
-                /** @phpstan-ignore-next-line */
                 'payment_method' => $paymentMethod,
                 'total_price' => $order->getGrandTotal(),
                 'subtotal_price' => $order->getSubtotal() + $order->getDiscountAmount(),
