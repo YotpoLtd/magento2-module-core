@@ -64,5 +64,24 @@
             "PRIMARY": true,
             "YOTPO_CATEGORY_SYNC_CATEGORY_ID_STORE_ID": true
         }
+    },
+    "yotpo_collections_products_sync": {
+        "column": {
+            "magento_store_id": true,
+            "magento_category_id": true,
+            "magento_product_id": true,
+            "is_synced_to_yotpo": true,
+            "is_deleted_in_magento": true,
+            "last_updated_at": true
+        },
+        "index": {
+            "MAGENTO_STORE_ID_ON_IS_SYNCED_TO_YOTPO": true,
+            "MAGENTO_STORE_ID_ON_MAGENTO_CATEGORY_ID": true,
+            "MAGENTO_STORE_ID_ON_MAGENTO_PRODUCT_ID": true
+        },
+        "constraint": {
+            "PRIMARY": true,
+            "YOTPO_COLLECTIONS_PRODUCTS_SYNC_MAGENTO_STORE_ID_MAGENTO_CATEGORY_ID_MAGENTO_PRODUCT_ID": true
+        }
     }
 }

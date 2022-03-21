@@ -14,6 +14,7 @@ use Yotpo\Core\Model\Sync\Category\Processor\ProcessByProduct as CategorySyncPro
 use Yotpo\Core\Model\Sync\Data\Main as SyncDataMain;
 use Yotpo\Core\Model\Sync\Catalog\Processor\Main;
 use Yotpo\Core\Api\ProductSyncRepositoryInterface;
+use Yotpo\Core\Model\Sync\CollectionsProducts\Services\CollectionsProductsService;
 
 /**
  * Class Processor - Process catalog sync
@@ -39,6 +40,11 @@ class Processor extends Main
      * @var ProductSyncRepositoryInterface
      */
     protected $productSyncRepositoryInterface;
+
+    /**
+     * @var CollectionsProductsService
+     */
+    protected $collectionsProductsService;
 
     /**
      * @var array<mixed>
@@ -69,6 +75,7 @@ class Processor extends Main
      * @param CategorySyncProcessor $categorySyncProcessor
      * @param ProductSyncRepositoryInterface $productSyncRepositoryInterface
      * @param SyncDataMain $syncDataMain
+     * @param CollectionsProductsService $collectionsProductsService
      */
     public function __construct(
         AppEmulation $appEmulation,
@@ -82,7 +89,8 @@ class Processor extends Main
         YotpoResource $yotpoResource,
         CategorySyncProcessor $categorySyncProcessor,
         ProductSyncRepositoryInterface $productSyncRepositoryInterface,
-        SyncDataMain $syncDataMain
+        SyncDataMain $syncDataMain,
+        CollectionsProductsService $collectionsProductsService
     ) {
         parent::__construct(
             $appEmulation,
@@ -98,6 +106,7 @@ class Processor extends Main
         $this->categorySyncProcessor = $categorySyncProcessor;
         $this->productSyncRepositoryInterface = $productSyncRepositoryInterface;
         $this->syncDataMain = $syncDataMain;
+        $this->collectionsProductsService = $collectionsProductsService;
     }
 
     /**
@@ -385,8 +394,6 @@ class Processor extends Main
                 }
             }
 
-            //push to parentData array if parent product is
-            // being the part of current collection
             if (!$isVisibleVariantsSync) {
                 $yotpoSyncTableItemsData = $this->pushParentData(
                     (int)$itemEntityId,
@@ -394,6 +401,10 @@ class Processor extends Main
                     $yotpoSyncTableItemsData,
                     $parentItemsIds
                 );
+
+                if ($this->shouldForceProductCollectionsResync($response, $apiRequestParams)) {
+                    $this->collectionsProductsService->forceUpdateProductCollectionsForResync($storeId, $itemRowId);
+                }
             }
 
             if ($processedSyncDataRecordToUpdate) {
@@ -954,5 +965,27 @@ class Processor extends Main
         $processedSyncDataRecordToUpdate = $returnResponse['temp_sql'];
         $this->updateSyncTable($processedSyncDataRecordToUpdate);
         return $processedSyncDataRecordToUpdate['yotpo_id'];
+    }
+
+    /**
+     * @param array<mixed> $response
+     * @param array<mixed> $apiRequestParams
+     * @return boolean
+     */
+    private function shouldForceProductCollectionsResync($response, $apiRequestParams)
+    {
+        if (!$this->isImmediateRetry) {
+            return false;
+        }
+
+        if (!$response->getData('is_success')) {
+            return false;
+        }
+
+        if (!in_array($apiRequestParams['method'], ['createProduct', 'updateProduct'])) {
+            return false;
+        }
+
+        return true;
     }
 }

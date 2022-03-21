@@ -8,6 +8,8 @@ use Magento\Store\Model\StoreManagerInterface;
 use Magento\Framework\App\ResourceConnection;
 use Yotpo\Core\Model\Config;
 use Yotpo\Core\Model\Sync\Data\Main;
+use Yotpo\Core\Model\Sync\CollectionsProducts\Services\CollectionsProductsService;
+use Yotpo\Core\Services\CatalogCategoryProductService;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\Session as CatalogSession;
 use Magento\Store\Api\StoreRepositoryInterface;
@@ -23,9 +25,14 @@ class SaveAfter implements ObserverInterface
     protected $storeManager;
 
     /**
-     * @var ResourceConnection
+     * @var AppEmulation
      */
     protected $resourceConnection;
+
+    /**
+     * @var ResourceConnection
+     */
+    protected $appEmulation;
 
     /**
      * @var Main
@@ -48,6 +55,16 @@ class SaveAfter implements ObserverInterface
     protected $config;
 
     /**
+     * @var CollectionsProductsService
+     */
+    protected $collectionsProductsService;
+
+    /**
+     * @var CatalogCategoryProductService
+     */
+    protected $catalogCategoryProductService;
+
+    /**
      * SaveAfter constructor.
      * @param StoreManagerInterface $storeManager
      * @param ResourceConnection $resourceConnection
@@ -55,6 +72,8 @@ class SaveAfter implements ObserverInterface
      * @param CatalogSession $catalogSession
      * @param StoreRepositoryInterface $storeRepository
      * @param Config $config
+     * @param CollectionsProductsService $collectionsProductsService
+     * @param CatalogCategoryProductService $catalogCategoryProductService
      */
     public function __construct(
         StoreManagerInterface $storeManager,
@@ -62,7 +81,9 @@ class SaveAfter implements ObserverInterface
         Main $main,
         CatalogSession $catalogSession,
         StoreRepositoryInterface $storeRepository,
-        Config $config
+        Config $config,
+        CollectionsProductsService $collectionsProductsService,
+        CatalogCategoryProductService $catalogCategoryProductService
     ) {
         $this->storeManager = $storeManager;
         $this->resourceConnection = $resourceConnection;
@@ -70,6 +91,8 @@ class SaveAfter implements ObserverInterface
         $this->catalogSession = $catalogSession;
         $this->storeRepository = $storeRepository;
         $this->config = $config;
+        $this->collectionsProductsService = $collectionsProductsService;
+        $this->catalogCategoryProductService = $catalogCategoryProductService;
     }
 
     /**
@@ -81,27 +104,39 @@ class SaveAfter implements ObserverInterface
      */
     public function execute(EventObserver $observer)
     {
-        $storeIds = [];
+        $storeIdsToUpdate = [];
         $product = $observer->getEvent()->getProduct();
         $currentStoreId = $product->getStoreId();
         if ($currentStoreId == 0) {
             $stores = $this->storeRepository->getList();
             foreach ($stores as $store) {
-                $storeIds[] = $store->getId();
+                $storeIdsToUpdate[] = $store->getId();
             }
-        }
-        $storeIdsToUpdate  = $currentStoreId == 0 ? $storeIds : [$product->getStoreId()];
-        if ($product->hasDataChanges()) {
-            $this->updateProductAttribute([$product->getRowId() ?: $product->getId()], $storeIdsToUpdate);
-            $this->updateIsDeleted($product);
-            $tableData = ['response_code' => Config::CUSTOM_RESPONSE_DATA];
-            $this->updateYotpoSyncTable($tableData, $storeIds, [$product->getId()]);
+        } else {
+            $storeIdsToUpdate[] = $currentStoreId;
         }
 
-        $oldChildIds = $this->catalogSession->getChildrenIds();
-        $newChildIds = $product->getTypeInstance()->getChildrenIds($product->getId());
-        $this->manageUnAssign($oldChildIds, $newChildIds, $product);
-        $this->catalogSession->unsChildrenIds();
+        $productId = $product->getId();
+        if ($product->hasDataChanges()) {
+            $this->updateProductAttribute([$product->getRowId() ?: $productId], $storeIdsToUpdate);
+            $this->updateIsDeleted($product);
+            $tableData = ['response_code' => Config::CUSTOM_RESPONSE_DATA];
+            $this->updateYotpoSyncTable($tableData, $storeIdsToUpdate, [$productId]);
+        }
+
+        $this->unassignProductChildrensForSync($product);
+
+        $productCategoriesBeforeSave = $this->catalogSession->getProductCategoriesIds();
+        $productCategories = $this->catalogCategoryProductService->getCategoryIdsFromCategoryProductsTableByProductId($productId);
+        foreach($storeIdsToUpdate as $storeId) {
+            if (!$this->config->isCatalogSyncActive($storeId)) {
+                continue;
+            }
+
+            $this->assignProductCategoriesForCollectionsProductsSync($productCategoriesBeforeSave, $productCategories, $storeId, $productId);
+            $this->assignDeletedProductCategoriesForCollectionsProductsSync($productCategoriesBeforeSave, $productCategories, $storeId, $productId);
+        }
+
     }
 
     /**
@@ -139,7 +174,7 @@ class SaveAfter implements ObserverInterface
         $existingIds = $product->getOrigData('website_ids');
         $newIds = $product->getData('website_ids');
 
-        $removedWebsite = $this->findDifferentArray($existingIds, $newIds);
+        $removedWebsite = $this->findAndRetrieveDifferenceBetweenArrays($existingIds, $newIds);
         if (count($removedWebsite) > 0) {
             $storeIds = $this->collectStoreIds($removedWebsite);
             $tableData = [
@@ -150,7 +185,7 @@ class SaveAfter implements ObserverInterface
             $this->updateYotpoSyncTable($tableData, $storeIds, [$product->getId()]);
         }
 
-        $newWebsite = $this->findDifferentArray($newIds, $existingIds);
+        $newWebsite = $this->findAndRetrieveDifferenceBetweenArrays($newIds, $existingIds);
         if (count($newWebsite) > 0) {
             $storeIds = $this->collectStoreIds($newWebsite);
 
@@ -183,29 +218,29 @@ class SaveAfter implements ObserverInterface
     }
 
     /**
-     * @param array<int, int> $oldChild
-     * @param array<int, int> $newChild
+     * @param array<int, int> $productChildrenIdsBeforeSave
+     * @param array<int, int> $productChildrenIds
      * @param Product $product
      * @return void
      */
-    protected function manageUnAssign($oldChild, $newChild, $product)
+    protected function manageUnAssign($productChildrenIdsBeforeSave, $productChildrenIds, $product)
     {
-        if (isset($oldChild[0])) {
-            $oldChild = (array)$oldChild[0];
+        if (isset($productChildrenIdsBeforeSave[0])) {
+            $productChildrenIdsBeforeSave = (array)$productChildrenIdsBeforeSave[0];
         }
-        if (isset($newChild[0])) {
-            $newChild = (array)$newChild[0];
+        if (isset($productChildrenIds[0])) {
+            $productChildrenIds = (array)$productChildrenIds[0];
         }
 
-        $oldChild = $this->checkIfMultiDimensional($oldChild);
-        $newChild = $this->checkIfMultiDimensional($newChild);
+        $productChildrenIdsBeforeSave = $this->checkIfMultiDimensional($productChildrenIdsBeforeSave);
+        $productChildrenIds = $this->checkIfMultiDimensional($productChildrenIds);
 
-        $result = array_merge(array_diff($oldChild, $newChild), array_diff($newChild, $oldChild));
+        $result = array_merge(array_diff($productChildrenIdsBeforeSave, $productChildrenIds), array_diff($productChildrenIds, $productChildrenIdsBeforeSave));
         if (count($result) > 0) {
             $this->updateUnAssign($result, $product);
         }
 
-        $result = $this->findDifferentArray($newChild, $oldChild);
+        $result = $this->findAndRetrieveDifferenceBetweenArrays($productChildrenIds, $productChildrenIdsBeforeSave);
         if (count($result) > 0) {
             $this->updateProductAttribute($result, [$product->getStoreId()]);
             $tableData = ['response_code' => Config::CUSTOM_RESPONSE_DATA];
@@ -240,20 +275,6 @@ class SaveAfter implements ObserverInterface
             $data,
             $cond
         );
-    }
-
-    /**
-     * @param array<int, int>|int $firstArray
-     * @param array<int, int>|int $secondArray
-     * @return array<int, int>
-     */
-    public function findDifferentArray($firstArray, $secondArray)
-    {
-        $result = [];
-        if (is_array($firstArray) && is_array($secondArray)) {
-            $result = array_diff($firstArray, $secondArray);
-        }
-        return $result;
     }
 
     /**
@@ -299,5 +320,58 @@ class SaveAfter implements ObserverInterface
         }
 
         return $returnArray;
+    }
+
+    /**
+     * @param $product
+     * @return void
+     */
+    private function unassignProductChildrensForSync($product)
+    {
+        $productChildrenIdsBeforeSave = $this->catalogSession->getChildrenIds();
+        $productChildrenIds = $product->getTypeInstance()->getChildrenIds($product->getId());
+        $this->manageUnAssign($productChildrenIdsBeforeSave, $productChildrenIds, $product);
+        $this->catalogSession->unsChildrenIds();
+    }
+
+    /**
+     * @param array $productCategoriesBeforeSave
+     * @param array $productCategories
+     * @param string $storeId
+     * @param string $productId
+     * @return void
+     */
+    private function assignProductCategoriesForCollectionsProductsSync($productCategoriesBeforeSave, $productCategories, $storeId, $productId)
+    {
+        $categoriesIdsForSync = $this->findAndRetrieveDifferenceBetweenArrays($productCategories, $productCategoriesBeforeSave);
+        $this->collectionsProductsService->assignProductCategoriesForCollectionsProductsSync($categoriesIdsForSync, $storeId, $productId);
+    }
+
+    /**
+     * @param array $productCategoriesBeforeSave
+     * @param array $productCategories
+     * @param string $storeId
+     * @param string $productId
+     * @return void
+     */
+    private function assignDeletedProductCategoriesForCollectionsProductsSync($productCategoriesBeforeSave, $productCategories, $storeId, $productId)
+    {
+        $categoriesIdsForSync = $this->findAndRetrieveDifferenceBetweenArrays($productCategoriesBeforeSave, $productCategories);
+        $this->collectionsProductsService->assignProductCategoriesForCollectionsProductsSync($categoriesIdsForSync, $storeId, $productId, true);
+    }
+
+    /**
+     * @param array<int, int>|int $firstArray
+     * @param array<int, int>|int $secondArray
+     * @return array<int, int>
+     */
+    private function findAndRetrieveDifferenceBetweenArrays($firstArray, $secondArray)
+    {
+        $result = [];
+        if (is_array($firstArray) && is_array($secondArray)) {
+            $result = array_diff($firstArray, $secondArray);
+        }
+
+        return $result;
     }
 }

@@ -19,23 +19,28 @@ class CronConfig extends Value
     /**
      * Cron expression configuration path
      */
-    const CRON_STRING_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync/schedule/cron_expr';
+    const CRON_EXPRESSION_PATH = '/schedule/cron_expr';
 
     /**
      * Cron expression model path
      */
-    const CRON_MODEL_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync/run/model';
+    const CRON_MODEL_PATH = '/run/model';
 
     /**
-     * Cron expression configuration path
+     * Products sync Cron job path
      */
     // phpcs:ignore
-    const CRON_STRING_PATH_CATEGORY = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_category_sync/schedule/cron_expr';
+    const PRODUCTS_SYNC_CRON_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_products_sync';
 
     /**
-     * Cron expression model path
+     * Category sync Cron job path
      */
-    const CRON_MODEL_PATH_CATEGORY = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_category_sync/run/model';
+    const CATEGORY_SYNC_CRON_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_category_sync';
+
+    /**
+     * Collections Products sync Cron job path
+     */
+    const COLLECTIONS_PRODUCTS_SYNC_CRON_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_collections_products_sync';
 
     /**
      * @var ValueFactory
@@ -82,52 +87,98 @@ class CronConfig extends Value
      */
     public function afterSave()
     {
-        $cronExprString = $this->getData('groups/sync_settings/groups/catalog_sync/fields/frequency/value');
+        $catalogCronExpressionString = $this->getData('groups/sync_settings/groups/catalog_sync/fields/frequency/value');
         try {
-            /** @phpstan-ignore-next-line */
-            $this->configValueFactory->create()->load(
-                self::CRON_STRING_PATH,
-                'path'
-            )->setValue(
-                $cronExprString
-            )->setPath(
-                self::CRON_STRING_PATH
-            )->save();
-            /** @phpstan-ignore-next-line */
-            $this->configValueFactory->create()->load(
-                self::CRON_MODEL_PATH,
-                'path'
-            )->setValue(
-                $this->runModelPath
-            )->setPath(
-                self::CRON_MODEL_PATH
-            )->save();
+            $this->configureCronProductsSync($catalogCronExpressionString);
 
-            /** @phpstan-ignore-next-line */
-            $this->configValueFactory->create()->load(
-                self::CRON_STRING_PATH_CATEGORY,
-                'path'
-            )->setValue(
-                $cronExprString
-            )->setPath(
-                self::CRON_STRING_PATH_CATEGORY
-            )->save();
-            /** @phpstan-ignore-next-line */
-            $this->configValueFactory->create()->load(
-                self::CRON_MODEL_PATH_CATEGORY,
-                'path'
-            )->setValue(
-                $this->runModelPath
-            )->setPath(
-                self::CRON_MODEL_PATH_CATEGORY
-            )->save();
-        } catch (\Exception $e) {
+            $this->configureCronCategorySync($catalogCronExpressionString);
+
+            $this->configureCronCollectionsProductsSync($catalogCronExpressionString);
+        } catch (\Exception $exception) {
             throw new CouldNotSaveException(
                 __('We can\'t save the cron expression.'),
-                $e
+                $exception
             );
         }
 
         return parent::afterSave();
+    }
+
+    /**
+     * @param string $catalogCronExpressionString
+     * @return void
+     */
+    private function configureCronProductsSync($catalogCronExpressionString)
+    {
+        /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::PRODUCTS_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH,
+            'path'
+        )->setValue(
+            $catalogCronExpressionString
+        )->setPath(
+            self::PRODUCTS_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH
+        )->save();
+         /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::PRODUCTS_SYNC_CRON_PATH . self::CRON_MODEL_PATH,
+            'path'
+        )->setValue(
+            $this->runModelPath
+        )->setPath(
+            self::PRODUCTS_SYNC_CRON_PATH . self::CRON_MODEL_PATH
+        )->save();
+    }
+
+    /**
+     * @param string $catalogCronExpressionString
+     * @return void
+     */
+    private function configureCronCategorySync($catalogCronExpressionString)
+    {
+        /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::CATEGORY_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH,
+            'path'
+        )->setValue(
+            $catalogCronExpressionString
+        )->setPath(
+            self::CATEGORY_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH
+        )->save();
+        /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::CATEGORY_SYNC_CRON_PATH . self::CRON_MODEL_PATH,
+            'path'
+        )->setValue(
+            $this->runModelPath
+        )->setPath(
+            self::CATEGORY_SYNC_CRON_PATH . self::CRON_MODEL_PATH
+        )->save();
+    }
+
+    /**
+     * @param string $catalogCronExpressionString
+     * @return void
+     */
+    private function configureCronCollectionsProductsSync($catalogCronExpressionString)
+    {
+        /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::COLLECTIONS_PRODUCTS_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH,
+            'path'
+        )->setValue(
+            $catalogCronExpressionString
+        )->setPath(
+            self::COLLECTIONS_PRODUCTS_SYNC_CRON_PATH . self::CRON_EXPRESSION_PATH
+        )->save();
+        /** @phpstan-ignore-next-line */
+        $this->configValueFactory->create()->load(
+            self::COLLECTIONS_PRODUCTS_SYNC_CRON_PATH . self::CRON_MODEL_PATH,
+            'path'
+        )->setValue(
+            $this->runModelPath
+        )->setPath(
+            self::COLLECTIONS_PRODUCTS_SYNC_CRON_PATH . self::CRON_MODEL_PATH
+        )->save();
     }
 }
