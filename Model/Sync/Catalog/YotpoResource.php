@@ -131,7 +131,7 @@ class YotpoResource
     /**
      * Get config parent IDs
      * @param array<int, int> $simpleIds
-     * @return array<int|string, mixed>
+     * @return array<mixed>
      */
     public function getConfigProductIds(array $simpleIds): array
     {

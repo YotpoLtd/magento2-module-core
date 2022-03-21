@@ -220,7 +220,9 @@ class Data extends Main
         $productIdsToParentIdsMap = [];
         if (!$isVariantsDataIncluded) {
             $productIdsToConfigurableIdsMapToCheck = $this->yotpoResource->getConfigProductIds($productsId);
-            $productIdsToConfigurableIdsMap = $this->filterNotConfigurableProducts($productIdsToConfigurableIdsMapToCheck);
+            $productIdsToConfigurableIdsMap = $this->filterNotConfigurableProducts(
+                $productIdsToConfigurableIdsMapToCheck
+            );
             $syncItems = $this->mergeProductOptions($syncItems, $productIdsToConfigurableIdsMap, $productsObject);
             $productIdsToGroupIdsMap = $this->yotpoResource->getGroupProductIds($productsId);
             $productIdsToParentIdsMap = $productIdsToConfigurableIdsMap + $productIdsToGroupIdsMap;
@@ -548,10 +550,11 @@ class Data extends Main
     }
 
     /**
-     * @param array<string, integer> $productIds
-     * @return array<string, integer>
+     * @param array<mixed> $productIds
+     * @return array<mixed>
      */
-    private function filterNotConfigurableProducts($productIds) {
+    private function filterNotConfigurableProducts($productIds)
+    {
         if (!$productIds) {
             return [];
         }
