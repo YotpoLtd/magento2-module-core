@@ -276,52 +276,16 @@ class Processor extends Main
                 $parentItemId = $parentItemsIds[$itemEntityId];
 
                 if (!$this->isProductParentYotpoIdFound($yotpoSyncTableItemsData, $parentItemId)) {
-                    $this->yotpoCatalogLogger->info(
-                        __(
-                            'Start syncing parent product that does not exist in Yotpo -
-                            Store ID: %1, Store Name: %2, Item Entity ID: %3, Parent Entity ID: %4',
-                            $storeId,
-                            $this->coreConfig->getStoreName($storeId),
-                            $itemEntityId,
-                            $parentItemId
-                        )
-                    );
-
-                    $parentProductYotpoId = $this->ensureEntityExistenceAsProductInYotpo(
+                    $isParentProductCreated = $this->forceParentProductSyncToYotpo(
+                        $storeId,
+                        $itemEntityId,
                         $parentItemId,
                         $yotpoSyncTableItemsData,
                         $parentItemsIds,
                         $yotpoFormatItemData
                     );
 
-                    if ($parentProductYotpoId) {
-                        $yotpoSyncTableItemsData[$parentItemId] = [
-                            'product_id' => $parentItemId,
-                            'yotpo_id' => $parentProductYotpoId
-                        ];
-
-                        $this->yotpoCatalogLogger->info(
-                            __(
-                                'Finished syncing parent product that does not exist in Yotpo -
-                                Store ID: %1, Store Name: %2, Parent Entity ID: %3, Yotpo ID: %4',
-                                $storeId,
-                                $this->coreConfig->getStoreName($storeId),
-                                $parentItemId,
-                                $parentProductYotpoId
-                            )
-                        );
-                    } else {
-                        $this->yotpoCatalogLogger->info(
-                            __(
-                                'Failed creating parent product for a variant, skipping variant sync -
-                                Store ID: %1, Store Name: %2, Parent Entity ID: %3, Yotpo ID: %4',
-                                $storeId,
-                                $this->coreConfig->getStoreName($storeId),
-                                $parentItemId,
-                                $parentProductYotpoId
-                            )
-                        );
-
+                    if (!$isParentProductCreated) {
                         continue;
                     }
                 } elseif ($this->isProductParentYotpoIdChanged($itemEntityId, $parentItemId, $yotpoSyncTableItemsData)) {
@@ -368,13 +332,28 @@ class Processor extends Main
             $response = $responseObject['response'];
             $apiRequestParams['method'] = $responseObject['method'];
             $apiRequestParams['yotpo_id'] = $responseObject['yotpo_id'];
+            $responseCode = $response->getData('status');
 
             if ($apiRequestParams['method'] == 'createProduct' && !$response->getData('is_success')) {
                 $hasFailedCreatingAnyProduct = true;
             }
 
+            if ($apiRequestParams['method'] == 'createProductVariant' && $responseCode == CoreConfig::NOT_FOUND_RESPONSE_CODE) {
+                $isParentProductCreated = $this->forceParentProductSyncToYotpo(
+                    $storeId,
+                    $itemEntityId,
+                    $parentItemsIds[$itemEntityId],
+                    $yotpoSyncTableItemsData,
+                    $parentItemsIds,
+                    $yotpoFormatItemData
+                );
+
+                if ($isParentProductCreated) {
+                    continue;
+                }
+            }
+
             $yotpoIdValue = $apiRequestParams['yotpo_id'] ?: 0;
-            $responseCode = $response->getData('status');
             $syncDataRecordToUpdate = $this->prepareSyncTableDataToUpdate(
                 $itemEntityId,
                 $yotpoIdKey,
@@ -853,6 +832,66 @@ class Processor extends Main
     }
 
     /**
+     * @param integer $storeId
+     * @param integer $itemEntityId
+     * @param integer $parentItemId
+     * @param array <mixed> $yotpoSyncTableItemsData
+     * @param array <mixed> $parentItemsIds
+     * @param array <mixed> $yotpoFormatItemData
+     * @return bool
+     */
+    private function forceParentProductSyncToYotpo($storeId, $itemEntityId, $parentItemId, $yotpoSyncTableItemsData, $parentItemsIds, $yotpoFormatItemData)
+    {
+        $this->yotpoCatalogLogger->info(
+            __(
+                'Start syncing parent product that does not exist in Yotpo - Store ID: %1, Store Name: %2, Item Entity ID: %3, Parent Entity ID: %4',
+                $storeId,
+                $this->coreConfig->getStoreName($storeId),
+                $itemEntityId,
+                $parentItemId
+            )
+        );
+
+        $parentProductYotpoId = $this->ensureEntityExistenceAsProductInYotpo(
+            $parentItemId,
+            $yotpoSyncTableItemsData,
+            $parentItemsIds,
+            $yotpoFormatItemData
+        );
+
+        if ($parentProductYotpoId) {
+            $this->yotpoCatalogLogger->info(
+                __(
+                    'Finished syncing parent product that does not exist in Yotpo - Store ID: %1, Store Name: %2, Parent Entity ID: %3, Yotpo ID: %4',
+                    $storeId,
+                    $this->coreConfig->getStoreName($storeId),
+                    $parentItemId,
+                    $parentProductYotpoId
+                )
+            );
+
+            $yotpoSyncTableItemsData[$parentItemId] = [
+                'product_id' => $parentItemId,
+                'yotpo_id' => $parentProductYotpoId
+            ];
+
+            return true;
+        } else {
+            $this->yotpoCatalogLogger->info(
+                __(
+                    'Failed creating parent product for a variant - Store ID: %1, Store Name: %2, Parent Entity ID: %3, Yotpo ID: %4',
+                    $storeId,
+                    $this->coreConfig->getStoreName($storeId),
+                    $parentItemId,
+                    $parentProductYotpoId
+                )
+            );
+
+            return false;
+        }
+    }
+
+    /**
      * @param int $parentId
      * @param array <mixed> $yotpoSyncTableItemsData
      * @param array <mixed> $parentItemsIds
@@ -891,8 +930,7 @@ class Processor extends Main
             && $response->getData('status') != CoreConfig::SUCCESS_RESPONSE_CODE) {
             $this->yotpoCatalogLogger->info(
                 __(
-                    'Failed syncing missing variant parent product to Yotpo -
-                    Parent Entity ID: %1, Status Code: %2, Reason: %3',
+                    'Failed syncing missing variant parent product to Yotpo - Parent Entity ID: %1, Status Code: %2, Reason: %3',
                     $parentId,
                     $response->getData('status'),
                     $response->getData('reason')
