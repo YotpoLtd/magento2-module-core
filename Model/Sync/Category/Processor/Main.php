@@ -149,7 +149,7 @@ class Main extends AbstractJobs
             $url = $this->config->getEndpoint('collections');
             $data = ['external_ids' => implode(',', $chunk)];
             $data['entityLog'] = 'catalog';
-            $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
+            $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data, true);
             $response = $response->getData('response');
             if (!$response) {
                 continue;
@@ -184,7 +184,7 @@ class Main extends AbstractJobs
         $collectionData = $this->data->prepareData($category);
         $collectionData['entityLog'] = 'catalog';
         $url = $this->config->getEndpoint('collections_update', ['{yotpo_collection_id}'], [$yotpoId]);
-        $response = $this->yotpoCoreApiSync->sync(\Zend_Http_Client::PATCH, $url, $collectionData);
+        $response = $this->yotpoCoreApiSync->sync(\Zend_Http_Client::PATCH, $url, $collectionData, true);
         $categoryId = $category->getId();
         $storeId = $category->getStoreId();
         if ($this->isImmediateRetry($response, $this->entity, $categoryId, $storeId)) {
@@ -330,7 +330,7 @@ class Main extends AbstractJobs
         $collectionData = $this->data->prepareData($category);
         $collectionData['entityLog'] = 'catalog';
         $url = $this->config->getEndpoint('collections');
-        return $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $url, $collectionData);
+        return $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $url, $collectionData, true);
     }
 
     /**

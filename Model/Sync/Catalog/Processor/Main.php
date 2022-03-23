@@ -177,12 +177,12 @@ class Main extends AbstractJobs
             case $this->coreConfig->getProductSyncMethod('deleteProduct'):
             case $this->coreConfig->getProductSyncMethod('unassignProduct'):
                 $data = ['product' => $data, 'entityLog' => 'catalog'];
-                $response = $this->coreSync->sync('PATCH', $params['url'], $data);
+                $response = $this->coreSync->sync('PATCH', $params['url'], $data, true);
                 break;
             case $this->coreConfig->getProductSyncMethod('deleteProductVariant'):
             case $this->coreConfig->getProductSyncMethod('unassignProductVariant'):
                 $data = ['variant' => $data, 'entityLog' => 'catalog'];
-                $response = $this->coreSync->sync('PATCH', $params['url'], $data);
+                $response = $this->coreSync->sync('PATCH', $params['url'], $data, true);
                 break;
             default:
                 throw new InvalidArgumentException("Invalid method was passed to processRequest");
@@ -509,7 +509,7 @@ class Main extends AbstractJobs
     public function getExistingProductsFromAPI($url, $requestIds, $type)
     {
         $data = ['external_ids' => $requestIds, 'entityLog' => 'catalog'];
-        $response = $this->coreSync->sync('GET', $url, $data);
+        $response = $this->coreSync->sync('GET', $url, $data, true);
 
         $products = [];
         if (is_object($response) && $response->getResponse()) {

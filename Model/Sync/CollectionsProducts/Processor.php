@@ -217,13 +217,15 @@ class Processor extends AbstractJobs
             $response = $this->yotpoCoreSync->sync(
                 $this->coreConfig::METHOD_DELETE,
                 $requestEndpoint,
-                $collectionProductDataToSync
+                $collectionProductDataToSync,
+                true
             );
         } else {
             $response = $this->yotpoCoreSync->sync(
                 $this->coreConfig::METHOD_POST,
                 $requestEndpoint,
-                $collectionProductDataToSync
+                $collectionProductDataToSync,
+                true
             );
         }
 

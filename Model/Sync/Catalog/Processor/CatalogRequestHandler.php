@@ -218,7 +218,7 @@ class CatalogRequestHandler
     private function createProduct($requestPayload)
     {
         $productPostEndpoint = $this->coreConfig->getEndpoint('products');
-        return $this->coreSync->sync(CoreConfig::METHOD_POST, $productPostEndpoint, $requestPayload);
+        return $this->coreSync->sync(CoreConfig::METHOD_POST, $productPostEndpoint, $requestPayload, true);
     }
 
     /**
@@ -233,7 +233,7 @@ class CatalogRequestHandler
             ['{yotpo_product_id}'],
             [$yotpoProductId]
         );
-        return $this->coreSync->sync(CoreConfig::METHOD_PATCH, $productPostEndpoint, $requestPayload);
+        return $this->coreSync->sync(CoreConfig::METHOD_PATCH, $productPostEndpoint, $requestPayload, true);
     }
 
     /**
@@ -248,7 +248,7 @@ class CatalogRequestHandler
             ['{yotpo_product_id}'],
             [$yotpoParentProductId]
         );
-        return $this->coreSync->sync(CoreConfig::METHOD_POST, $variantPostEndpoint, $requestPayload);
+        return $this->coreSync->sync(CoreConfig::METHOD_POST, $variantPostEndpoint, $requestPayload, true);
     }
 
     /**
@@ -265,7 +265,7 @@ class CatalogRequestHandler
             '{yotpo_variant_id}'],
             [$yotpoParentProductId, $yotpoVariantId]
         );
-        return $this->coreSync->sync(CoreConfig::METHOD_PATCH, $variantPostEndpoint, $requestPayload);
+        return $this->coreSync->sync(CoreConfig::METHOD_PATCH, $variantPostEndpoint, $requestPayload, true);
     }
 
     /**
@@ -305,7 +305,7 @@ class CatalogRequestHandler
     {
         $productGetEndpoint = $this->coreConfig->getEndpoint('products');
         $requestData = ['external_ids' => $itemEntityId, 'entityLog' => 'catalog'];
-        $response = $this->coreSync->sync(CoreConfig::METHOD_GET, $productGetEndpoint, $requestData);
+        $response = $this->coreSync->sync(CoreConfig::METHOD_GET, $productGetEndpoint, $requestData, true);
 
         if (!$response->getData('is_success')) {
             throw new UnexpectedValueException("Request to get product from Yotpo was not successful");
@@ -328,7 +328,7 @@ class CatalogRequestHandler
             [$yotpoParentProductId]
         );
         $requestData = ['external_ids' => $itemEntityId, 'entityLog' => 'catalog'];
-        $response = $this->coreSync->sync(CoreConfig::METHOD_GET, $variantGetEndpoint, $requestData);
+        $response = $this->coreSync->sync(CoreConfig::METHOD_GET, $variantGetEndpoint, $requestData, true);
 
         if (!$response->getData('is_success')) {
             throw new UnexpectedValueException("Request to get variant from Yotpo was not successful");
