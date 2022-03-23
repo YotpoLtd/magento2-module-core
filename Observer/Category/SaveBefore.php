@@ -82,23 +82,42 @@ class SaveBefore implements ObserverInterface
             return;
         }
 
-        $currentProductIdsInCategory = $this->catalogCategoryProductService->getProductIdsFromCategoryProductsTableByCategoryId($categoryId);
-        $productIdToPositionInCategoryMapBeforeSave = json_decode($this->request->getParam('vm_category_products'), true);
+        $currentProductIdsInCategory =
+            $this->catalogCategoryProductService->getProductIdsFromCategoryProductsTableByCategoryId(
+                $categoryId
+            );
+        $productIdToPositionInCategoryMapBeforeSave =
+            json_decode(
+                $this->request->getParam('vm_category_products'),
+                true
+            );
         $productIdsInCategoryBeforeSave = array_keys($productIdToPositionInCategoryMapBeforeSave);
 
         $productsAddedToCategory = array_diff($productIdsInCategoryBeforeSave, $currentProductIdsInCategory);
         $productsDeletedFromCategory = array_diff($currentProductIdsInCategory, $productIdsInCategoryBeforeSave);
-        $storeIdsSuccessfullySyncedWithCategory = $this->categoryProcessorMain->getStoresSuccessfullySyncedWithCategory($categoryId);
+        $storeIdsSuccessfullySyncedWithCategory =
+            $this->categoryProcessorMain->getStoresSuccessfullySyncedWithCategory(
+                $categoryId
+            );
 
         if ($storeIdsSuccessfullySyncedWithCategory) {
             foreach ($storeIdsSuccessfullySyncedWithCategory as $storeId) {
                 if ($this->config->isCatalogSyncActive($storeId)) {
                     if ($productsAddedToCategory) {
-                        $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync($productsAddedToCategory, $storeId, $categoryId);
+                        $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync(
+                            $productsAddedToCategory,
+                            $storeId,
+                            $categoryId
+                        );
                     }
 
                     if ($productsDeletedFromCategory) {
-                        $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync($productsDeletedFromCategory, $storeId, $categoryId, true);
+                        $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync(
+                            $productsDeletedFromCategory,
+                            $storeId,
+                            $categoryId,
+                            true
+                        );
                     }
                 }
             }

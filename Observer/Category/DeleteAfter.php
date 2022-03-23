@@ -62,7 +62,8 @@ class DeleteAfter implements ObserverInterface
      * @param string $categoryId
      * @return void
      */
-    private function assignCategoryForDeletion($categoryId) {
+    private function assignCategoryForDeletion($categoryId)
+    {
         $connection = $this->resourceConnection->getConnection();
         $connection->update(
             $this->resourceConnection->getTableName('yotpo_category_sync'),

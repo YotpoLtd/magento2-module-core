@@ -57,7 +57,10 @@ class SaveBefore implements ObserverInterface
             $productId = $product->getId();
             $childrenIds = $product->getTypeInstance()->getChildrenIds($productId);
             $this->catalogSession->setChildrenIds($childrenIds);
-            $productCategoriesIds = $this->catalogCategoryProductService->getCategoryIdsFromCategoryProductsTableByProductId($productId);
+            $productCategoriesIds =
+                $this->catalogCategoryProductService->getCategoryIdsFromCategoryProductsTableByProductId(
+                    $productId
+                );
             $this->catalogSession->setProductCategoriesIds($productCategoriesIds);
         }
     }

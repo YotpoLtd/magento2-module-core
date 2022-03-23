@@ -40,7 +40,8 @@ class CronConfig extends Value
     /**
      * Collections Products sync Cron job path
      */
-    const COLLECTIONS_PRODUCTS_SYNC_CRON_PATH = 'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_collections_products_sync';
+    const COLLECTIONS_PRODUCTS_SYNC_CRON_PATH =
+        'crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_collections_products_sync';
 
     /**
      * @var ValueFactory
@@ -87,7 +88,9 @@ class CronConfig extends Value
      */
     public function afterSave()
     {
-        $catalogCronExpressionString = $this->getData('groups/sync_settings/groups/catalog_sync/fields/frequency/value');
+        $catalogCronExpressionString = $this->getData(
+            'groups/sync_settings/groups/catalog_sync/fields/frequency/value'
+        );
         try {
             $this->configureCronProductsSync($catalogCronExpressionString);
 

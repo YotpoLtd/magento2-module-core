@@ -1,6 +1,7 @@
 <?php
 namespace Yotpo\Core\Model\Sync\Catalog;
 
+use Magento\Framework\DataObject;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Yotpo\Core\Model\Config as CoreConfig;
 use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
@@ -968,7 +969,7 @@ class Processor extends Main
     }
 
     /**
-     * @param array<mixed> $response
+     * @param DataObject $response
      * @param array<mixed> $apiRequestParams
      * @return boolean
      */

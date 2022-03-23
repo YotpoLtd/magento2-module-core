@@ -694,7 +694,11 @@ class Config
         return self::YOTPO_RETRY_ATTEMPTS_AMOUNT;
     }
 
-    public function getSuccessfulResponseCodes() {
+    /**
+     * @return mixed[]
+     */
+    public function getSuccessfulResponseCodes()
+    {
         return $this->successfulResponseCodes;
     }
 }

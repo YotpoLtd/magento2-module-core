@@ -57,7 +57,10 @@ class DeleteBefore implements ObserverInterface
             $productId = $product->getId();
             $childrenIds = $product->getTypeInstance()->getChildrenIds($productId);
             $this->catalogSession->setDeleteYotpoIds($childrenIds);
-            $productCategoriesIds = $this->catalogCategoryProductService->getCategoryIdsFromCategoryProductsTableByProductId($productId);
+            $productCategoriesIds =
+                $this->catalogCategoryProductService->getCategoryIdsFromCategoryProductsTableByProductId(
+                    $productId
+                );
             $this->catalogSession->setProductCategoriesIds($productCategoriesIds);
         }
     }

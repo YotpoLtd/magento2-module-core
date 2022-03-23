@@ -562,7 +562,7 @@ class Main extends AbstractJobs
         $response = $this->coreSync->sync('GET', $url, $data);
 
         $products = [];
-        if ($response && $response->getResponse()) {
+        if (is_object($response) && $response->getResponse()) {
             $responseData = $response->getResponse();
             if ($responseData && is_array($responseData)) {
                 if ($type == 'variants') {
@@ -700,7 +700,8 @@ class Main extends AbstractJobs
      * @param string $productId
      * @return string
      */
-    public function getYotpoIdFromProductsSyncTableByProductId($productId) {
+    public function getYotpoIdFromProductsSyncTableByProductId($productId)
+    {
         $storeId = $this->coreConfig->getStoreId();
         $connection = $this->resourceConnection->getConnection();
         $productYotpoIdQuery = $connection->select(
@@ -720,7 +721,7 @@ class Main extends AbstractJobs
     }
 
     /**
-     * @param array $productsIds
+     * @param array<int|string> $productsIds
      * @return array<string>
      */
     public function getYotpoIdsFromProductsSyncTableByProductIds(array $productsIds)
