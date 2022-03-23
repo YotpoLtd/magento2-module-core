@@ -143,7 +143,8 @@ class ProcessByCategory extends Main
     }
 
     /**
-     * @param array <mixed> $retryCategoryIds
+     * @param array<mixed> $retryCategoryIds
+     * @param int|null $storeId
      * @return void
      * @throws LocalizedException
      * @throws NoSuchEntityException
@@ -285,10 +286,9 @@ class ProcessByCategory extends Main
     }
 
     /**
-     * @param string $storeId
      * @return void
-     * @throws NoSuchEntityException
      * @throws LocalizedException
+     * @throws NoSuchEntityException
      */
     public function deleteCollections()
     {
@@ -314,7 +314,12 @@ class ProcessByCategory extends Main
 
             $categoryProductsIds = $this->collectionsProductsService->getCategoryProductsIdsFromSyncTable($categoryId);
             if ($categoryProductsIds) {
-                $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync($categoryProductsIds, $storeId, $categoryId, true);
+                $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync(
+                    $categoryProductsIds,
+                    $storeId,
+                    $categoryId,
+                    true
+                );
             }
 
             $this->updateYotpoTblForDeletedCategories($categoryId);
@@ -409,23 +414,32 @@ class ProcessByCategory extends Main
     }
 
     /**
-     * @param array $yotpoSyncedCategories
-     * @param array $existingCollections
+     * @param array<mixed> $yotpoSyncedCategories
+     * @param array<mixed> $existingCollections
      * @param Category $magentoCategory
      * @return bool
      */
-    private function isCategoryWasEverSynced(array $yotpoSyncedCategories, array $existingCollections, Category $magentoCategory)
-    {
-        return isset($yotpoSyncedCategories[$magentoCategory->getId()]) && isset($existingCollections[$magentoCategory->getId()]);
+    private function isCategoryWasEverSynced(
+        $yotpoSyncedCategories,
+        $existingCollections,
+        $magentoCategory
+    ) {
+        return isset(
+            $yotpoSyncedCategories[$magentoCategory->getId()]
+        ) && isset(
+            $existingCollections[$magentoCategory->getId()]
+        );
     }
 
     /**
-     * @param array $yotpoSyncedCategories
+     * @param array<mixed> $yotpoSyncedCategories
      * @param Category $magentoCategory
      * @return bool
      */
     private function isSyncedCategoryMissingYotpoId(array $yotpoSyncedCategories, Category $magentoCategory)
     {
-        return isset($yotpoSyncedCategories[$magentoCategory->getId()]) && !$yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'];
+        return isset(
+            $yotpoSyncedCategories[$magentoCategory->getId()]
+        ) && !$yotpoSyncedCategories[$magentoCategory->getId()]['yotpo_id'];
     }
 }

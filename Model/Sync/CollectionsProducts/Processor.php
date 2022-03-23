@@ -74,7 +74,6 @@ class Processor extends AbstractJobs
     protected $collectionsProductsSyncBatchSize = null;
 
     /**
-     * Processor constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
      * @param CoreConfig $coreConfig
@@ -86,7 +85,9 @@ class Processor extends AbstractJobs
      * @param YotpoProductProcessorMain $yotpoProductProcessorMain
      * @param YotpoProductProcessor $yotpoProductProcessor
      * @param CollectionsProductsService $collectionsProductsService
-    **/
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
     public function __construct(
         AppEmulation $appEmulation,
         ResourceConnection $resourceConnection,
@@ -113,6 +114,10 @@ class Processor extends AbstractJobs
         parent::__construct($appEmulation, $resourceConnection);
     }
 
+    /**
+     * @return void
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
     public function process()
     {
         $storeIdsList = (array) $this->coreConfig->getAllStoreIds();
@@ -123,7 +128,9 @@ class Processor extends AbstractJobs
                 if (!$this->shouldSyncCollectionsProducts()) {
                     $this->catalogLogger->info(
                         __(
-                            'Collections Products Sync - Sync for store is disabled - Magento Store ID: %1, Magento Store Name: %2',
+                            'Collections Products Sync -
+                            Sync for store is disabled -
+                            Magento Store ID: %1, Magento Store Name: %2',
                             $storeId,
                             $this->coreConfig->getStoreName($storeId)
                         )
@@ -134,25 +141,35 @@ class Processor extends AbstractJobs
 
                 $this->catalogLogger->info(
                     __(
-                        'Collections Products Sync - Starting sync for store - Magento Store ID: %1, Magento Store Name: %2',
+                        'Collections Products Sync -
+                        Starting sync for store -
+                        Magento Store ID: %1, Magento Store Name: %2',
                         $storeId,
                         $this->coreConfig->getStoreName($storeId)
                     )
                 );
 
-                $collectionsProductsEntitiesToSync = $this->collectionsProductsService->getCollectionsProductsToSync($this->collectionsProductsSyncBatchSize);
+                $collectionsProductsEntitiesToSync =
+                    $this->collectionsProductsService->getCollectionsProductsToSync(
+                        $this->collectionsProductsSyncBatchSize
+                    );
                 if (!$collectionsProductsEntitiesToSync) {
                     $this->logFinishedCollectionsProductsSync($storeId);
                     continue;
                 }
 
-                $enrichedCollectionsProductsEntitiesToSync = $this->enrichCollectionsProductsDataWithYotpoIds($collectionsProductsEntitiesToSync);
+                $enrichedCollectionsProductsEntitiesToSync =
+                    $this->enrichCollectionsProductsDataWithYotpoIds(
+                        $collectionsProductsEntitiesToSync
+                    );
                 $this->syncCollectionsProductsEntitiesToYotpo($enrichedCollectionsProductsEntitiesToSync, $storeId);
                 $this->logFinishedCollectionsProductsSync($storeId);
             } catch (Exception $exception) {
                 $this->catalogLogger->info(
                     __(
-                        'Collections Products Sync - Stopped sync for store - Magento Store ID: %1, Magento Store Name: %2, Exception: %3',
+                        'Collections Products Sync -
+                        Stopped sync for store -
+                        Magento Store ID: %1, Magento Store Name: %2, Exception: %3',
                         $storeId,
                         $this->coreConfig->getStoreName($storeId),
                         $exception->getMessage()
@@ -173,8 +190,8 @@ class Processor extends AbstractJobs
     }
 
     /**
-     * @param array $collectionProductEntityToSync
-     * @return array
+     * @param array<mixed> $collectionProductEntityToSync
+     * @return array<mixed>
      */
     private function prepareCollectionProductToSync($collectionProductEntityToSync)
     {
@@ -187,16 +204,27 @@ class Processor extends AbstractJobs
 
     /**
      * @param string $requestEndpoint
-     * @param array $collectionProductDataToSync
+     * @param array<mixed> $collectionProductDataToSync
      * @param boolean $isCollectionProductIsDeletedInMagento
      * @return mixed
      */
-    private function syncCollectionProductToYotpo($requestEndpoint, array $collectionProductDataToSync, $isCollectionProductIsDeletedInMagento)
-    {
+    private function syncCollectionProductToYotpo(
+        $requestEndpoint,
+        $collectionProductDataToSync,
+        $isCollectionProductIsDeletedInMagento
+    ) {
         if ($isCollectionProductIsDeletedInMagento) {
-            $response = $this->yotpoCoreSync->sync($this->coreConfig::METHOD_DELETE, $requestEndpoint, $collectionProductDataToSync);
+            $response = $this->yotpoCoreSync->sync(
+                $this->coreConfig::METHOD_DELETE,
+                $requestEndpoint,
+                $collectionProductDataToSync
+            );
         } else {
-            $response = $this->yotpoCoreSync->sync($this->coreConfig::METHOD_POST, $requestEndpoint, $collectionProductDataToSync);
+            $response = $this->yotpoCoreSync->sync(
+                $this->coreConfig::METHOD_POST,
+                $requestEndpoint,
+                $collectionProductDataToSync
+            );
         }
 
         return $response;
@@ -204,13 +232,16 @@ class Processor extends AbstractJobs
 
     /**
      * @param string $magentoCategoryId
-     * @param string $storeId
+     * @param int $storeId
      * @return string|null
      */
     private function syncCollectionAndGetCreatedYotpoId($magentoCategoryId, $storeId)
     {
-        $this->yotpoCategoryProcessor->processEntities($magentoCategoryId, $storeId);
-        $collectionYotpoId = $this->yotpoCategoryProcessorMain->getYotpoIdFromCategoriesSyncTableByCategoryId($magentoCategoryId);
+        $this->yotpoCategoryProcessor->processEntities([$magentoCategoryId], $storeId);
+        $collectionYotpoId =
+            $this->yotpoCategoryProcessorMain->getYotpoIdFromCategoriesSyncTableByCategoryId(
+                $magentoCategoryId
+            );
         if (!$collectionYotpoId) {
             return null;
         }
@@ -220,7 +251,7 @@ class Processor extends AbstractJobs
 
     /**
      * @param string $magentoProductId
-     * @param string $storeId
+     * @param int $storeId
      * @return string|null
      */
     private function syncProductAndGetCreatedYotpoId($magentoProductId, $storeId)
@@ -228,7 +259,10 @@ class Processor extends AbstractJobs
         $this->yotpoProductProcessorMain->setNormalSyncFlag(false);
         $unSyncedProductIds = [$storeId => [$magentoProductId]];
         $this->yotpoProductProcessor->process($unSyncedProductIds, [$storeId]);
-        $productYotpoId = $this->yotpoProductProcessorMain->getYotpoIdFromProductsSyncTableByProductId($magentoProductId);
+        $productYotpoId =
+            $this->yotpoProductProcessorMain->getYotpoIdFromProductsSyncTableByProductId(
+                $magentoProductId
+            );
         if (!$productYotpoId) {
             return null;
         }
@@ -237,20 +271,23 @@ class Processor extends AbstractJobs
     }
 
     /**
-     * @param string $storeId
-     * @param array $collectionProductEntityToSync
+     * @param int $storeId
+     * @param array<mixed> $collectionProductEntityToSync
      * @return void
      */
     private function setAsSuccessfulCollectionProductSync($storeId, $collectionProductEntityToSync)
     {
-        $this->collectionsProductsService->updateCollectionsProductsSyncDataAsSyncedToYotpo($storeId, $collectionProductEntityToSync);
+        $this->collectionsProductsService->updateCollectionsProductsSyncDataAsSyncedToYotpo(
+            $storeId,
+            $collectionProductEntityToSync
+        );
 
         $this->catalogLogger->info(
             __(
                 'Collections Products Sync - Synced Collection Product to Yotpo successfully -
                      Magento Store ID: %1
-                     Magento Store Name: %2, 
-                     Magento Category ID: %3, 
+                     Magento Store Name: %2,
+                     Magento Category ID: %3,
                      Magento Product ID: %4',
                 $storeId,
                 $this->coreConfig->getStoreName($storeId),
@@ -261,7 +298,7 @@ class Processor extends AbstractJobs
     }
 
     /**
-     * @param string $storeId
+     * @param int $storeId
      * @return void
      */
     private function logFinishedCollectionsProductsSync($storeId)
@@ -276,8 +313,8 @@ class Processor extends AbstractJobs
     }
 
     /**
-     * @param array $collectionsProductsEntitiesToSync
-     * @return array
+     * @param array<mixed> $collectionsProductsEntitiesToSync
+     * @return array<mixed>
      */
     private function enrichCollectionsProductsDataWithYotpoIds(array $collectionsProductsEntitiesToSync)
     {
@@ -292,14 +329,22 @@ class Processor extends AbstractJobs
         $collectionsProductsProductIds = array_unique($collectionsProductsProductIds);
 
         $enrichedCollectionsProductsEntitiesToSync = [];
-        $collectionsProductsCategoriesIdsToYotpoIdsMap = $this->yotpoCategoryProcessorMain->getYotpoIdsFromCategoriesSyncTableByCategoryIds($collectionsProductsCategoriesIds);
-        $collectionsProductsProductIdToYotpoIdsMap = $this->yotpoProductProcessorMain->getYotpoIdsFromProductsSyncTableByProductIds($collectionsProductsProductIds);
+        $collectionsProductsCategoriesIdsToYotpoIdsMap =
+            $this->yotpoCategoryProcessorMain->getYotpoIdsFromCategoriesSyncTableByCategoryIds(
+                $collectionsProductsCategoriesIds
+            );
+        $collectionsProductsProductIdToYotpoIdsMap =
+            $this->yotpoProductProcessorMain->getYotpoIdsFromProductsSyncTableByProductIds(
+                $collectionsProductsProductIds
+            );
         foreach ($collectionsProductsEntitiesToSync as $collectionProductEntityToSync) {
             $magentoCategoryId = $collectionProductEntityToSync['magento_category_id'];
-            $collectionProductEntityToSync['category_yotpo_id'] = $collectionsProductsCategoriesIdsToYotpoIdsMap[$magentoCategoryId] ?? null;
-
+            $collectionProductEntityToSync['category_yotpo_id'] =
+                $collectionsProductsCategoriesIdsToYotpoIdsMap[$magentoCategoryId] ??
+                null;
             $magentoProductId = $collectionProductEntityToSync['magento_product_id'];
-            $collectionProductEntityToSync['product_yotpo_id'] = $collectionsProductsProductIdToYotpoIdsMap[$magentoProductId] ?? null;
+            $collectionProductEntityToSync['product_yotpo_id'] =
+                $collectionsProductsProductIdToYotpoIdsMap[$magentoProductId] ?? null;
 
             $enrichedCollectionsProductsEntitiesToSync[] = $collectionProductEntityToSync;
         }
@@ -308,11 +353,11 @@ class Processor extends AbstractJobs
     }
 
     /**
-     * @param array $enrichedCollectionsProductsEntitiesToSync
-     * @param string $storeId
+     * @param array<mixed> $enrichedCollectionsProductsEntitiesToSync
+     * @param int $storeId
      * @return void
      */
-    private function syncCollectionsProductsEntitiesToYotpo(array $enrichedCollectionsProductsEntitiesToSync, $storeId)
+    private function syncCollectionsProductsEntitiesToYotpo($enrichedCollectionsProductsEntitiesToSync, $storeId)
     {
         $requestEndpointKey = $this::COLLECTIONS_PRODUCT_ENDPOINT_STRING;
         $collectionIdRequestParamString = $this::YOTPO_COLLECTION_ID_REQUEST_PARAM_STRING;
@@ -326,7 +371,10 @@ class Processor extends AbstractJobs
                     $magentoCategoryId = $enrichedCollectionProductEntityToSync['magento_category_id'];
                     $collectionYotpoId = $this->syncCollectionAndGetCreatedYotpoId($magentoCategoryId, $storeId);
                     if ($collectionYotpoId == null) {
-                        $this->collectionsProductsService->updateCollectionsProductsSyncDataAsSyncedToYotpo($storeId, $enrichedCollectionProductEntityToSync);
+                        $this->collectionsProductsService->updateCollectionsProductsSyncDataAsSyncedToYotpo(
+                            $storeId,
+                            $enrichedCollectionProductEntityToSync
+                        );
                         continue;
                     }
                 }
@@ -335,17 +383,32 @@ class Processor extends AbstractJobs
                     $magentoProductId = $enrichedCollectionProductEntityToSync['magento_product_id'];
                     $productYotpoId = $this->syncProductAndGetCreatedYotpoId($magentoProductId, $storeId);
                     if ($productYotpoId == null) {
-                        $this->collectionsProductsService->updateCollectionsProductsSyncDataAsSyncedToYotpo($storeId, $enrichedCollectionProductEntityToSync);
+                        $this->collectionsProductsService->updateCollectionsProductsSyncDataAsSyncedToYotpo(
+                            $storeId,
+                            $enrichedCollectionProductEntityToSync
+                        );
                         continue;
                     }
                 }
 
-                $requestEndpoint = $this->coreConfig->getEndpoint($requestEndpointKey, [$collectionIdRequestParamString], [$collectionYotpoId]);
-                $collectionProductDataToSync = $this->prepareCollectionProductToSync($enrichedCollectionProductEntityToSync);
+                $requestEndpoint = $this->coreConfig->getEndpoint(
+                    $requestEndpointKey,
+                    [$collectionIdRequestParamString],
+                    [$collectionYotpoId]
+                );
+                $collectionProductDataToSync =
+                    $this->prepareCollectionProductToSync(
+                        $enrichedCollectionProductEntityToSync
+                    );
                 $collectionProductDataToSync['entityLog'] = $this::LOGGER_LOG_ENTITY_FILE;
-                $isCollectionProductDeletedInMagento = (bool)$enrichedCollectionProductEntityToSync['is_deleted_in_magento'];
+                $isCollectionProductDeletedInMagento =
+                    (bool)$enrichedCollectionProductEntityToSync['is_deleted_in_magento'];
 
-                $response = $this->syncCollectionProductToYotpo($requestEndpoint, $collectionProductDataToSync, $isCollectionProductDeletedInMagento);
+                $response = $this->syncCollectionProductToYotpo(
+                    $requestEndpoint,
+                    $collectionProductDataToSync,
+                    $isCollectionProductDeletedInMagento
+                );
 
                 if ($response->getData('is_success')) {
                     $this->setAsSuccessfulCollectionProductSync($storeId, $enrichedCollectionProductEntityToSync);
@@ -355,7 +418,7 @@ class Processor extends AbstractJobs
             } catch (Exception $exception) {
                 $this->catalogLogger->info(
                     __(
-                        'Collections Products Sync - Failed syncing Collection Product entity to Yotpo - 
+                        'Collections Products Sync - Failed syncing Collection Product entity to Yotpo -
                             Magento Store ID: %1,
                             Magento Store Name: %2,
                             Collection Yotpo ID: %3,
@@ -380,7 +443,10 @@ class Processor extends AbstractJobs
     private function isCollectionProductShouldBeSetAsSynced($response)
     {
         $responseStatusCode = $response->getData('status');
-        $unsyncableCollectionProductStatusCodes = [ CoreConfig::CONFLICT_RESPONSE_CODE, CoreConfig::NOT_FOUND_RESPONSE_CODE ];
+        $unsyncableCollectionProductStatusCodes = [
+            CoreConfig::CONFLICT_RESPONSE_CODE,
+            CoreConfig::NOT_FOUND_RESPONSE_CODE
+        ];
         $isResyncableStatusCode = $this->coreConfig->canResync($responseStatusCode);
 
         if (in_array($responseStatusCode, $unsyncableCollectionProductStatusCodes) || !$isResyncableStatusCode) {

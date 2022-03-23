@@ -115,7 +115,7 @@ class DeleteAfter implements ObserverInterface
     }
 
     /**
-     * @param string $productId
+     * @param int $productId
      * @return void
      */
     private function unassignProductCategoriesForSync($productId)
@@ -123,11 +123,19 @@ class DeleteAfter implements ObserverInterface
         $productCategoriesIdsForDeletion = $this->catalogSession->getProductCategoriesIds();
 
         foreach ($productCategoriesIdsForDeletion as $categoryId) {
-            $storeIdsSuccessfullySyncedWithCategory = $this->yotpoCategoryProcessorMain->getStoresSuccessfullySyncedWithCategory($categoryId);
+            $storeIdsSuccessfullySyncedWithCategory =
+                $this->yotpoCategoryProcessorMain->getStoresSuccessfullySyncedWithCategory(
+                    $categoryId
+                );
             if ($storeIdsSuccessfullySyncedWithCategory) {
                 foreach ($storeIdsSuccessfullySyncedWithCategory as $storeId) {
                     if ($this->yotpoCoreConfig->isCatalogSyncActive($storeId)) {
-                        $this->collectionsProductsService->assignProductCategoriesForCollectionsProductsSync([$categoryId], $storeId, $productId, true);
+                        $this->collectionsProductsService->assignProductCategoriesForCollectionsProductsSync(
+                            [$categoryId],
+                            $storeId,
+                            $productId,
+                            true
+                        );
                     }
                 }
             }

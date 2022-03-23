@@ -60,7 +60,8 @@ class CollectionsProductsService extends AbstractJobs
      * @param integer $collectionsProductsSyncBatchSize
      * @return array<string>
      */
-    public function getCollectionsProductsToSync($collectionsProductsSyncBatchSize) {
+    public function getCollectionsProductsToSync($collectionsProductsSyncBatchSize)
+    {
         $storeId = $this->coreConfig->getStoreId();
         $connection = $this->resourceConnection->getConnection();
         $categoryProductsQuery = $connection->select(
@@ -72,7 +73,7 @@ class CollectionsProductsService extends AbstractJobs
             $storeId
         )->where(
             'is_synced_to_yotpo = ?',
-            false
+            0
         )->limit(
             $collectionsProductsSyncBatchSize
         );
@@ -85,7 +86,8 @@ class CollectionsProductsService extends AbstractJobs
      * @param string $categoryId
      * @return array<string>
      */
-    public function getCategoryProductsIdsFromSyncTable($categoryId) {
+    public function getCategoryProductsIdsFromSyncTable($categoryId)
+    {
         $connection = $this->resourceConnection->getConnection();
         $categoryProductsQuery = $connection->select(
         )->from(
@@ -102,9 +104,10 @@ class CollectionsProductsService extends AbstractJobs
 
     /**
      * @param string $productId
-     * @return array<string>
+     * @return array<int|string>
      */
-    public function getCategoryIdsFromSyncTableByProductId($productId) {
+    public function getCategoryIdsFromSyncTableByProductId($productId)
+    {
         $connection = $this->resourceConnection->getConnection();
         $categoryProductsQuery = $connection->select(
         )->from(
@@ -120,14 +123,18 @@ class CollectionsProductsService extends AbstractJobs
     }
 
     /**
-     * @param array $productsIds
-     * @param string $storeId
-     * @param string $categoryId
+     * @param array<int|string> $productsIds
+     * @param int $storeId
+     * @param int|string $categoryId
      * @param boolean $isDeletedInMagento
      * @return void
      */
-    public function assignCategoryProductsForCollectionsProductsSync(array $productsIds, $storeId, $categoryId, $isDeletedInMagento = false)
-    {
+    public function assignCategoryProductsForCollectionsProductsSync(
+        $productsIds,
+        $storeId,
+        $categoryId,
+        $isDeletedInMagento = false
+    ) {
         $productIdsEligibleForSync = array_filter($productsIds, function ($productId) {
             return $this->isProductEligibleForProductsCollectionsSync($productId);
         });
@@ -144,7 +151,7 @@ class CollectionsProductsService extends AbstractJobs
                 'magento_category_id' => $categoryId,
                 'magento_product_id' => $productId,
                 'is_deleted_in_magento' => $isDeletedInMagento,
-                'is_synced_to_yotpo' => false,
+                'is_synced_to_yotpo' => 0,
                 'last_updated_at' => $currentDatetime
             ];
         }
@@ -153,14 +160,18 @@ class CollectionsProductsService extends AbstractJobs
     }
 
     /**
-     * @param array $categoriesIds
+     * @param array<int|string> $categoriesIds
      * @param string $storeId
-     * @param string $productId
+     * @param int $productId
      * @param boolean $isDeletedInMagento
      * @return void
      */
-    public function assignProductCategoriesForCollectionsProductsSync(array $categoriesIds, $storeId, $productId, $isDeletedInMagento = false)
-    {
+    public function assignProductCategoriesForCollectionsProductsSync(
+        $categoriesIds,
+        $storeId,
+        $productId,
+        $isDeletedInMagento = false
+    ) {
         if (!$this->isProductEligibleForProductsCollectionsSync($productId)) {
             return;
         }
@@ -173,7 +184,7 @@ class CollectionsProductsService extends AbstractJobs
                 'magento_category_id' => $categoryId,
                 'magento_product_id' => $productId,
                 'is_deleted_in_magento' => $isDeletedInMagento,
-                'is_synced_to_yotpo' => false,
+                'is_synced_to_yotpo' => 0,
                 'last_updated_at' => $currentDatetime
             ];
         }
@@ -182,8 +193,8 @@ class CollectionsProductsService extends AbstractJobs
     }
 
     /**
-     * @param string $storeId
-     * @param array $collectionProductEntityToSync
+     * @param int $storeId
+     * @param array<mixed> $collectionProductEntityToSync
      * @return void
      */
     public function updateCollectionsProductsSyncDataAsSyncedToYotpo($storeId, $collectionProductEntityToSync)
@@ -194,7 +205,7 @@ class CollectionsProductsService extends AbstractJobs
             'magento_category_id' => $collectionProductEntityToSync['magento_category_id'],
             'magento_product_id' => $collectionProductEntityToSync['magento_product_id'],
             'is_deleted_in_magento' => $collectionProductEntityToSync['is_deleted_in_magento'],
-            'is_synced_to_yotpo' => true,
+            'is_synced_to_yotpo' => 1,
             'last_updated_at' => $currentDatetime
         ];
 
@@ -205,7 +216,8 @@ class CollectionsProductsService extends AbstractJobs
      * @param string $categoryId
      * @return void
      */
-    public function updateCollectionProductsSyncDataAsDeletedInYotpo($categoryId) {
+    public function updateCollectionProductsSyncDataAsDeletedInYotpo($categoryId)
+    {
         $currentDatetime = date('Y-m-d H:i:s');
         $connection = $this->resourceConnection->getConnection();
         $updateCondition = [
@@ -225,11 +237,12 @@ class CollectionsProductsService extends AbstractJobs
     }
 
     /**
-     * @param string $storeId
+     * @param int $storeId
      * @param string $productId
      * @return void
      */
-    public function forceUpdateProductCollectionsForResync($storeId, $productId) {
+    public function forceUpdateProductCollectionsForResync($storeId, $productId)
+    {
         $connection = $this->resourceConnection->getConnection();
         $updateCondition = [
             'magento_store_id = ?' => $storeId,
@@ -244,8 +257,13 @@ class CollectionsProductsService extends AbstractJobs
         );
     }
 
-    private function isProductEligibleForProductsCollectionsSync($productId) {
-        $parentProduct = $this->productTypeConfigurable->getParentIdsByChild($productId);
+    /**
+     * @param int|string $productId
+     * @return bool
+     */
+    private function isProductEligibleForProductsCollectionsSync($productId)
+    {
+        $parentProduct = $this->productTypeConfigurable->getParentIdsByChild((int) $productId);
         if (!$parentProduct) {
             return true;
         }

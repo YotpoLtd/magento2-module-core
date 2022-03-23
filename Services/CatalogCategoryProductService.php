@@ -40,7 +40,7 @@ class CatalogCategoryProductService extends AbstractJobs
 
     /**
      * @param string $productId
-     * @return array<string>
+     * @return array<int>
      */
     public function getCategoryIdsFromCategoryProductsTableByProductId($productId)
     {
@@ -59,9 +59,10 @@ class CatalogCategoryProductService extends AbstractJobs
 
     /**
      * @param string $categoryId
-     * @return array<string>
+     * @return array<int>
      */
-    public function getProductIdsFromCategoryProductsTableByCategoryId($categoryId) {
+    public function getProductIdsFromCategoryProductsTableByCategoryId($categoryId)
+    {
         $connection = $this->resourceConnection->getConnection();
         $select = $connection->select()->from(
             $this->resourceConnection->getTableName($this::CATALOG_CATEGORY_PRODUCT_TABLE),

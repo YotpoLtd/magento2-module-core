@@ -444,7 +444,7 @@ class Main extends AbstractJobs
     }
 
     /**
-     * @param array $categoryIds
+     * @param array<int|string> $categoryIds
      * @return array<string>
      */
     public function getYotpoIdsFromCategoriesSyncTableByCategoryIds(array $categoryIds)
@@ -491,12 +491,21 @@ class Main extends AbstractJobs
                         $categoryProductsIds[] = $categoryProduct->getId();
                     }
 
-                    $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync($categoryProductsIds, $storeId, $categoryId, $isDeletedInMagento);
+                    $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync(
+                        $categoryProductsIds,
+                        $storeId,
+                        $categoryId,
+                        $isDeletedInMagento
+                    );
                 }
             }
         }
     }
 
+    /**
+     * @param int|string $categoryId
+     * @return array<mixed>
+     */
     public function getStoresSuccessfullySyncedWithCategory($categoryId)
     {
         $connection = $this->resourceConnection->getConnection();
@@ -510,7 +519,7 @@ class Main extends AbstractJobs
         $storesSyncedWithCategory = $connection->fetchAssoc($select, 'store_id');
 
         $storesSuccessfullySyncedWithCategory = [];
-        foreach($storesSyncedWithCategory as $storeId => $storeSyncedWithCategory) {
+        foreach ($storesSyncedWithCategory as $storeId => $storeSyncedWithCategory) {
             if (in_array($storeSyncedWithCategory['response_code'], $this->config->getSuccessfulResponseCodes())) {
                 $storesSuccessfullySyncedWithCategory[] = $storeId;
             }

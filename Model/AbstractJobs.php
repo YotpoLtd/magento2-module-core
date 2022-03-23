@@ -2,6 +2,7 @@
 namespace Yotpo\Core\Model;
 
 use Magento\Framework\App\Area;
+use Magento\Framework\DataObject;
 use Magento\Store\Model\App\Emulation as AppEmulation;
 use Magento\Framework\App\ResourceConnection;
 
@@ -147,7 +148,7 @@ class AbstractJobs
     }
 
     /**
-     * @param array <mixed> $response
+     * @param DataObject $response
      * @param string $entity
      * @param int|string $entityId
      * @param int|null $storeId
@@ -156,8 +157,7 @@ class AbstractJobs
     public function isImmediateRetry($response, $entity, $entityId, $storeId)
     {
         $storeId = (int) $storeId;
-        /** @phpstan-ignore-next-line */
-        $responseCode = $response && $response->getData('status') ? $response->getData('status') : null;
+        $responseCode = is_object($response) && $response->getData('status') ? $response->getData('status') : null;
         if ($responseCode) {
             $isImmediateRetry = $this->isImmediateRetryResponse($responseCode);
             return $isImmediateRetry && !$this->getImmediateRetryAlreadyDone($entity, $entityId, $storeId);

@@ -14,6 +14,10 @@ use Magento\Framework\Webapi\Rest\Request;
 class ProcessByProduct extends Main
 {
 
+    /**
+     * @param array<mixed> $productItems
+     * @return void
+     */
     public function process(array $productItems)
     {
         $this->yotpoCoreCatalogLogger->info('Category Sync - Process categories by product - START ');
@@ -28,7 +32,10 @@ class ProcessByProduct extends Main
             );
 
             $productCategoriesIds = $productItem->getCategoryIds();
-            $categoryIdsSyncedForProduct = $this->collectionsProductsService->getCategoryIdsFromSyncTableByProductId($productId);
+            $categoryIdsSyncedForProduct =
+                $this->collectionsProductsService->getCategoryIdsFromSyncTableByProductId(
+                    $productId
+                );
 
             foreach ($productCategoriesIds as $categoryId) {
                 if (in_array($categoryId, $categoryIdsSyncedForProduct)) {
@@ -39,7 +46,10 @@ class ProcessByProduct extends Main
             }
 
             $deletedCategoryIdsFromProduct = array_diff($categoryIdsSyncedForProduct, $productCategoriesIds);
-            $this->assignProductCategoriesForCollectionsProductsSyncAsDeleted($productItem, $deletedCategoryIdsFromProduct);
+            $this->assignProductCategoriesForCollectionsProductsSyncAsDeleted(
+                $productItem,
+                $deletedCategoryIdsFromProduct
+            );
         }
     }
 
@@ -52,20 +62,31 @@ class ProcessByProduct extends Main
     {
         $productId = $product->getId();
         $productStoreId =$product->getStoreId();
-        $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync([$productId], $productStoreId, $categoryId);
+        $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync(
+            [$productId],
+            $productStoreId,
+            $categoryId
+        );
     }
 
     /**
      * @param Product $product
-     * @param array $deletedCategoriesIds
+     * @param array<int|string> $deletedCategoriesIds
      * @return void
      */
-    public function assignProductCategoriesForCollectionsProductsSyncAsDeleted(Product $product, array $deletedCategoriesIds)
-    {
+    public function assignProductCategoriesForCollectionsProductsSyncAsDeleted(
+        $product,
+        $deletedCategoriesIds
+    ) {
         $productId = $product->getId();
         $productStoreId = $product->getStoreId();
         foreach ($deletedCategoriesIds as $deletedCategoryId) {
-            $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync([$productId], $productStoreId, $deletedCategoryId, true);
+            $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync(
+                [$productId],
+                $productStoreId,
+                $deletedCategoryId,
+                true
+            );
         }
     }
 }

@@ -25,14 +25,9 @@ class SaveAfter implements ObserverInterface
     protected $storeManager;
 
     /**
-     * @var AppEmulation
-     */
-    protected $resourceConnection;
-
-    /**
      * @var ResourceConnection
      */
-    protected $appEmulation;
+    protected $resourceConnection;
 
     /**
      * @var Main
@@ -127,16 +122,28 @@ class SaveAfter implements ObserverInterface
         $this->unassignProductChildrensForSync($product);
 
         $productCategoriesBeforeSave = $this->catalogSession->getProductCategoriesIds();
-        $productCategories = $this->catalogCategoryProductService->getCategoryIdsFromCategoryProductsTableByProductId($productId);
-        foreach($storeIdsToUpdate as $storeId) {
+        $productCategories =
+            $this->catalogCategoryProductService->getCategoryIdsFromCategoryProductsTableByProductId(
+                $productId
+            );
+        foreach ($storeIdsToUpdate as $storeId) {
             if (!$this->config->isCatalogSyncActive($storeId)) {
                 continue;
             }
 
-            $this->assignProductCategoriesForCollectionsProductsSync($productCategoriesBeforeSave, $productCategories, $storeId, $productId);
-            $this->assignDeletedProductCategoriesForCollectionsProductsSync($productCategoriesBeforeSave, $productCategories, $storeId, $productId);
+            $this->assignProductCategoriesForCollectionsProductsSync(
+                $productCategoriesBeforeSave,
+                $productCategories,
+                $storeId,
+                $productId
+            );
+            $this->assignDeletedProductCategoriesForCollectionsProductsSync(
+                $productCategoriesBeforeSave,
+                $productCategories,
+                $storeId,
+                $productId
+            );
         }
-
     }
 
     /**
@@ -235,7 +242,16 @@ class SaveAfter implements ObserverInterface
         $productChildrenIdsBeforeSave = $this->checkIfMultiDimensional($productChildrenIdsBeforeSave);
         $productChildrenIds = $this->checkIfMultiDimensional($productChildrenIds);
 
-        $result = array_merge(array_diff($productChildrenIdsBeforeSave, $productChildrenIds), array_diff($productChildrenIds, $productChildrenIdsBeforeSave));
+        $result = array_merge(
+            array_diff(
+                $productChildrenIdsBeforeSave,
+                $productChildrenIds
+            ),
+            array_diff(
+                $productChildrenIds,
+                $productChildrenIdsBeforeSave
+            )
+        );
         if (count($result) > 0) {
             $this->updateUnAssign($result, $product);
         }
@@ -323,7 +339,7 @@ class SaveAfter implements ObserverInterface
     }
 
     /**
-     * @param $product
+     * @param Product $product
      * @return void
      */
     private function unassignProductChildrensForSync($product)
@@ -335,29 +351,54 @@ class SaveAfter implements ObserverInterface
     }
 
     /**
-     * @param array $productCategoriesBeforeSave
-     * @param array $productCategories
+     * @param array<int> $productCategoriesBeforeSave
+     * @param array<int> $productCategories
      * @param string $storeId
-     * @param string $productId
+     * @param int $productId
      * @return void
      */
-    private function assignProductCategoriesForCollectionsProductsSync($productCategoriesBeforeSave, $productCategories, $storeId, $productId)
-    {
-        $categoriesIdsForSync = $this->findAndRetrieveDifferenceBetweenArrays($productCategories, $productCategoriesBeforeSave);
-        $this->collectionsProductsService->assignProductCategoriesForCollectionsProductsSync($categoriesIdsForSync, $storeId, $productId);
+    private function assignProductCategoriesForCollectionsProductsSync(
+        $productCategoriesBeforeSave,
+        $productCategories,
+        $storeId,
+        $productId
+    ) {
+        $categoriesIdsForSync =
+            $this->findAndRetrieveDifferenceBetweenArrays(
+                $productCategories,
+                $productCategoriesBeforeSave
+            );
+        $this->collectionsProductsService->assignProductCategoriesForCollectionsProductsSync(
+            $categoriesIdsForSync,
+            $storeId,
+            $productId
+        );
     }
 
     /**
-     * @param array $productCategoriesBeforeSave
-     * @param array $productCategories
+     * @param array<int> $productCategoriesBeforeSave
+     * @param array<int> $productCategories
      * @param string $storeId
-     * @param string $productId
+     * @param int $productId
      * @return void
      */
-    private function assignDeletedProductCategoriesForCollectionsProductsSync($productCategoriesBeforeSave, $productCategories, $storeId, $productId)
-    {
-        $categoriesIdsForSync = $this->findAndRetrieveDifferenceBetweenArrays($productCategoriesBeforeSave, $productCategories);
-        $this->collectionsProductsService->assignProductCategoriesForCollectionsProductsSync($categoriesIdsForSync, $storeId, $productId, true);
+    private function assignDeletedProductCategoriesForCollectionsProductsSync(
+        $productCategoriesBeforeSave,
+        $productCategories,
+        $storeId,
+        $productId
+    ) {
+        $categoriesIdsForSync =
+            $this->findAndRetrieveDifferenceBetweenArrays(
+                $productCategoriesBeforeSave,
+                $productCategories
+            );
+        $this->collectionsProductsService->assignProductCategoriesForCollectionsProductsSync(
+            $categoriesIdsForSync,
+            $storeId,
+            $productId,
+            true
+        );
     }
 
     /**
