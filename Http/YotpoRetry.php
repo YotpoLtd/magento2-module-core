@@ -38,13 +38,11 @@ class YotpoRetry
         $requestResult = $request();
 
         while ($this->haveAdditionalAttempts($attemptsLeftCount)) {
-            if (!$requestResult->getData(self::IS_SUCCESS_KEY)) {
-                if ($this->config->isNetworkRetriableResponse($requestResult->getData(self::STATUS_KEY))) {
-                    // phpcs:ignore Magento2.Functions.DiscouragedFunction
-                    sleep(1);
-                    $attemptsLeftCount--;
-                    $requestResult = $request();
-                }
+            if ($this->shouldRetryRequest($requestResult)) {
+                // phpcs:ignore Magento2.Functions.DiscouragedFunction
+                sleep(1);
+                $attemptsLeftCount--;
+                $requestResult = $request();
             } else {
                 break;
             }
@@ -68,5 +66,15 @@ class YotpoRetry
     private function getMaxAttemptsAmount()
     {
         return $this->config->getYotpoRetryAttemptsAmount();
+    }
+
+    /**
+     * @param DataObject $requestResult
+     * @return bool
+     */
+    private function shouldRetryRequest($requestResult)
+    {
+        return !$requestResult->getData(self::IS_SUCCESS_KEY) &&
+               $this->config->isNetworkRetriableResponse($requestResult->getData(self::STATUS_KEY));
     }
 }
