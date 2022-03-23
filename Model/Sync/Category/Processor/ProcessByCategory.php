@@ -355,19 +355,6 @@ class ProcessByCategory extends Main
     }
 
     /**
-     * @param Category $category
-     * @return mixed
-     * @throws NoSuchEntityException
-     */
-    public function syncAsNewCollection(Category $category)
-    {
-        $collectionData = $this->data->prepareData($category);
-        $collectionData['entityLog'] = 'catalog';
-        $url = $this->config->getEndpoint('collections');
-        return $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_POST, $url, $collectionData);
-    }
-
-    /**
      * @param array <int> | int $categoryIds
      * @return void
      * @throws NoSuchEntityException
