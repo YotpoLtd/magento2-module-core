@@ -169,45 +169,6 @@ class Main extends AbstractJobs
     }
 
     /**
-     * @param array<mixed> $categoryIds
-     * @return array<mixed>
-     * @throws NoSuchEntityException
-     * @throws LocalizedException
-     */
-    public function getExistingCollection(array $categoryIds): array
-    {
-        if (!$categoryIds) {
-            return [];
-        }
-        $yotpoCollections = [];
-        $categoryIds = array_chunk($categoryIds, 100);
-        foreach ($categoryIds as $chunk) {
-            $url = $this->config->getEndpoint('collections');
-            $data = ['external_ids' => implode(',', $chunk)];
-            $data['entityLog'] = 'catalog';
-            $response = $this->yotpoCoreApiSync->sync(Request::HTTP_METHOD_GET, $url, $data);
-            $response = $response->getData('response');
-            if (!$response) {
-                continue;
-            }
-            $collections = is_array($response) && isset($response['collections']) ? $response['collections'] : [];
-            $count = count($collections);
-            for ($i = 0; $i < $count; $i++) {
-                if (is_array($collections[$i])
-                    && isset($collections[$i]['external_id'])
-                    && isset($collections[$i]['yotpo_id'])
-                ) {
-                    $yotpoCollections[$collections[$i]['external_id']] = [
-                        'yotpo_id' => $collections[$i]['yotpo_id'],
-                        'name' => $collections[$i]['name']
-                    ];
-                }
-            }
-        }
-        return $yotpoCollections;
-    }
-
-    /**
      * @param Category $category
      * @param int $yotpoId
      * @return mixed|void
