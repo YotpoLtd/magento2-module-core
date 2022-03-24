@@ -245,6 +245,9 @@ class Processor extends Main
         $hasFailedCreatingAnyProduct = false;
         $syncedToYotpoProductAttributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
         $items = $this->getSyncItems($collectionItems, $isVisibleVariantsSync);
+        foreach ($items['failed_variants_ids'] as $failedVariantId) {
+            $this->updateProductSyncAttribute($storeId, $failedVariantId);
+        }
         $parentItemsIds = $items['parents_ids'];
         $yotpoSyncTableItemsData = $items['yotpo_data'];
 

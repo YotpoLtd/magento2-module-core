@@ -218,8 +218,15 @@ class Data extends Main
         }
         $visibleVariantsData = [];
         $productIdsToParentIdsMap = [];
+        $failedVariantsIds = [];
         if (!$isVariantsDataIncluded) {
-            $productIdsToConfigurableIdsMapToCheck = $this->yotpoResource->getConfigProductIds($productsId);
+            $productIdsToConfigurableIdsMapToCheck = $this->yotpoResource->getConfigProductIds($productsId, $failedVariantsIds);
+            foreach ($failedVariantsIds as $failedVariantId) {
+                unset($productsId[array_search($failedVariantId, $productsId)]);
+                unset($productsObject[$failedVariantId]);
+                unset($syncItems[$failedVariantId]);
+            }
+
             $productIdsToConfigurableIdsMap = $this->filterNotConfigurableProducts(
                 $productIdsToConfigurableIdsMapToCheck
             );
@@ -238,6 +245,7 @@ class Data extends Main
         $yotpoData = $this->fetchYotpoData($productsId, $productIdsToParentIdsMap);
         $return['yotpo_data'] = $yotpoData['yotpo_data'];
         $return['visible_variants'] = $visibleVariantsData;
+        $return['failed_variants_ids'] = $failedVariantsIds;
         return $return;
     }
 

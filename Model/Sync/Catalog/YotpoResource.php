@@ -131,20 +131,25 @@ class YotpoResource
     /**
      * Get config parent IDs
      * @param array<int, int> $simpleIds
+     * @param $failedSimpleIds
      * @return array<mixed>
      */
-    public function getConfigProductIds(array $simpleIds): array
+    public function getConfigProductIds(array $simpleIds, &$failedSimpleIds): array
     {
         $configIds = [];
         foreach ($simpleIds as $simpleId) {
-            if (!isset($this->loadedConfigProducts[$simpleId])) {
-                $parent = $this->productTypeConfigurable->getParentIdsByChild($simpleId);
-                if ($parent) {
-                    $configIds[$simpleId] = $parent[0];
-                    $this->loadedConfigProducts[$simpleId] = $configIds[$simpleId];
+            try {
+                if (!isset($this->loadedConfigProducts[$simpleId])) {
+                    $parent = $this->productTypeConfigurable->getParentIdsByChild($simpleId);
+                    if ($parent) {
+                        $configIds[$simpleId] = $parent[0];
+                        $this->loadedConfigProducts[$simpleId] = $configIds[$simpleId];
+                    }
+                } else {
+                    $configIds[$simpleId] = $this->loadedConfigProducts[$simpleId];
                 }
-            } else {
-                $configIds[$simpleId] = $this->loadedConfigProducts[$simpleId];
+            } catch (\Exception $e) {
+                $failedSimpleIds[] = $simpleId;
             }
 
         }
