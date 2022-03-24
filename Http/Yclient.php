@@ -11,6 +11,7 @@ use Magento\Framework\DataObject;
 use Magento\Framework\Webapi\Rest\Request;
 use Yotpo\Core\Model\Api\Logger as YotpoApiLogger;
 use Yotpo\Core\Model\Api\Response as YotpoResponse;
+use Yotpo\Core\Model\Config;
 
 /**
  * Class Yclient to manage API client communication
@@ -115,16 +116,24 @@ class Yclient
             $logData[] = 'response = ' . $responseContent;
             $this->yotpoApiLogger->info($logMessage, $logData);
         } catch (GuzzleException $exception) {
-            /** @var Response $response */
-            $response = $this->responseFactory->create([
-                'status' => $exception->getCode(),
-                'reason' => $exception->getMessage()
-            ]);
             $exceptionData = [];
             $exceptionMessage = 'API Error';
             $exceptionData[] = 'API URL = ' . $baseUrl . $uriEndpoint;
             $exceptionData[] = $options;
-            $exceptionData[] = 'response code = ' . $exception->getCode();
+            try {
+                $response = $this->responseFactory->create([
+                    'status' => $exception->getCode(),
+                    'reason' => $exception->getMessage()
+                ]);
+                $exceptionCode = $exception->getCode();
+            } catch (\InvalidArgumentException $exception) {
+                $response = $this->responseFactory->create([
+                    'status' => Config::RESPONSE_CODE_FOR_UNKNOWN_ERRORS,
+                    'reason' => $exception->getMessage()
+                ]);
+                $exceptionCode = $exception->getCode();
+            }
+            $exceptionData[] = 'response code = ' . $exceptionCode;
             $exceptionData[] = 'response = ' . $exception->getMessage();
             $this->yotpoApiLogger->info($exceptionMessage, $exceptionData);
         }
