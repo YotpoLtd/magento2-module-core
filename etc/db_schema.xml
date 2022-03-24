@@ -91,7 +91,7 @@
     </table>
     <table name="yotpo_collections_products_sync" resource="default" engine="innodb" comment="Collections products sync to Yotpo">
         <column xsi:type="int" name="entity_id" unsigned="true" nullable="false" identity="true" comment="Entity ID"/>
-        <column xsi:type="int" name="magento_store_id" unsigned="true" nullable="false" default="0" comment="Magento Store ID"/>/>
+        <column xsi:type="int" name="magento_store_id" unsigned="true" nullable="false" default="0" comment="Magento Store ID"/>
         <column xsi:type="int" name="magento_category_id" unsigned="true" nullable="false" comment="Magento Category ID"/>
         <column xsi:type="int" name="magento_product_id" unsigned="true" nullable="false" comment="Magento Product ID"/>
         <column xsi:type="boolean" name="is_deleted_in_magento" nullable="false" comment="Is Deleted in Magento"/>
