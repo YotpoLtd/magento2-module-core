@@ -274,7 +274,11 @@ class Data extends Main
         $collection->addAttributeToFilter('entity_id', ['in' => $configIds]);
         if ($collection->getSize()) {
             foreach ($collection->getItems() as $item) {
-                $this->getChildOptions($item);
+                try {
+                    $this->getChildOptions($item);
+                } catch (\Exception $e) {
+                    $this->logger->info('error in mergeProductOptions() :  ' . $e->getMessage(), []);
+                }
             }
         }
         return $this->prepareOptions($syncItems, $configIds, $productObjects);
@@ -324,21 +328,32 @@ class Data extends Main
     protected function prepareOptions($syncItems, $configIds, $productObjects)
     {
         foreach ($configIds as $key => $id) {
-            $configOptions = [];
-            if (isset($this->parentOptions[$id])
-                && $options = $this->parentOptions[$id]) {
-                foreach ($options as $attribute_code => $option) {
-                    $simpleProductAttributeCode = $productObjects[$key]->getData($attribute_code);
-                    if ($simpleProductAttributeCode === null) {
-                        continue;
-                    }
+            try {
+                $configOptions = [];
+                if (isset($this->parentOptions[$id])
+                    && $options = $this->parentOptions[$id]) {
+                    foreach ($options as $attribute_code => $option) {
+                        $simpleProductAttributeCode = $productObjects[$key]->getData($attribute_code);
+                        if ($simpleProductAttributeCode === null) {
+                            continue;
+                        }
 
-                    $configOptions[] = [
-                        'name' => $option['label'],
-                        'value' => $option[$simpleProductAttributeCode]
-                    ];
+                        $configOptions[] = [
+                            'name' => $option['label'],
+                            'value' => $option[$simpleProductAttributeCode]
+                        ];
+                    }
+                    $syncItems[$key]['options'] = $configOptions;
                 }
-                $syncItems[$key]['options'] = $configOptions;
+            } catch (\Exception $e) {
+                $this->logger->info(
+                    __(
+                        'Exception raised within prepareOptions - $key: %1, $id: %2 Exception Message: %3',
+                        $key,
+                        $id,
+                        $e->getMessage()
+                    )
+                );
             }
         }
 
@@ -358,47 +373,57 @@ class Data extends Main
         $mapAttributes = $this->mappingAttributes;
 
         foreach ($mapAttributes as $key => $attr) {
-            if ($key === 'gtins') {
-                $value = $this->prepareGtinsData($attr, $item);
-            } elseif ($key === 'custom_properties') {
-                $value = $this->prepareCustomProperties($attr, $item);
-            } elseif ($key === 'is_discontinued') {
-                $value = false;
-            } else {
-                if ($attr['default']) {
-                    $data = $item->getData($attr['attr_code']);
-
-                    if (isset($attr['type']) && $attr['type'] === 'url') {
-                        $data = $item->getProductUrl();
-                    }
-
-                    if (isset($attr['type']) && $attr['type'] === 'image') {
-                        $baseUrl = $this->yotpoCoreConfig->getBaseUrl(UrlInterface::URL_TYPE_MEDIA);
-                        $data = $data ? $baseUrl . 'catalog/product' . $data : "";
-                    }
-                    $value = $data;
-                } elseif (isset($attr['method']) && $attr['method']) {
-
-                    $configKey = isset($attr['attr_code']) && $attr['attr_code'] ?
-                        $attr['attr_code'] : '';
-
-                    $method = $attr['method'];
-                    $itemValue = $this->$method($item, $configKey);
-                    $value = $itemValue ?: ($method == 'getProductPrice' ? 0.00 : $itemValue);
+            try {
+                if ($key === 'gtins') {
+                    $value = $this->prepareGtinsData($attr, $item);
+                } elseif ($key === 'custom_properties') {
+                    $value = $this->prepareCustomProperties($attr, $item);
+                } elseif ($key === 'is_discontinued') {
+                    $value = false;
                 } else {
-                    $value = '';
-                }
-                if ($key == 'group_name' && $value) {
-                    $value = strtolower($value);
-                    $value = str_replace(' ', '_', $value);
-                    $value = preg_replace('/[^A-Za-z0-9_-]/', '-', $value);
-                    $value = substr((string)$value, 0, 100);
-                }
-            }
+                    if ($attr['default']) {
+                        $data = $item->getData($attr['attr_code']);
 
-            $itemArray[$key] = $value;
-            if (($key == 'custom_properties' || $key == 'gtins') && !$value) {
-                unset($itemArray[$key]);
+                        if (isset($attr['type']) && $attr['type'] === 'url') {
+                            $data = $item->getProductUrl();
+                        }
+
+                        if (isset($attr['type']) && $attr['type'] === 'image') {
+                            $baseUrl = $this->yotpoCoreConfig->getBaseUrl(UrlInterface::URL_TYPE_MEDIA);
+                            $data = $data ? $baseUrl . 'catalog/product' . $data : "";
+                        }
+                        $value = $data;
+                    } elseif (isset($attr['method']) && $attr['method']) {
+
+                        $configKey = isset($attr['attr_code']) && $attr['attr_code'] ?
+                            $attr['attr_code'] : '';
+
+                        $method = $attr['method'];
+                        $itemValue = $this->$method($item, $configKey);
+                        $value = $itemValue ?: ($method == 'getProductPrice' ? 0.00 : $itemValue);
+                    } else {
+                        $value = '';
+                    }
+                    if ($key == 'group_name' && $value) {
+                        $value = strtolower($value);
+                        $value = str_replace(' ', '_', $value);
+                        $value = preg_replace('/[^A-Za-z0-9_-]/', '-', $value);
+                        $value = substr((string)$value, 0, 100);
+                    }
+                }
+                $itemArray[$key] = $value;
+                if (($key == 'custom_properties' || $key == 'gtins') && !$value) {
+                    unset($itemArray[$key]);
+                }
+            } catch (\Exception $e) {
+                $this->logger->info(
+                    __(
+                        'Exception raised within attributeMapping - $key: %1, $attr: %2 Exception Message: %3',
+                        $key,
+                        $attr,
+                        $e->getMessage()
+                    )
+                );
             }
         }
 
