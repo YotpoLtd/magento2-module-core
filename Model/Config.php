@@ -41,9 +41,9 @@ class Config
     const SUCCESS_RESPONSE_CODE = '200';
     const CREATED_STATUS_CODE = '201';
     const BAD_REQUEST_RESPONSE_CODE = 400;
+    const RESPONSE_CODE_FOR_UNKNOWN_ERRORS = 500;
     const NOT_FOUND_RESPONSE_CODE = 404;
     const CONFLICT_RESPONSE_CODE = 409;
-
     const YOTPO_SYNC_RESPONSE_IS_SUCCESS_KEY = 'is_success';
 
     /**
@@ -347,7 +347,7 @@ class Config
      *
      * @param bool $withDefault
      * @param bool $onlyActive
-     * @return array<mixed>
+     * @return array <mixed>
      */
     public function getAllStoreIds(bool $withDefault = false, bool $onlyActive = true): ?array
     {
