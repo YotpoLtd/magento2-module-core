@@ -768,11 +768,11 @@ class Processor extends Main
     /**
      * @param integer $storeId
      * @param integer $itemRowId
-     * @param integer $syncedToYotpoProductAttributeId
      * @return array <mixed>
      */
-    private function prepareAttributeDataToUpdate($storeId, $itemRowId, $syncedToYotpoProductAttributeId)
+    private function prepareAttributeDataToUpdate($storeId, $itemRowId)
     {
+        $syncedToYotpoProductAttributeId = $this->catalogData->getAttributeId(CoreConfig::CATALOG_SYNC_ATTR_CODE);
         return [
             'attribute_id' => $syncedToYotpoProductAttributeId,
             'store_id' => $storeId,
@@ -813,11 +813,13 @@ class Processor extends Main
     }
 
     /**
-     * @param array <mixed> $attributeDataToUpdate
+     * @param $storeId
+     * @param $itemRowId
      * @return void
      */
-    private function updateProductSyncAttribute($attributeDataToUpdate)
+    private function updateProductSyncAttribute($storeId, $itemRowId)
     {
+        $attributeDataToUpdate = $this->prepareAttributeDataToUpdate($storeId, $itemRowId);
         $this->insertOnDuplicate(
             'catalog_product_entity_int',
             [$attributeDataToUpdate]
