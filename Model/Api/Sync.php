@@ -19,13 +19,14 @@ class Sync extends YotpoRequest
      * @param string $method
      * @param string $url
      * @param array<mixed> $data
+     * @param bool $shouldRetry
      * @return DataObject
      * @throws NoSuchEntityException|LocalizedException
      */
-    public function sync(string $method, string $url, array $data = [])
+    public function sync(string $method, string $url, array $data = [], $shouldRetry = false)
     {
         $data = $this->setEntityLog($data);
-        return $this->send($method, $url, $data);
+        return $this->send($method, $url, $data, 'api', $shouldRetry);
     }
 
     /**

@@ -457,7 +457,8 @@ class Processor extends Main
             $response = $this->yotpoCoreSync->sync(
                 'GET',
                 $this->config->getEndpoint('orders'),
-                ['external_ids' => $incrementId, 'entityLog' => 'orders']
+                ['external_ids' => $incrementId, 'entityLog' => 'orders'],
+                true
             );
             if ($response->getData('is_success')) {
                 $yotpoOrderId = $this->getYotpoIdFromResponse($response);
@@ -471,7 +472,7 @@ class Processor extends Main
             $method = $this->config::METHOD_POST;
         }
         $orderData['entityLog'] = 'orders';
-        $response = $this->yotpoCoreSync->sync($method, $url, $orderData);
+        $response = $this->yotpoCoreSync->sync($method, $url, $orderData, true);
         $immediateRetry = false;
         if ($response->getData('is_success')) {
             if ($yotpoOrderId) {
@@ -483,7 +484,8 @@ class Processor extends Main
             $response = $this->yotpoCoreSync->sync(
                 'GET',
                 $this->config->getEndpoint('orders'),
-                ['external_ids' => $incrementId, 'entityLog' => 'orders']
+                ['external_ids' => $incrementId, 'entityLog' => 'orders'],
+                true
             );
         } elseif ($this->isImmediateRetry($response, $this->entity, $orderId, $order->getStoreId())) {
             $missingProducts = $this->getMissingProductIdsFromNotFoundResponse($response);
