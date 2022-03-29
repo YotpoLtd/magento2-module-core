@@ -93,7 +93,7 @@ class Request
         if (!$successFullResponse && $this->yotpoResponse->invalidToken($response) && $this->retryRequestInvalidToken) {
             $this->getAuthToken(true); //generate new token
             $this->retryRequestInvalidToken--;
-            $this->send($method, $endPoint, $data);
+            return $this->send($method, $endPoint, $data);
         }
         return $response;
     }
