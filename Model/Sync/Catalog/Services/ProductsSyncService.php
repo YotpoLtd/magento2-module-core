@@ -1,0 +1,114 @@
+<?php
+
+namespace Yotpo\Core\Model\Sync\Catalog\Services;
+
+use Yotpo\Core\Model\AbstractJobs;
+use Magento\Framework\App\ResourceConnection;
+use Magento\Store\Model\App\Emulation as AppEmulation;
+use Yotpo\Core\Model\Config as CoreConfig;
+
+class ProductsSyncService extends AbstractJobs
+{
+    const YOTPO_PRODUCT_SYNC_TABLE_NAME = 'yotpo_product_sync';
+
+    /**
+     * @var CoreConfig
+     */
+    protected $coreConfig;
+
+    /**
+     * Processor constructor.
+     * @param AppEmulation $appEmulation
+     * @param ResourceConnection $resourceConnection
+     * @param CoreConfig $coreConfig
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
+    public function __construct(
+        AppEmulation $appEmulation,
+        ResourceConnection $resourceConnection,
+        CoreConfig $coreConfig
+    ) {
+        $this->coreConfig = $coreConfig;
+        parent::__construct($appEmulation, $resourceConnection);
+    }
+
+    /**
+     * @param array <mixed> $syncDataRecord
+     * @return void
+     */
+    public function updateSyncTable($syncDataRecord)
+    {
+        $this->insertOnDuplicate($this::YOTPO_PRODUCT_SYNC_TABLE_NAME, [$syncDataRecord]);
+    }
+
+    /**
+     * @param integer $storeId
+     * @param integer $parentYotpoId
+     * @return array
+     */
+    public function getProductIdsFromSyncTableByStoreIdAndParentYotpoId($storeId, $parentYotpoId)
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $select = $connection->select(
+        )->from(
+            [$this->resourceConnection->getTableName($this::YOTPO_PRODUCT_SYNC_TABLE_NAME)],
+            ['product_id']
+        )->where(
+            'store_id = ?',
+            $storeId
+        )->where(
+            'yotpo_id_parent = ?',
+            $parentYotpoId
+        )->where(
+            'is_deleted = ?',
+            0
+        );
+        $items = $connection->fetchAssoc($select, 'product_id');
+        return array_keys($items);
+    }
+
+    /**
+     * @param integer $storeId
+     * @param array $variantIds
+     * @param integer $yotpoIdParentToBeUpdated
+     * @return void
+     */
+    public function updateYotpoIdParentInSyncTableByStoreIdAndVariantIds($storeId, $variantIds, $yotpoIdParentToBeUpdated)
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $condition = [
+            'store_id = ?' => $storeId,
+            'product_id IN (?)' => $variantIds
+        ];
+        $data = [
+            'yotpo_id_parent' => $yotpoIdParentToBeUpdated,
+            'response_code' => CoreConfig::CUSTOM_RESPONSE_DATA
+        ];
+        $connection->update(
+            $this->resourceConnection->getTableName($this::YOTPO_PRODUCT_SYNC_TABLE_NAME),
+            $data,
+            $condition
+        );
+    }
+
+    /**
+     * @param array<mixed> $productsIds
+     * @return void
+     */
+    public function resetProductsResponseCodeByProductsIds($productsIds = [])
+    {
+        if (!$productsIds) {
+            return;
+        }
+
+        $condition = [];
+        $condition['product_id IN (?) '] = $productsIds;
+        $connection = $this->resourceConnection->getConnection();
+        $connection->update(
+            $this->resourceConnection->getTableName($this::YOTPO_PRODUCT_SYNC_TABLE_NAME),
+            ['response_code' => $this->coreConfig::CUSTOM_RESPONSE_DATA],
+            $condition
+        );
+    }
+}

@@ -17,6 +17,7 @@ use Yotpo\Core\Model\Sync\Data\Main as SyncDataMain;
 use Yotpo\Core\Model\Sync\Catalog\Processor\Main;
 use Yotpo\Core\Api\ProductSyncRepositoryInterface;
 use Yotpo\Core\Model\Sync\CollectionsProducts\Services\CollectionsProductsService;
+use Yotpo\Core\Model\Sync\Catalog\Services\ProductsSyncService;
 
 /**
  * Class Processor - Process catalog sync
@@ -49,6 +50,11 @@ class Processor extends Main
     protected $collectionsProductsService;
 
     /**
+     * @var ProductsSyncService
+     */
+    protected $productsSyncService;
+
+    /**
      * @var array<mixed>
      */
     protected $retryItems = [];
@@ -78,6 +84,7 @@ class Processor extends Main
      * @param ProductSyncRepositoryInterface $productSyncRepositoryInterface
      * @param SyncDataMain $syncDataMain
      * @param CollectionsProductsService $collectionsProductsService
+     * @param ProductsSyncService $productsSyncService
      * @param CatalogRequestHandler $catalogRequestHandler
      */
     public function __construct(
@@ -94,6 +101,7 @@ class Processor extends Main
         ProductSyncRepositoryInterface $productSyncRepositoryInterface,
         SyncDataMain $syncDataMain,
         CollectionsProductsService $collectionsProductsService,
+        ProductsSyncService $productsSyncService,
         CatalogRequestHandler $catalogRequestHandler
     ) {
         parent::__construct(
@@ -112,6 +120,7 @@ class Processor extends Main
         $this->productSyncRepositoryInterface = $productSyncRepositoryInterface;
         $this->syncDataMain = $syncDataMain;
         $this->collectionsProductsService = $collectionsProductsService;
+        $this->productsSyncService = $productsSyncService;
     }
 
     /**
@@ -419,7 +428,7 @@ class Processor extends Main
                 }
 
                 if ($processedSyncDataRecordToUpdate) {
-                    $this->updateSyncTable($processedSyncDataRecordToUpdate);
+                    $this->productsSyncService->updateSyncTable($processedSyncDataRecordToUpdate);
                     $syncTableRecordsUpdated[] = $processedSyncDataRecordToUpdate;
 
                     if ($this->shouldForceVariantsSyncFollowingProductUpsert(
@@ -530,7 +539,7 @@ class Processor extends Main
                     ];
                     if (!$itemData['yotpo_id']) {
                         $tempDeleteQry['is_deleted_at_yotpo'] = 1;
-                        $this->updateSyncTable($tempDeleteQry);
+                        $this->productsSyncService->updateSyncTable($tempDeleteQry);
                         continue;
                     }
                     $apiParam = [];
@@ -548,7 +557,7 @@ class Processor extends Main
                         $response = $this->processDeleteRetry($params, $apiParam, $itemData, $itemId);
                         $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
                     }
-                    $this->updateSyncTable($returnResponse['temp_sql']);
+                    $this->productsSyncService->updateSyncTable($returnResponse['temp_sql']);
                 } catch (\Exception $e) {
                     $this->updateProductSyncAttribute($storeId, $itemId);
                     $this->yotpoCatalogLogger->info(
@@ -598,7 +607,7 @@ class Processor extends Main
                         $response = $this->processDeleteRetry($params, $apiParam, $itemData, $itemId);
                         $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
                     }
-                    $this->updateSyncTable($returnResponse['temp_sql']);
+                    $this->productsSyncService->updateSyncTable($returnResponse['temp_sql']);
                 } catch (\Exception $e) {
                     $this->updateProductSyncAttribute($storeId, $itemId);
                     $this->yotpoCatalogLogger->info(
@@ -848,18 +857,6 @@ class Processor extends Main
     }
 
     /**
-     * @param array <mixed> $syncDataRecord
-     * @return void
-     */
-    private function updateSyncTable($syncDataRecord)
-    {
-        $this->insertOnDuplicate(
-            'yotpo_product_sync',
-            [$syncDataRecord]
-        );
-    }
-
-    /**
      * @param integer $storeId
      * @param integer $itemEntityId
      * @param integer $parentItemId
@@ -983,7 +980,7 @@ class Processor extends Main
             $yotpoFormatItemData
         );
         $processedSyncDataRecordToUpdate = $returnResponse['temp_sql'];
-        $this->updateSyncTable($processedSyncDataRecordToUpdate);
+        $this->productsSyncService->updateSyncTable($processedSyncDataRecordToUpdate);
         return $processedSyncDataRecordToUpdate['yotpo_id'];
     }
 
@@ -1081,63 +1078,13 @@ class Processor extends Main
             )
         );
 
-        $variantIds = $this->getProductIdsFromSyncTableByStoreIdAndParentYotpoId($storeId, $currentParentYotpoId);
+        $variantIds = $this->productsSyncService->getProductIdsFromSyncTableByStoreIdAndParentYotpoId($storeId, $currentParentYotpoId);
         if (!$variantIds) {
             return;
         }
 
-        $this->updateYotpoIdParentInSyncTableByStoreIdAndVariantIds($storeId, $variantIds, $updatedParentYotpoId);
+        $this->productsSyncService->updateYotpoIdParentInSyncTableByStoreIdAndVariantIds($storeId, $variantIds, $updatedParentYotpoId);
         $this->updateProductSyncAttributeByStoreIdAndProductIds($storeId, $variantIds, $syncedToYotpoProductAttributeId);
-    }
-
-    /**
-     * @param integer $storeId
-     * @param integer $parentYotpoId
-     * @return array
-     */
-    private function getProductIdsFromSyncTableByStoreIdAndParentYotpoId($storeId, $parentYotpoId)
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $select = $connection->select(
-        )->from(
-            [$this->resourceConnection->getTableName('yotpo_product_sync')],
-            ['product_id']
-        )->where(
-            'store_id = ?',
-            $storeId
-        )->where(
-            'yotpo_id_parent = ?',
-            $parentYotpoId
-        )->where(
-            'is_deleted = ?',
-            0
-        );
-        $items = $connection->fetchAssoc($select, 'product_id');
-        return array_keys($items);
-    }
-
-    /**
-     * @param integer $storeId
-     * @param array $variantIds
-     * @param integer $yotpoIdParentToBeUpdated
-     * @return void
-     */
-    private function updateYotpoIdParentInSyncTableByStoreIdAndVariantIds($storeId, $variantIds, $yotpoIdParentToBeUpdated)
-    {
-        $connection = $this->resourceConnection->getConnection();
-        $condition = [
-            'store_id = ?' => $storeId,
-            'product_id IN (?)' => $variantIds
-        ];
-        $data = [
-            'yotpo_id_parent' => $yotpoIdParentToBeUpdated,
-            'response_code' => CoreConfig::CUSTOM_RESPONSE_DATA
-        ];
-        $connection->update(
-            $this->resourceConnection->getTableName('yotpo_product_sync'),
-            $data,
-            $condition
-        );
     }
 
     /**
