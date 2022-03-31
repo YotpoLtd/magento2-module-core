@@ -211,7 +211,7 @@ class Main extends AbstractJobs
         $visibleVariants = false
     ) {
         $storeId = $this->coreConfig->getStoreId();
-        $fourNotFourData = [];
+        $failedProductSyncIdsForRetry = [];
         switch ($apiParam['method']) {
             case $this->coreConfig->getProductSyncMethod('createProduct'):
             case $this->coreConfig->getProductSyncMethod('createProductVariant'):
@@ -244,15 +244,15 @@ class Main extends AbstractJobs
                     }
                 } else {
                     if ($this->isImmediateRetryResponse($response->getData('status'))) {
-                        $fnfParentIdFromYotpoTbl = '';
+                        $BadRequestExcludingNotFoundProductSyncParentId = '';
                         if ($apiParam['method'] === $this->coreConfig->getProductSyncMethod('updateProductVariant')) {
-                            $fnfParentIdFromYotpoTbl = $this->getFourNotFourParentId($apiParam);
+                            $BadRequestExcludingNotFoundProductSyncParentId = $this->getProductParentIdFromSyncTable($apiParam);
                         }
-                        if ($fnfParentIdFromYotpoTbl) {
-                            $fourNotFourData[] = $fnfParentIdFromYotpoTbl;
+                        if ($BadRequestExcludingNotFoundProductSyncParentId) {
+                            $failedProductSyncIdsForRetry[] = $BadRequestExcludingNotFoundProductSyncParentId;
                         }
                         if (array_key_exists('external_id', $data)) {
-                            $fourNotFourData[] = $data['external_id'];
+                            $failedProductSyncIdsForRetry[] = $data['external_id'];
                         }
                     }
                     $this->writeFailedLog($apiParam['method'], $storeId);
@@ -275,7 +275,7 @@ class Main extends AbstractJobs
         return [
             'temp_sql' => $tempSqlArray,
             'external_id' => array_filter($externalIds),
-            'four_not_four_data' => $fourNotFourData
+            'failed_product_ids_for_retry' => $failedProductSyncIdsForRetry
         ];
     }
 
@@ -530,20 +530,21 @@ class Main extends AbstractJobs
      * @return int|string
      * @throws NoSuchEntityException
      */
-    protected function getFourNotFourParentId($apiParam)
+    protected function getProductParentIdFromSyncTable($apiParam)
     {
-        $return = 0;
-        $connection = $this->getConnection();
-        $tableName = $this->getTableName('yotpo_product_sync');
         $yotpoId = isset($apiParam['yotpo_id_parent']) ? $apiParam['yotpo_id_parent'] : 0;
         if ($yotpoId) {
-            $select = $connection->select()
+            $connection = $this->getConnection();
+            $tableName = $this->getTableName('yotpo_product_sync');
+            $productIdByYotpoIdAndStoreIdQuery = $connection->select()
                 ->from($tableName, 'product_id')
                 ->where('yotpo_id = ?', $yotpoId)
                 ->where('store_id = ?', $this->coreConfig->getStoreId());
-            $return = $connection->fetchOne($select);
+
+            return $connection->fetchOne($productIdByYotpoIdAndStoreIdQuery);
         }
-        return $return;
+
+        return 0;
     }
 
     /**
@@ -559,7 +560,7 @@ class Main extends AbstractJobs
         $parentYotpoId = '';
         $childYotpoId = '';
 
-        $parentId = $this->getFourNotFourParentId($apiParam);
+        $parentId = $this->getProductParentIdFromSyncTable($apiParam);
         if ($params['method'] === $this->coreConfig->getProductSyncMethod('deleteProduct') || $parentId) {
             $requestId = $parentId ?: $itemId;
             $url = $this->coreConfig->getEndpoint('products');
