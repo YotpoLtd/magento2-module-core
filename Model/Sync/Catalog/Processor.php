@@ -385,6 +385,7 @@ class Processor extends Main
                         $this->updateProductSyncAttribute($storeId, $itemRowId);
                     }
                 }
+                $this->updateProductSyncAttribute($storeId, $itemRowId);
 
                 $returnResponse = $this->processResponse(
                     $apiRequestParams,
@@ -738,9 +739,8 @@ class Processor extends Main
 
     /**
      * Check and sync the products if not already synced
-     *
-     * @param array <mixed> $productIds
-     * @param array <mixed> $visibleItems
+     * @param array<mixed> $productIds
+     * @param array<mixed> $visibleItems
      * @param int|null $storeId
      * @return bool
      */
@@ -759,9 +759,8 @@ class Processor extends Main
 
     /**
      * Get the productIds od the products that are not synced
-     *
-     * @param array <mixed> $productIds
-     * @param array <mixed> $visibleItems
+     * @param array<mixed> $productIds
+     * @param array<mixed> $visibleItems
      * @param int|null $storeId
      * @return mixed
      */
@@ -773,9 +772,18 @@ class Processor extends Main
             if (!$product) {
                 continue;
             }
+
             $itemsMap[$product->getId()] = $product;
         }
-        return $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
+        $productsIdsToUpdate = [];
+        $productsIdsToCreate = $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
+
+        if (!$this->coreConfig->isCatalogSyncActive($storeId)) {
+            $productsIdsToCheck = array_diff($productIds, $productsIdsToCreate);
+            $productsIdsToUpdate = $this->getProductsThatShouldBeUpdated($productsIdsToCheck);
+        }
+
+        return array_merge($productsIdsToUpdate, $productsIdsToCreate);
     }
 
     /**
@@ -1106,5 +1114,20 @@ class Processor extends Main
             ['value' => 0],
             $condition
         );
+    }
+
+    /**
+     * @param array $productsIdsToCheck
+     */
+    private function getProductsThatShouldBeUpdated($productsIdsToCheck)
+    {
+        $productsIdsToUpdate = [];
+        foreach ($productsIdsToCheck as $productId) {
+            if ($this->productsSyncService->checkProductShouldBeSyncedByAttribute($productId)) {
+                $productsIdsToUpdate[] = $productId;
+            }
+        }
+
+        return $productsIdsToUpdate;
     }
 }

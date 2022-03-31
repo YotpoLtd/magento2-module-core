@@ -5,6 +5,7 @@ namespace Yotpo\Core\Model\Sync\Catalog\Services;
 use Yotpo\Core\Model\AbstractJobs;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Store\Model\App\Emulation as AppEmulation;
+use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
 use Yotpo\Core\Model\Config as CoreConfig;
 
 class ProductsSyncService extends AbstractJobs
@@ -17,19 +18,27 @@ class ProductsSyncService extends AbstractJobs
     protected $coreConfig;
 
     /**
+     * @var CollectionFactory
+     */
+    protected $collectionFactory;
+
+    /**
      * Processor constructor.
      * @param AppEmulation $appEmulation
      * @param ResourceConnection $resourceConnection
      * @param CoreConfig $coreConfig
+     * @param CollectionFactory $collectionFactory
      * @throws \Magento\Framework\Exception\LocalizedException
      * @throws \Magento\Framework\Exception\NoSuchEntityException
      */
     public function __construct(
         AppEmulation $appEmulation,
         ResourceConnection $resourceConnection,
-        CoreConfig $coreConfig
+        CoreConfig $coreConfig,
+        CollectionFactory $collectionFactory
     ) {
         $this->coreConfig = $coreConfig;
+        $this->collectionFactory = $collectionFactory;
         parent::__construct($appEmulation, $resourceConnection);
     }
 
@@ -66,6 +75,31 @@ class ProductsSyncService extends AbstractJobs
         );
         $items = $connection->fetchAssoc($select, 'product_id');
         return array_keys($items);
+    }
+
+    /**
+     * @param integer $productId
+     * @return bool
+     */
+    public function checkProductShouldBeSyncedByAttribute($productId)
+    {
+        $collection = $this->collectionFactory->create();
+        $collection->addAttributeToSelect('*');
+        $collection->addAttributeToFilter(
+            [
+                ['attribute' => CoreConfig::CATALOG_SYNC_ATTR_CODE, 'null' => true],
+                ['attribute' => CoreConfig::CATALOG_SYNC_ATTR_CODE, 'eq' => '0'],
+            ]
+        );
+        $collection->addFieldToFilter('entity_id', ['eq' => $productId]);
+
+        $productId = null;
+        $product = $collection->getFirstItem();
+        if ($product) {
+            $productId = $product->getId();
+        }
+
+        return $productId ? true : false;
     }
 
     /**
