@@ -738,9 +738,8 @@ class Processor extends Main
 
     /**
      * Check and sync the products if not already synced
-     *
-     * @param array <mixed> $productIds
-     * @param array <mixed> $visibleItems
+     * @param array<mixed> $productIds
+     * @param array<mixed> $visibleItems
      * @param int|null $storeId
      * @return bool
      */
@@ -759,9 +758,8 @@ class Processor extends Main
 
     /**
      * Get the productIds od the products that are not synced
-     *
-     * @param array <mixed> $productIds
-     * @param array <mixed> $visibleItems
+     * @param array<mixed> $productIds
+     * @param array<mixed> $visibleItems
      * @param int|null $storeId
      * @return mixed
      */
@@ -773,9 +771,18 @@ class Processor extends Main
             if (!$product) {
                 continue;
             }
+
             $itemsMap[$product->getId()] = $product;
         }
-        return $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
+        $productsIdsToUpdate = [];
+        $productsIdsToCreate = $this->syncDataMain->getProductIds($productIds, $storeId, $itemsMap);
+
+        if (!$this->coreConfig->isCatalogSyncActive($storeId)) {
+            $productsIdsToCheck = array_diff($productIds, $productsIdsToCreate);
+            $productsIdsToUpdate = $this->productsSyncService->findProductsThatShouldBeSyncedByAttribute($productsIdsToCheck);
+        }
+
+        return array_merge($productsIdsToUpdate, $productsIdsToCreate);
     }
 
     /**
