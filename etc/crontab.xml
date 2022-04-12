@@ -12,6 +12,9 @@
         <job name="yotpo_cron_core_category_sync" instance="Yotpo\Core\Model\Sync\Catalog\Cron\CategorySync" method="execute">
             <config_path>crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_category_sync/schedule/cron_expr</config_path>
         </job>
+        <job name="yotpo_cron_core_collections_products_sync" instance="Yotpo\Core\Model\Sync\CollectionsProducts\Cron\CollectionsProductsSync" method="execute">
+            <config_path>crontab/yotpo_core_catalog_sync/jobs/yotpo_cron_core_collections_products_sync/schedule/cron_expr</config_path>
+        </job>
     </group>
     <group id="yotpo_misc">
         <job name="yotpo_cron_core_metadata_sync" instance="Yotpo\Core\Model\Sync\Metadata\Cron\MetadataSync" method="execute">

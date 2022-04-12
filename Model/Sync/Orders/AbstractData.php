@@ -341,13 +341,28 @@ class AbstractData extends Main
      */
     public function prepareShipmentStatuses($orderIds)
     {
-        if (!$this->shipmentsCollection) {
-            $collection = $this->shipmentCollectionFactory->create();
-            $collection->addFieldToFilter('order_id', ['in' => $orderIds]);
-            $shipmentRecords = $collection->getItems();
-            foreach ($shipmentRecords as $shipment) {
-                $this->shipmentsCollection[$shipment->getOrderId()][] = $shipment;
+        try {
+            if (!$this->shipmentsCollection) {
+                $collection = $this->shipmentCollectionFactory->create();
+                $collection->addFieldToFilter('order_id', ['in' => $orderIds]);
+                $shipmentRecords = $collection->getItems();
+                foreach ($shipmentRecords as $shipment) {
+                    try {
+                        $this->shipmentsCollection[$shipment->getOrderId()][] = $shipment;
+                    } catch (\Exception $e) {
+                        $orderId = method_exists($shipment, 'getOrderId') ? $shipment->getOrderId() : null;
+                        $this->yotpoOrdersLogger->info(
+                            __(
+                                'Exception raised within prepareShipmentStatuses - orderId: %1, Exception Message: %2',
+                                $orderId,
+                                $e->getMessage()
+                            )
+                        );
+                    }
+                }
             }
+        } catch (\Exception $e) {
+            $this->yotpoOrdersLogger->info(' Exception raised within prepareShipmentStatuses() :  ' . $e->getMessage(), []);
         }
     }
 
@@ -433,14 +448,18 @@ class AbstractData extends Main
      */
     public function prepareCouponCodes($couponCodes)
     {
-        if (!$this->couponsCollection) {
-            $coupons = $this->couponCollectionFactory->create();
-            $coupons->addFieldToFilter('code', ['in' => $couponCodes]);
-            if ($couponsData = $coupons->getItems()) {
-                foreach ($couponsData as $coupon) {
-                    $this->couponsCollection[$coupon->getRuleId()] = $coupon->getCode();
+        try {
+            if (!$this->couponsCollection) {
+                $coupons = $this->couponCollectionFactory->create();
+                $coupons->addFieldToFilter('code', ['in' => $couponCodes]);
+                if ($couponsData = $coupons->getItems()) {
+                    foreach ($couponsData as $coupon) {
+                        $this->couponsCollection[$coupon->getRuleId()] = $coupon->getCode();
+                    }
                 }
             }
+        } catch (\Exception $e) {
+            $this->yotpoOrdersLogger->info('Exception raised within prepareCouponCodes' . $e->getMessage(), []);
         }
     }
 
@@ -506,11 +525,22 @@ class AbstractData extends Main
                 $customers = $this->customerRepository->getList($searchCriteria);
                 $customersData = $customers->getItems();
                 foreach ($customersData as $customer) {
-                    /** @var Customer $customer */
-                    $customAttributeValue = $this->getSmsMarketingCustomAttributeValue($customer);
-                    $this->customersAttributeCollection[$customer->getId()] = $customAttributeValue;
+                    try {
+                        /** @var Customer $customer */
+                        $customAttributeValue = $this->getSmsMarketingCustomAttributeValue($customer);
+                        $this->customersAttributeCollection[$customer->getId()] = $customAttributeValue;
+                    } catch (\Exception $e) {
+                        $customerId = method_exists($customer, 'getId') ? $customer->getId() : null;
+                        $this->yotpoOrdersLogger->info(
+                            __(
+                                'Exception raised within prepareShipmentStatuses - customerId: %1, Exception Message: %2',
+                                $customerId,
+                                $e->getMessage()
+                            )
+                        );
+                    }
                 }
-            } catch (NoSuchEntityException | LocalizedException $e) {
+            } catch (\Exception $e) {
                 $this->yotpoOrdersLogger->info(' prepareCustomAttributes() :  ' . $e->getMessage(), []);
             }
         }
@@ -541,29 +571,45 @@ class AbstractData extends Main
      */
     public function prepareGuestUsersCustomAttributes($orderIds)
     {
-        if (!$orderIds) {
-            $this->guestUsersAttributeCollection = [];
-            return;
-        }
-        if (!$this->guestUsersAttributeCollection ||
-            array_diff($orderIds, array_keys($this->guestUsersAttributeCollection))
-        ) {
-            $this->searchCriteriaBuilder->addFilter(
-                'entity_id',
-                $orderIds,
-                'in'
-            );
-            $searchCriteria = $this->searchCriteriaBuilder->create();
-            $orders = $this->orderRepository->getList($searchCriteria);
-            $ordersData = $orders->getItems();
-            foreach ($ordersData as $order) {
-                $attributeCode = $this->config->getConfig(
-                    'sms_marketing_custom_attribute',
-                    $order->getStoreId()
-                );
-                $this->guestUsersAttributeCollection[$order->getEntityId()] =
-                    $order->getData($attributeCode) ?: false; /** @phpstan-ignore-line */
+        try {
+            if (!$orderIds) {
+                $this->guestUsersAttributeCollection = [];
+                return;
             }
+            if (!$this->guestUsersAttributeCollection ||
+                array_diff($orderIds, array_keys($this->guestUsersAttributeCollection))
+            ) {
+                $this->searchCriteriaBuilder->addFilter(
+                    'entity_id',
+                    $orderIds,
+                    'in'
+                );
+                $searchCriteria = $this->searchCriteriaBuilder->create();
+                $orders = $this->orderRepository->getList($searchCriteria);
+                $ordersData = $orders->getItems();
+                foreach ($ordersData as $order) {
+                    try {
+                        $attributeCode = $this->config->getConfig(
+                            'sms_marketing_custom_attribute',
+                            $order->getStoreId()
+                        );
+                        $this->guestUsersAttributeCollection[$order->getEntityId()] =
+                            $order->getData($attributeCode) ?: false;
+                        /** @phpstan-ignore-line */
+                    } catch (\Exception $e) {
+                        $orderId = method_exists($order, 'getEntityId') ? $order->getEntityId() : null;
+                        $this->yotpoOrdersLogger->info(
+                            __(
+                                'Exception raised within prepareGuestUsersCustomAttributes - orderId: %1, Exception Message: %2',
+                                $orderId,
+                                $e->getMessage()
+                            )
+                        );
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            $this->yotpoOrdersLogger->info(' prepareGuestUsersCustomAttributes() :  ' . $e->getMessage(), []);
         }
     }
 
