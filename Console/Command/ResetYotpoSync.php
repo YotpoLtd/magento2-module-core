@@ -10,7 +10,7 @@ use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
 use Magento\Framework\App\State as AppState;
 use Yotpo\Core\Model\Config;
-use Yotpo\Core\Model\Sync\Reset;
+use Yotpo\Core\Model\Sync\ResetEntitiesSync;
 
 /**
  * Class ReSetYotpoSync - Manage Yotpo Reset Sync
@@ -35,7 +35,7 @@ class ResetYotpoSync extends Command
     protected $appState;
 
     /**
-     * @var Reset
+     * @var ResetEntitiesSync
      */
     protected $syncReset;
 
@@ -47,11 +47,11 @@ class ResetYotpoSync extends Command
     /**
      * RetryYotpoSync constructor.
      * @param AppState $appState
-     * @param Reset $syncReset
+     * @param ResetEntitiesSync $syncReset
      * @param string|null $name
      */
     public function __construct(
-        Reset $syncReset,
+        ResetEntitiesSync $syncReset,
         AppState $appState,
         Config $config,
         string $name = null

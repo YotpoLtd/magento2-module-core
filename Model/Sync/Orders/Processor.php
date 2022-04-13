@@ -164,7 +164,7 @@ class Processor extends Main
     {
         $storeId = $order->getStoreId();
 
-        if ($this->config->syncResetInProgress($storeId, 'order')) {
+        if ($this->config->isSyncResetInProgress($storeId, 'order')) {
             return;
         }
         $this->emulateFrontendArea((int)$storeId);
@@ -207,7 +207,7 @@ class Processor extends Main
         $ordersWithMissedProducts = [];
         foreach ($orderItems as $order) {
             $storeId = $order->getStoreId();
-            if ($this->config->syncResetInProgress($storeId, 'order')) {
+            if ($this->config->isSyncResetInProgress($storeId, 'order')) {
                 $this->yotpoOrdersLogger->info(
                     __(
                         'Order sync is skipped because order sync reset is in progress

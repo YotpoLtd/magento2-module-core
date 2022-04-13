@@ -5,6 +5,7 @@ namespace Yotpo\Core\Model\Sync\Reset;
 use Magento\Framework\App\Cache\TypeListInterface;
 use Magento\Framework\App\ResourceConnection;
 use Yotpo\Core\Model\Config;
+use Yotpo\Core\Model\Sync\Data\Main as SyncDataMain;
 
 class Main
 {
@@ -27,29 +28,39 @@ class Main
     protected $cacheTypeList;
 
     /**
+     * @var SyncDataMain
+     */
+    protected $syncDataMain;
+
+    /**
      * @param ResourceConnection $resourceConnection
+     * @param Config $config
+     * @param TypeListInterface $cacheTypeList
+     * @param SyncDataMain $syncDataMain
      */
     public function __construct(
         ResourceConnection $resourceConnection,
         Config $config,
-        TypeListInterface $cacheTypeList
+        TypeListInterface $cacheTypeList,
+        SyncDataMain $syncDataMain
     ) {
         $this->resourceConnection = $resourceConnection;
         $this->config = $config;
         $this->cacheTypeList = $cacheTypeList;
+        $this->syncDataMain = $syncDataMain;
     }
 
     /**
      * @param int $storeId
-     * @param boolean $skipSyncTables
+     * @param boolean $clearSyncTables
      * @return void
      * @throws \Zend_Db_Statement_Exception
      */
-    public function resetSync($storeId, $skipSyncTables = false)
+    public function resetSync($storeId, $clearSyncTables = true)
     {
         $this->setResetInProgressConfig($storeId, '1');
         $this->deleteRunningCronSchedules();
-        if (!$skipSyncTables) {
+        if ($clearSyncTables) {
             $this->deleteAllFromTables($storeId);
         }
     }
@@ -104,13 +115,14 @@ class Main
         if (!$totalCount) {
             return;
         }
+        $storeIdColumnName = $this->getStoreIdColumnName($tableName);
         $connection  = $this->resourceConnection->getConnection();
         while ($totalCount > 0) {
             $totalCount -= self::DELETE_LIMIT;
             $select = $connection
                 ->select()
                 ->from($tableName)
-                ->where('store_id = \''.$storeId.'\'')
+                ->where($storeIdColumnName . ' = \''.$storeId.'\'')
                 ->limit(self::DELETE_LIMIT);
 
             $query = $connection->deleteFromSelect($select, new \Zend_Db_Expr(''));
@@ -126,11 +138,24 @@ class Main
      */
     private function getTotalCount($tableName, $storeId)
     {
+        $storeIdColumnName = $this->getStoreIdColumnName($tableName);
         $connection  = $this->resourceConnection->getConnection();
         $query = $connection->select()
             ->from($tableName)
-            ->where('store_id = ?', $storeId);
+            ->where($storeIdColumnName . ' = ?', $storeId);
         return $connection->query($query)->rowCount();
+    }
+
+    /**
+     * @param string $tableName
+     * @return string
+     */
+    private function getStoreIdColumnName($tableName)
+    {
+        if (stripos($tableName, Catalog::CATEGORY_PRODUCT_MAP_SYNC_TABLE) !== false) {
+            return 'magento_store_id';
+        }
+        return 'store_id';
     }
 
     /**
@@ -161,8 +186,80 @@ class Main
     public function setResetInProgressConfig($storeId, $flag)
     {
         $yotpoEntityName = $this->getYotpoEntityName();
+        if (!$yotpoEntityName) {
+            return;
+        }
         $key = 'reset_sync_in_progress_' . $yotpoEntityName;
         $this->config->saveConfig($key, $flag, $storeId);
         $this->cacheTypeList->cleanType(\Magento\Framework\App\Cache\Type\Config::TYPE_IDENTIFIER);
+    }
+
+    /**
+     * @param string $tableName
+     * @param int $attributeId
+     * @param int $storeId
+     * @return int
+     */
+    public function getCountOfEntities($tableName, $attributeId, $storeId)
+    {
+        $connection  = $this->resourceConnection->getConnection();
+        $tableName = $this->resourceConnection->getTableName($tableName);
+        $select = $connection->select();
+        $query = $select->reset()
+            ->from(
+                ['p' => $tableName]
+            );
+        if ($storeId) {
+            $query->where('store_id = ?', $storeId);
+        }
+        $query->where('attribute_id = ?', $attributeId);
+        $query->where('value = ?', 1);
+        return $connection->query($query)->rowCount();
+    }
+
+    /**
+     * @param array<mixed> $dataSet
+     * @param int $storeId
+     * @return void
+     */
+    public function updateEntityAttributeTableData($dataSet, $storeId)
+    {
+        $connection =   $this->resourceConnection->getConnection();
+        foreach ($dataSet as $data) {
+            $attributeId = $this->syncDataMain->getAttributeId($data['attribute_code']);
+            $totalCount = $this->getCountOfEntities($data['table_name'], $attributeId, $storeId);
+            $tableName = $this->resourceConnection->getTableName($data['table_name']);
+            while ($totalCount > 0) {
+                if ($totalCount > self::UPDATE_LIMIT) {
+                    $limit = self::UPDATE_LIMIT;
+                    $totalCount -= self::UPDATE_LIMIT;
+                } else {
+                    $limit = $totalCount;
+                    $totalCount = 0;
+                }
+                if ($storeId) {
+                    $updateQuery = sprintf(
+                        'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `store_id` = %d AND `value` = 1
+                        ORDER BY `value_id` ASC LIMIT %d',
+                        $tableName,
+                        0,
+                        $attributeId,
+                        $storeId,
+                        $limit
+                    );
+                } else {
+                    $updateQuery = sprintf(
+                        'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `value` = 1
+                        ORDER BY `value_id` ASC LIMIT %d',
+                        $tableName,
+                        0,
+                        $attributeId,
+                        $limit
+                    );
+                }
+
+                $connection->query($updateQuery);
+            }
+        }
     }
 }

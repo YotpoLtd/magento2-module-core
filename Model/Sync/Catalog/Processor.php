@@ -173,6 +173,17 @@ class Processor extends Main
                                 $this->coreConfig->getStoreName($storeId) . PHP_EOL;
                         }
                     }
+                    if ($this->coreConfig->isSyncResetInProgress($storeId, 'catalog')) {
+                        $disabled = true;
+                        $this->yotpoCatalogLogger->info(
+                            __(
+                                'Product sync is skipped because catalog sync reset is in progress
+                        - Magento Store ID: %1, Name: %2',
+                                $storeId,
+                                $this->coreConfig->getStoreName($storeId)
+                            )
+                        );
+                    }
                     if ($disabled) {
                         $this->stopEnvironmentEmulation();
                         continue;
@@ -267,7 +278,7 @@ class Processor extends Main
 
         $itemsToBeSyncedToYotpo = $items['sync_data'];
         foreach ($itemsToBeSyncedToYotpo as $itemEntityId => $yotpoFormatItemData) {
-            if ($this->coreConfig->syncResetInProgress($storeId, 'catalog')) {
+            if ($this->coreConfig->isSyncResetInProgress($storeId, 'catalog')) {
                 $this->yotpoCatalogLogger->info(
                     __(
                         'Product sync is skipped because catalog sync reset is in progress

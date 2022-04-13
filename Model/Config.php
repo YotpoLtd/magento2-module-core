@@ -704,7 +704,7 @@ class Config
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function syncResetInProgress($scopeId, $entity)
+    public function isSyncResetInProgress($scopeId, $entity)
     {
         return (bool)$this->getConfig('reset_sync_in_progress_' . $entity, $scopeId);
     }

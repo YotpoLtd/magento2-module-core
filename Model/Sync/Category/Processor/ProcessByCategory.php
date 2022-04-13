@@ -105,7 +105,29 @@ class ProcessByCategory extends Main
                         $this->config->getStoreName($storeId) . PHP_EOL;
                 }
                 $this->emulateFrontendArea($storeId);
+                $syncShouldProgress = true;
                 if (!$this->config->isCatalogSyncActive()) {
+                    $syncShouldProgress = false;
+                    $this->yotpoCoreCatalogLogger->info(
+                        __(
+                            'Catalog Sync is Disabled - Magento Store ID: %1, Name: %2',
+                            $storeId,
+                            $this->config->getStoreName($storeId)
+                        )
+                    );
+                }
+                if ($this->config->isSyncResetInProgress($storeId, 'catalog')) {
+                    $syncShouldProgress = false;
+                    $this->yotpoCoreCatalogLogger->info(
+                        __(
+                            'Category sync is skipped because catalog sync
+                            reset is in progress - Magento Store ID: %1, Name: %2',
+                            $storeId,
+                            $this->config->getStoreName($storeId)
+                        )
+                    );
+                }
+                if (!$syncShouldProgress) {
                     $this->stopEnvironmentEmulation();
                     continue;
                 }
@@ -173,13 +195,13 @@ class ProcessByCategory extends Main
         $collection->getSelect()->limit($batchSize);
         $magentoCategories = [];
         foreach ($collection->getItems() as $category) {
-            if ($this->config->syncResetInProgress($storeId, 'catalog')) {
+            if ($this->config->isSyncResetInProgress($storeId, 'catalog')) {
                 $this->yotpoCoreCatalogLogger->info(
                     __(
                         'Category sync is skipped because catalog sync
                             reset is in progress - Magento Store ID: %1, Name: %2',
                         $storeId,
-                        $storeId
+                        $this->config->getStoreName($storeId)
                     )
                 );
                 continue;

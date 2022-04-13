@@ -126,7 +126,7 @@ class RetryYotpoSync extends Command
         if ($isAllOption) {
             $this->resyncAllEntities($output);
         } else {
-           $yotpoEntityInput = $input->getOption(self::YOTPO_ENTITY);
+            $yotpoEntityInput = $input->getOption(self::YOTPO_ENTITY);
             if (!$yotpoEntityInput) {
                 return $this;
             }
