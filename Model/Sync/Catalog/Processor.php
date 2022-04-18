@@ -143,6 +143,17 @@ class Processor extends Main
                 $this->emulateFrontendArea($storeId);
                 try {
                     $disabled = false;
+                    if ($this->coreConfig->isSyncResetInProgress($storeId, 'catalog')) {
+                        $disabled = true;
+                        $this->yotpoCatalogLogger->info(
+                            __(
+                                'Product sync is skipped because catalog sync reset is in progress
+                        - Magento Store ID: %1, Name: %2',
+                                $storeId,
+                                $this->coreConfig->getStoreName($storeId)
+                            )
+                        );
+                    }
                     if (!$this->coreConfig->isEnabled()) {
                         $disabled = true;
                         $this->yotpoCatalogLogger->info(
@@ -172,17 +183,6 @@ class Processor extends Main
                             echo 'Catalog sync is disabled for store - ' .
                                 $this->coreConfig->getStoreName($storeId) . PHP_EOL;
                         }
-                    }
-                    if ($this->coreConfig->isSyncResetInProgress($storeId, 'catalog')) {
-                        $disabled = true;
-                        $this->yotpoCatalogLogger->info(
-                            __(
-                                'Product sync is skipped because catalog sync reset is in progress
-                        - Magento Store ID: %1, Name: %2',
-                                $storeId,
-                                $this->coreConfig->getStoreName($storeId)
-                            )
-                        );
                     }
                     if ($disabled) {
                         $this->stopEnvironmentEmulation();
@@ -278,17 +278,6 @@ class Processor extends Main
 
         $itemsToBeSyncedToYotpo = $items['sync_data'];
         foreach ($itemsToBeSyncedToYotpo as $itemEntityId => $yotpoFormatItemData) {
-            if ($this->coreConfig->isSyncResetInProgress($storeId, 'catalog')) {
-                $this->yotpoCatalogLogger->info(
-                    __(
-                        'Product sync is skipped because catalog sync reset is in progress
-                        - Magento Store ID: %1, Name: %2',
-                        $storeId,
-                        $this->coreConfig->getStoreName($storeId)
-                    )
-                );
-                continue;
-            }
             $itemRowId = $yotpoFormatItemData['row_id'];
             try {
                 unset($yotpoFormatItemData['row_id']);

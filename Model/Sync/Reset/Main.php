@@ -218,48 +218,46 @@ class Main
     }
 
     /**
-     * @param array<mixed> $dataSet
      * @param int $storeId
+     * @param string $attributeCode
+     * @param string $tableName
      * @return void
      */
-    public function updateEntityAttributeTableData($dataSet, $storeId)
+    public function updateEntityAttributeTableData($storeId, $attributeCode, $tableName)
     {
         $connection =   $this->resourceConnection->getConnection();
-        foreach ($dataSet as $data) {
-            $attributeId = $this->syncDataMain->getAttributeId($data['attribute_code']);
-            $totalCount = $this->getCountOfEntities($data['table_name'], $attributeId, $storeId);
-            $tableName = $this->resourceConnection->getTableName($data['table_name']);
-            while ($totalCount > 0) {
-                if ($totalCount > self::UPDATE_LIMIT) {
-                    $limit = self::UPDATE_LIMIT;
-                    $totalCount -= self::UPDATE_LIMIT;
-                } else {
-                    $limit = $totalCount;
-                    $totalCount = 0;
-                }
-                if ($storeId) {
-                    $updateQuery = sprintf(
-                        'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `store_id` = %d AND `value` = 1
-                        ORDER BY `value_id` ASC LIMIT %d',
-                        $tableName,
-                        0,
-                        $attributeId,
-                        $storeId,
-                        $limit
-                    );
-                } else {
-                    $updateQuery = sprintf(
-                        'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `value` = 1
-                        ORDER BY `value_id` ASC LIMIT %d',
-                        $tableName,
-                        0,
-                        $attributeId,
-                        $limit
-                    );
-                }
-
-                $connection->query($updateQuery);
+        $attributeId = $this->syncDataMain->getAttributeId($attributeCode);
+        $totalCount = $this->getCountOfEntities($tableName, $attributeId, $storeId);
+        $tableName = $this->resourceConnection->getTableName($tableName);
+        while ($totalCount > 0) {
+            if ($totalCount > self::UPDATE_LIMIT) {
+                $limit = self::UPDATE_LIMIT;
+                $totalCount -= self::UPDATE_LIMIT;
+            } else {
+                $limit = $totalCount;
+                $totalCount = 0;
             }
+            if ($storeId) {
+                $updateQuery = sprintf(
+                    'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `store_id` = %d AND
+                                   `value` = 1 LIMIT %d',
+                    $tableName,
+                    0,
+                    $attributeId,
+                    $storeId,
+                    $limit
+                );
+            } else {
+                $updateQuery = sprintf(
+                    'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `value` = 1 LIMIT %d',
+                    $tableName,
+                    0,
+                    $attributeId,
+                    $limit
+                );
+            }
+
+            $connection->query($updateQuery);
         }
     }
 }

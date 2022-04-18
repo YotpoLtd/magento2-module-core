@@ -105,19 +105,7 @@ class ProcessByCategory extends Main
                         $this->config->getStoreName($storeId) . PHP_EOL;
                 }
                 $this->emulateFrontendArea($storeId);
-                $syncShouldProgress = true;
-                if (!$this->config->isCatalogSyncActive()) {
-                    $syncShouldProgress = false;
-                    $this->yotpoCoreCatalogLogger->info(
-                        __(
-                            'Catalog Sync is Disabled - Magento Store ID: %1, Name: %2',
-                            $storeId,
-                            $this->config->getStoreName($storeId)
-                        )
-                    );
-                }
                 if ($this->config->isSyncResetInProgress($storeId, 'catalog')) {
-                    $syncShouldProgress = false;
                     $this->yotpoCoreCatalogLogger->info(
                         __(
                             'Category sync is skipped because catalog sync
@@ -126,8 +114,17 @@ class ProcessByCategory extends Main
                             $this->config->getStoreName($storeId)
                         )
                     );
+                    $this->stopEnvironmentEmulation();
+                    continue;
                 }
-                if (!$syncShouldProgress) {
+                if (!$this->config->isCatalogSyncActive()) {
+                    $this->yotpoCoreCatalogLogger->info(
+                        __(
+                            'Catalog Sync is Disabled - Magento Store ID: %1, Name: %2',
+                            $storeId,
+                            $this->config->getStoreName($storeId)
+                        )
+                    );
                     $this->stopEnvironmentEmulation();
                     continue;
                 }

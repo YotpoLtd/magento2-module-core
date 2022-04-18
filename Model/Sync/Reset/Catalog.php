@@ -65,6 +65,8 @@ class Catalog extends Main
                 'attribute_code' => CoreConfig::CATALOG_SYNC_ATTR_CODE
             ],
         ];
-        $this->updateEntityAttributeTableData($dataSet, $storeId);
+        foreach ($dataSet as $data) {
+            $this->updateEntityAttributeTableData($storeId, $data['attribute_code'], $data['table_name']);
+        }
     }
 }

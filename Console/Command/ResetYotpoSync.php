@@ -77,12 +77,6 @@ class ResetYotpoSync extends Command
                 'Entity'
             ),
             new InputOption(
-                self::YOTPO_ENTITY_ALL,
-                null,
-                InputOption::VALUE_NONE,
-                'All Entities'
-            ),
-            new InputOption(
                 self::STORE_ID,
                 null,
                 InputOption::VALUE_REQUIRED,
@@ -106,9 +100,7 @@ class ResetYotpoSync extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->setAreaCode();
-
-        $isAllOption = $input->getOption(self::YOTPO_ENTITY_ALL);
+        $this->setAreaCodeIfNotConfigured();
         $storeId = $input->getOption(self::STORE_ID);
         if ($storeId) {
             $storeIds = [$storeId];
@@ -119,18 +111,14 @@ class ResetYotpoSync extends Command
             return $this;
         }
         foreach ($storeIds as $storeId) {
-            if ($isAllOption) {
-                $this->resetAllSync($storeId);
-            } else {
-                $yotpoEntityInput = $input->getOption(self::YOTPO_ENTITY);
-                if (!$yotpoEntityInput) {
-                    return $this;
-                }
-                if (!is_array($yotpoEntityInput)) {
-                    $yotpoEntityInput = [$yotpoEntityInput];
-                }
-                $this->resetYotpoSync($yotpoEntityInput, $storeId, $output);
+            $yotpoEntityInput = $input->getOption(self::YOTPO_ENTITY);
+            if (!$yotpoEntityInput) {
+                return $this;
             }
+            if (!is_array($yotpoEntityInput)) {
+                $yotpoEntityInput = [$yotpoEntityInput];
+            }
+            $this->resetYotpoSyncByEntity($yotpoEntityInput, $storeId, $output);
         }
 
         return $this;
@@ -140,7 +128,7 @@ class ResetYotpoSync extends Command
      * @return void
      * @throws LocalizedException
      */
-    public function setAreaCode()
+    public function setAreaCodeIfNotConfigured()
     {
         try {
             $this->appState->getAreaCode();
@@ -192,7 +180,7 @@ class ResetYotpoSync extends Command
      * @return void
      * @throws NoSuchEntityException
      */
-    protected function resetYotpoSync($yotpoEntityInput, $storeId, OutputInterface $output)
+    protected function resetYotpoSyncByEntity($yotpoEntityInput, $storeId, OutputInterface $output)
     {
         foreach ($yotpoEntityInput as $yotpoEntity) {
             switch ($yotpoEntity) {
