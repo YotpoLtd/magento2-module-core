@@ -42,7 +42,7 @@ class UpdateCategoryAttribute implements DataPatchInterface
             'catalog_category',
             'synced_to_yotpo_collection',
             'is_global',
-            ScopedAttributeInterface::SCOPE_STORE,
+            ScopedAttributeInterface::SCOPE_STORE
         );
         $eavSetup->updateAttribute(
             'catalog_category',
