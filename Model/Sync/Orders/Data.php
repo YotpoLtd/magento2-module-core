@@ -144,12 +144,18 @@ class Data extends AbstractData
         $shippingAddress = $order->getShippingAddress();
         $orderStatus = $order->getStatus();
         $mappedYotpoOrderStatus = $this->getYotpoOrderStatus($orderStatus);
+        /** @var \Magento\Sales\Model\Order\Payment $payment **/
+        $payment = $order->getPayment();
+        $paymentMethod = null;
+        if ($payment !== null) {
+            $paymentMethod = $payment->getMethodInstance()->getTitle();
+        }
+
         $data = [
             'order' => [
                 'order_date' => $this->coreHelper->formatDate($order->getCreatedAt()),
                 'checkout_token' => $order->getQuoteId(),
-                /** @phpstan-ignore-next-line */
-                'payment_method' => $order->getPayment()->getMethodInstance()->getTitle(),
+                'payment_method' => $paymentMethod,
                 'total_price' => $order->getGrandTotal(),
                 'subtotal_price' => $order->getSubtotal() + $order->getDiscountAmount(),
                 'currency' => $order->getOrderCurrencyCode(),
@@ -290,35 +296,51 @@ class Data extends AbstractData
         $orderItemProductIds = [];
         foreach ($orders as $order) {
             foreach ($order->getAllVisibleItems() as $orderItem) {
-                if (!$orderItem->getProduct()) {
-                    continue;
-                }
-                $orderItemProduct = $this->prepareProductObject($orderItem);
-                $orderItemProductId = $orderItemProduct->getId();
-                /** @var OrderItem $orderItem */
-                if ($orderItem->getProductType() == 'simple' && !$orderItem->getParentItemId()
-                && !$orderItem->getProduct()->isVisibleInSiteVisibility()) {/** @phpstan-ignore-line */
-                    $orderItemProductIds[] = $orderItemProductId;
-                } else {
-                    $this->parentProductIds[$orderItemProductId] = $orderItemProductId;
+                try {
+                    if (!$orderItem->getProduct()) {
+                        continue;
+                    }
+                    $orderItemProduct = $this->prepareProductObject($orderItem);
+                    $orderItemProductId = $orderItemProduct->getId();
+                    /** @var OrderItem $orderItem */
+                    if ($orderItem->getProductType() == 'simple' && !$orderItem->getParentItemId()
+                        && !$orderItem->getProduct()->isVisibleInSiteVisibility()) {
+                        /** @phpstan-ignore-line */
+                        $orderItemProductIds[] = $orderItemProductId;
+                    } else {
+                        $this->parentProductIds[$orderItemProductId] = $orderItemProductId;
+                    }
+                } catch (\Exception $e) {
+                    $orderId = method_exists($order, 'getEntityId') ? $order->getEntityId() : null;
+                    $this->yotpoOrdersLogger->info(
+                        __(
+                            'Exception raised within prepareParentData - orderId: %1, Exception Message: %2',
+                            $orderId,
+                            $e->getMessage()
+                        )
+                    );
                 }
             }
         }
         if ($orderItemProductIds) {
-            $yotpoParentIds = $this->getYotpoParentIds($orderItemProductIds);
-            if ($yotpoParentIds) {
-                $this->parentProductIds = array_replace($this->parentProductIds, $yotpoParentIds);
-                $missingProductIds = array_diff($orderItemProductIds, array_keys($yotpoParentIds));
-                if ($missingProductIds) {
-                    $this->getMagentoParentIds($missingProductIds);
+            try {
+                $yotpoParentIds = $this->getYotpoParentIds($orderItemProductIds);
+                if ($yotpoParentIds) {
+                    $this->parentProductIds = array_replace($this->parentProductIds, $yotpoParentIds);
+                    $missingProductIds = array_diff($orderItemProductIds, array_keys($yotpoParentIds));
+                    if ($missingProductIds) {
+                        $this->getMagentoParentIds($missingProductIds);
+                    }
+                } else {
+                    $this->getMagentoParentIds($orderItemProductIds);
                 }
-            } else {
-                $this->getMagentoParentIds($orderItemProductIds);
-            }
-            foreach ($orderItemProductIds as $oIProductId) {
-                if (!isset($this->parentProductIds[$oIProductId])) {
-                    $this->parentProductIds[$oIProductId] = $oIProductId;
+                foreach ($orderItemProductIds as $oIProductId) {
+                    if (!isset($this->parentProductIds[$oIProductId])) {
+                        $this->parentProductIds[$oIProductId] = $oIProductId;
+                    }
                 }
+            } catch (\Exception $e) {
+                $this->yotpoOrdersLogger->info(' prepareParentData() :  ' . $e->getMessage(), []);
             }
         }
     }

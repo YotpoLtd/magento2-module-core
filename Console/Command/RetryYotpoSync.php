@@ -126,45 +126,14 @@ class RetryYotpoSync extends Command
         if ($isAllOption) {
             $this->resyncAllEntities($output);
         } else {
-            $yotpoEntity = $input->getOption(self::YOTPO_ENTITY);
-            if (is_array($yotpoEntity)) {
-                $yotpoEntity = implode('', $yotpoEntity);
+            $yotpoEntityInput = $input->getOption(self::YOTPO_ENTITY);
+            if (!$yotpoEntityInput) {
+                return $this;
             }
-            switch ($yotpoEntity) {
-                case self::YOTPO_ENTITY_CATEGORY:
-                    $this->categoryProcessor->retryCategorySync();
-                    break;
-                case self::YOTPO_ENTITY_PRODUCT:
-                    $this->catalogProcessor->retryProductSync();
-                    break;
-                case self::YOTPO_ENTITY_CATALOG:
-                    $this->retryCatalogSync();
-                    break;
-                case self::YOTPO_ENTITY_CUSTOMERS:
-                    if (method_exists($this->customersProcessor, 'retryCustomersSync')) {
-                        $this->customersProcessor->retryCustomersSync();
-                        $output->writeln('Entity ' . $yotpoEntity . ' resync completed');
-                    } else {
-                        $output->writeln('SmsBump module is not installed to process customers.');
-                    }
-                    break;
-                case self::YOTPO_ENTITY_ORDERS:
-                    $this->ordersProcessor->retryOrdersSync();
-                    break;
-                case self::YOTPO_ENTITY_ALL:
-                    $this->resyncAllEntities($output);
-                    break;
-                default:
-                    $output->writeln('Yotpo Resync');
-                    break;
+            if (!is_array($yotpoEntityInput)) {
+                $yotpoEntityInput = [$yotpoEntityInput];
             }
-            if ($yotpoEntity !== self::YOTPO_ENTITY_CUSTOMERS) {
-                if (in_array($yotpoEntity, $this->yotpoCoreEntities)) {
-                    $output->writeln('Entity - ' . $yotpoEntity . ' resync completed');
-                } else {
-                    $output->writeln('Entity - ' . $yotpoEntity . ' does not exist');
-                }
-            }
+            $this->retryYotpoSync($yotpoEntityInput, $output);
         }
         return $this;
     }
@@ -211,5 +180,51 @@ class RetryYotpoSync extends Command
     {
         $this->catalogProcessor->retryProductSync();
         $this->categoryProcessor->retryCategorySync();
+    }
+
+    /**
+     * @param array <bool|string|null> $yotpoEntityInput
+     * @param OutputInterface $output
+     * @return void
+     */
+    public function retryYotpoSync($yotpoEntityInput, OutputInterface $output)
+    {
+        foreach ($yotpoEntityInput as $yotpoEntity) {
+            switch ($yotpoEntity) {
+                case self::YOTPO_ENTITY_CATEGORY:
+                    $this->categoryProcessor->retryCategorySync();
+                    break;
+                case self::YOTPO_ENTITY_PRODUCT:
+                    $this->catalogProcessor->retryProductSync();
+                    break;
+                case self::YOTPO_ENTITY_CATALOG:
+                    $this->retryCatalogSync();
+                    break;
+                case self::YOTPO_ENTITY_CUSTOMERS:
+                    if (method_exists($this->customersProcessor, 'retryCustomersSync')) {
+                        $this->customersProcessor->retryCustomersSync();
+                        $output->writeln('Entity ' . $yotpoEntity . ' resync completed');
+                    } else {
+                        $output->writeln('SmsBump module is not installed to process customers.');
+                    }
+                    break;
+                case self::YOTPO_ENTITY_ORDERS:
+                    $this->ordersProcessor->retryOrdersSync();
+                    break;
+                case self::YOTPO_ENTITY_ALL:
+                    $this->resyncAllEntities($output);
+                    break;
+                default:
+                    $output->writeln('Yotpo Resync');
+                    break;
+            }
+            if ($yotpoEntity !== self::YOTPO_ENTITY_CUSTOMERS) {
+                if (in_array($yotpoEntity, $this->yotpoCoreEntities)) {
+                    $output->writeln('Entity - ' . $yotpoEntity . ' resync completed');
+                } else {
+                    $output->writeln('Entity - ' . $yotpoEntity . ' does not exist');
+                }
+            }
+        }
     }
 }

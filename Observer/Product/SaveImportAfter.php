@@ -6,6 +6,7 @@ use Magento\Framework\Event\Observer as EventObserver;
 use Magento\Framework\App\ResourceConnection;
 use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory as ProductCollectionFactory;
 use Yotpo\Core\Model\Sync\Data\Main;
+use Yotpo\Core\Model\Sync\Catalog\Services\ProductsSyncService;
 use Yotpo\Core\Model\Config as YotpoCoreConfig;
 
 /**
@@ -29,6 +30,11 @@ class SaveImportAfter implements ObserverInterface
     protected $main;
 
     /**
+     * @var ProductsSyncService
+     */
+    protected $productsSyncService;
+
+    /**
      * @var string|null
      */
     protected $entityIdFieldValue;
@@ -43,16 +49,19 @@ class SaveImportAfter implements ObserverInterface
      * @param ResourceConnection $resourceConnection
      * @param ProductCollectionFactory $productCollectionFactory
      * @param Main $main
+     * @param ProductsSyncService $productsSyncService
      */
     public function __construct(
         ResourceConnection $resourceConnection,
         ProductCollectionFactory $productCollectionFactory,
         Main $main,
+        ProductsSyncService $productsSyncService,
         YotpoCoreConfig $config
     ) {
         $this->resourceConnection = $resourceConnection;
         $this->productCollectionFactory = $productCollectionFactory;
         $this->main = $main;
+        $this->productsSyncService = $productsSyncService;
         $this->config = $config;
         $this->entityIdFieldValue = $this->config->getEavRowIdFieldName();
     }
@@ -103,25 +112,6 @@ class SaveImportAfter implements ObserverInterface
             ['value' => 0],
             $condition
         );
-        $this->updateSyncTable($productIds);
-    }
-
-    /**
-     * @param array<mixed> $productIds
-     * @return void
-     */
-    private function updateSyncTable($productIds = [])
-    {
-        if (!$productIds) {
-            return;
-        }
-        $cond = [];
-        $cond['product_id IN (?) '] = $productIds;
-        $connection = $this->resourceConnection->getConnection();
-        $connection->update(
-            $this->resourceConnection->getTableName('yotpo_product_sync'),
-            ['response_code' => YotpoCoreConfig::CUSTOM_RESPONSE_DATA],
-            $cond
-        );
+        $this->productsSyncService->resetProductsResponseCodeByProductsIds($productIds);
     }
 }

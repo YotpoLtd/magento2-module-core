@@ -26,6 +26,8 @@ class Config
 
     const UPDATE_SQL_LIMIT = 50000;
 
+    const YOTPO_RETRY_ATTEMPTS_AMOUNT = 3;
+
     const MODULE_NAME = 'Yotpo_Core';
 
     /**
@@ -34,10 +36,15 @@ class Config
     const METHOD_GET = 'GET';
     const METHOD_POST = 'POST';
     const METHOD_PATCH = 'PATCH';
+    const METHOD_DELETE = 'DELETE';
     const CUSTOM_RESPONSE_DATA = '000';
     const SUCCESS_RESPONSE_CODE = '200';
     const CREATED_STATUS_CODE = '201';
     const BAD_REQUEST_RESPONSE_CODE = 400;
+    const RESPONSE_CODE_FOR_UNKNOWN_ERRORS = 500;
+    const NOT_FOUND_RESPONSE_CODE = 404;
+    const CONFLICT_RESPONSE_CODE = 409;
+    const YOTPO_SYNC_RESPONSE_IS_SUCCESS_KEY = 'is_success';
 
     /**
      * @var mixed[]
@@ -508,9 +515,8 @@ class Config
      */
     public function canUpdateCustomAttributeForProducts($responseCode = ''): bool
     {
-        return ($responseCode
-                && in_array($responseCode, $this->successfulResponseCodes))
-            || !$this->canResync($responseCode) || $responseCode == '409';
+        return ($responseCode && in_array($responseCode, $this->successfulResponseCodes))
+            || !($this->canResync($responseCode) || $responseCode == self::CONFLICT_RESPONSE_CODE);
     }
 
     /**
@@ -548,14 +554,14 @@ class Config
 
     /**
      * Check if Yotpo is enabled and if order sync is active.
-     *
+     * @param int|null $storeId
      * @return bool
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function isCatalogSyncActive()
+    public function isCatalogSyncActive($storeId = null)
     {
-        return ($this->isEnabled() && $this->getConfig('catalog_sync_enable'));
+        return ($this->isEnabled($storeId) && $this->getConfig('catalog_sync_enable', $storeId));
     }
 
     /**
@@ -603,6 +609,19 @@ class Config
     public function isSingleStoreMode()
     {
         return $this->storeManager->isSingleStoreMode();
+    }
+
+    /**
+     * @param mixed $response
+     * @return boolean
+     */
+    public function isResponseIndicatesSuccess($response)
+    {
+        if ($response && $response->getData($this::YOTPO_SYNC_RESPONSE_IS_SUCCESS_KEY)) {
+            return $response->getData($this::YOTPO_SYNC_RESPONSE_IS_SUCCESS_KEY);
+        }
+
+        return false;
     }
 
     /**
@@ -676,6 +695,22 @@ class Config
     public function getUpdateSqlLimit(): int
     {
         return self::UPDATE_SQL_LIMIT;
+    }
+
+    /**
+     * @return int
+     */
+    public function getYotpoRetryAttemptsAmount(): int
+    {
+        return self::YOTPO_RETRY_ATTEMPTS_AMOUNT;
+    }
+
+    /**
+     * @return mixed[]
+     */
+    public function getSuccessfulResponseCodes()
+    {
+        return $this->successfulResponseCodes;
     }
 
     /**

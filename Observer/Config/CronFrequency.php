@@ -35,7 +35,10 @@ class CronFrequency
     protected $cronFrequency = [
         'catalog_sync_frequency' => [
             'config_path' => '',
-            'job_code' => 'yotpo_cron_core_products_sync,yotpo_cron_core_category_sync'
+            'job_code' =>
+                'yotpo_cron_core_products_sync,
+                yotpo_cron_core_category_sync,
+                yotpo_cron_core_collections_products_sync'
         ],
         'orders_sync_frequency' => [
             'config_path' => '',
