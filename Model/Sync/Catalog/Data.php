@@ -2,6 +2,7 @@
 
 namespace Yotpo\Core\Model\Sync\Catalog;
 
+use Magento\Catalog\Helper\Image as CatalogImageHelper;
 use Magento\CatalogInventory\Model\StockRegistry;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
@@ -20,6 +21,11 @@ use Magento\Catalog\Model\ResourceModel\Product\CollectionFactory;
  */
 class Data extends Main
 {
+    /**
+     * @var CatalogImageHelper
+     */
+    private $catalogImageHelper;
+
     /**
      * @var YotpoCoreConfig
      */
@@ -167,6 +173,7 @@ class Data extends Main
 
     /**
      * Data constructor.
+     * @param CatalogImageHelper $catalogImageHelper
      * @param YotpoCoreConfig $yotpoCoreConfig
      * @param YotpoResource $yotpoResource
      * @param Configurable $resourceConfigurable
@@ -177,6 +184,7 @@ class Data extends Main
      * @param YotpoCoreCatalogLogger $yotpoCatalogLogger
      */
     public function __construct(
+        CatalogImageHelper $catalogImageHelper,
         YotpoCoreConfig $yotpoCoreConfig,
         YotpoResource $yotpoResource,
         Configurable $resourceConfigurable,
@@ -186,6 +194,7 @@ class Data extends Main
         StockRegistry $stockRegistry,
         YotpoCoreCatalogLogger $yotpoCatalogLogger
     ) {
+        $this->catalogImageHelper = $catalogImageHelper;
         $this->yotpoCoreConfig = $yotpoCoreConfig;
         $this->yotpoResource = $yotpoResource;
         $this->resourceConfigurable = $resourceConfigurable;
@@ -389,8 +398,7 @@ class Data extends Main
                         }
 
                         if (isset($attr['type']) && $attr['type'] === 'image') {
-                            $baseUrl = $this->yotpoCoreConfig->getBaseUrl(UrlInterface::URL_TYPE_MEDIA);
-                            $data = $data ? $baseUrl . 'catalog/product' . $data : "";
+                            $data = $this->getProductImageUrl($item);
                         }
                         $value = $data;
                     } elseif (isset($attr['method']) && $attr['method']) {
@@ -617,5 +625,17 @@ class Data extends Main
         }
 
         return $filteredProductIds;
+    }
+
+    /**
+     * Get Product Image from product object
+     *
+     * @param Product $product
+     * @param string  $imageId
+     * @return string|null
+     */
+    private function getProductImageUrl($product, $imageId = 'product_page_image_large')
+    {
+        return $this->catalogImageHelper->init($product, $imageId)->getUrl();
     }
 }
