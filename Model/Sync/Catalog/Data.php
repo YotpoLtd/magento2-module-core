@@ -383,42 +383,42 @@ class Data extends Main
 
         foreach ($mapAttributes as $key => $attr) {
             try {
-                if ($key === 'gtins') {
-                    $value = $this->prepareGtinsData($attr, $item);
-                } elseif ($key === 'custom_properties') {
-                    $value = $this->prepareCustomProperties($attr, $item);
-                } elseif ($key === 'is_discontinued') {
-                    $value = false;
-                } else {
-                    if ($attr['default']) {
-                        $data = $item->getData($attr['attr_code']);
+                switch ($key) {
+                    case 'gtins':
+                        $value = $this->prepareGtinsData($attr, $item);
+                        break;
+                    case 'custom_properties':
+                        $value = $this->prepareCustomProperties($attr, $item);
+                        break;
+                    case 'is_discontinued':
+                        $value = false;
+                        break;
+                    case 'url':
+                        $value = $item->getProductUrl();
+                        break;
+                    case 'image_url':
+                        $value = $this->getProductImageUrl($item);
+                        break;
+                    default:
+                        if (!$attr['default'] && isset($attr['method']) && $attr['method']) {
 
-                        if (isset($attr['type']) && $attr['type'] === 'url') {
-                            $data = $item->getProductUrl();
+                            $configKey = isset($attr['attr_code']) && $attr['attr_code'] ?
+                                $attr['attr_code'] : '';
+
+                            $method = $attr['method'];
+                            $itemValue = $this->$method($item, $configKey);
+                            $value = $itemValue ?: ($method == 'getProductPrice' ? 0.00 : $itemValue);
+                        } else {
+                            $value = '';
                         }
-
-                        if (isset($attr['type']) && $attr['type'] === 'image') {
-                            $data = $this->getProductImageUrl($item);
+                        if ($key == 'group_name' && $value) {
+                            $value = strtolower($value);
+                            $value = str_replace(' ', '_', $value);
+                            $value = preg_replace('/[^A-Za-z0-9_-]/', '-', $value);
+                            $value = substr((string)$value, 0, 100);
                         }
-                        $value = $data;
-                    } elseif (isset($attr['method']) && $attr['method']) {
-
-                        $configKey = isset($attr['attr_code']) && $attr['attr_code'] ?
-                            $attr['attr_code'] : '';
-
-                        $method = $attr['method'];
-                        $itemValue = $this->$method($item, $configKey);
-                        $value = $itemValue ?: ($method == 'getProductPrice' ? 0.00 : $itemValue);
-                    } else {
-                        $value = '';
-                    }
-                    if ($key == 'group_name' && $value) {
-                        $value = strtolower($value);
-                        $value = str_replace(' ', '_', $value);
-                        $value = preg_replace('/[^A-Za-z0-9_-]/', '-', $value);
-                        $value = substr((string)$value, 0, 100);
-                    }
                 }
+
                 $itemArray[$key] = $value;
                 if (($key == 'custom_properties' || $key == 'gtins') && !$value) {
                     unset($itemArray[$key]);
