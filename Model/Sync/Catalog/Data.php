@@ -59,7 +59,7 @@ class Data extends Main
     /**
      * @var array<string, array>
      */
-    protected $mappingAttributes = [
+    protected $attributesMapping = [
         'row_id' => [
             'default' => 1,
             'attr_code' => 'row_id'
@@ -201,7 +201,7 @@ class Data extends Main
         $this->productRepository = $productRepository;
         $this->collectionFactory = $collectionFactory;
         $this->stockRegistry = $stockRegistry;
-        $this->mappingAttributes['row_id']['attr_code'] = $this->yotpoCoreConfig->getEavRowIdFieldName();
+        $this->attributesMapping['row_id']['attr_code'] = $this->yotpoCoreConfig->getEavRowIdFieldName();
         $this->logger = $yotpoCatalogLogger;
         parent::__construct($resourceConnection);
     }
@@ -378,64 +378,69 @@ class Data extends Main
      */
     public function attributeMapping(Product $item)
     {
-        $itemArray = [];
-        $mapAttributes = $this->mappingAttributes;
+        $itemAttributesData = [];
 
-        foreach ($mapAttributes as $key => $attr) {
+        foreach ($this->attributesMapping as $attributeKey => $attributeDetails) {
             try {
-                if ($key === 'gtins') {
-                    $value = $this->prepareGtinsData($attr, $item);
-                } elseif ($key === 'custom_properties') {
-                    $value = $this->prepareCustomProperties($attr, $item);
-                } elseif ($key === 'is_discontinued') {
-                    $value = false;
-                } else {
-                    if ($attr['default']) {
-                        $data = $item->getData($attr['attr_code']);
+                switch ($attributeKey) {
+                    case 'gtins':
+                        $value = $this->prepareGtinsData($attributeDetails, $item);
+                        break;
+                    case 'custom_properties':
+                        $value = $this->prepareCustomProperties($attributeDetails, $item);
+                        break;
+                    case 'is_discontinued':
+                        $value = false;
+                        break;
+                    case 'url':
+                        $value = $item->getProductUrl();
+                        break;
+                    case 'image_url':
+                        $value = $this->getProductImageUrl($item);
+                        break;
+                    default:
+                        if (!$attributeDetails['default'] && isset($attributeDetails['method']) && $attributeDetails['method']) {
 
-                        if (isset($attr['type']) && $attr['type'] === 'url') {
-                            $data = $item->getProductUrl();
+                            $configKey = isset($attributeDetails['attr_code']) && $attributeDetails['attr_code'] ?
+                                $attributeDetails['attr_code'] : '';
+
+                            $method = $attributeDetails['method'];
+                            $itemValue = $this->$method($item, $configKey);
+                            if ($itemValue) {
+                                $value = $itemValue;
+                            } elseif ($method == 'getProductPrice') {
+                                $value = 0.00;
+                            } else {
+                                $value = $itemValue;
+                            }
+                        } else {
+                            $value = '';
                         }
-
-                        if (isset($attr['type']) && $attr['type'] === 'image') {
-                            $data = $this->getProductImageUrl($item);
+                        if ($attributeKey == 'group_name' && $value) {
+                            $value = substr((string)$value, 0, 100);
+                            $value = strtolower($value);
+                            $value = str_replace(' ', '_', $value);
+                            $value = preg_replace('/[^A-Za-z0-9_-]/', '-', $value);
                         }
-                        $value = $data;
-                    } elseif (isset($attr['method']) && $attr['method']) {
-
-                        $configKey = isset($attr['attr_code']) && $attr['attr_code'] ?
-                            $attr['attr_code'] : '';
-
-                        $method = $attr['method'];
-                        $itemValue = $this->$method($item, $configKey);
-                        $value = $itemValue ?: ($method == 'getProductPrice' ? 0.00 : $itemValue);
-                    } else {
-                        $value = '';
-                    }
-                    if ($key == 'group_name' && $value) {
-                        $value = strtolower($value);
-                        $value = str_replace(' ', '_', $value);
-                        $value = preg_replace('/[^A-Za-z0-9_-]/', '-', $value);
-                        $value = substr((string)$value, 0, 100);
-                    }
                 }
-                $itemArray[$key] = $value;
-                if (($key == 'custom_properties' || $key == 'gtins') && !$value) {
-                    unset($itemArray[$key]);
+
+                $itemAttributesData[$attributeKey] = $value;
+                if (($attributeKey == 'custom_properties' || $attributeKey == 'gtins') && !$value) {
+                    unset($itemAttributesData[$attributeKey]);
                 }
             } catch (\Exception $e) {
                 $this->logger->info(
                     __(
                         'Exception raised within attributeMapping - $key: %1, $attr: %2 Exception Message: %3',
-                        $key,
-                        $attr,
+                        $attributeKey,
+                        $attributeDetails,
                         $e->getMessage()
                     )
                 );
             }
         }
 
-        return $itemArray;
+        return $itemAttributesData;
     }
 
     /**
