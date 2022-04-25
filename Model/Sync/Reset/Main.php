@@ -61,7 +61,7 @@ class Main
         $this->setResetInProgressConfig($storeId, '1');
         $this->deleteRunningCronSchedules();
         if ($clearSyncTables) {
-            $this->deleteAllFromTables($storeId);
+            $this->deleteAllRecordsFromTables($storeId);
         }
     }
 
@@ -94,11 +94,11 @@ class Main
      * @return void
      * @throws \Zend_Db_Statement_Exception
      */
-    private function deleteAllFromTables($storeId)
+    private function deleteAllRecordsFromTables($storeId)
     {
         $tableResourceNames = $this->getTableResourceNames();
         foreach ($tableResourceNames as $tableResourceName) {
-            $this->deleteAllFromTable($storeId, $tableResourceName);
+            $this->deleteAllRecordsFromTable($storeId, $tableResourceName);
         }
     }
 
@@ -108,7 +108,7 @@ class Main
      * @return void
      * @throws \Zend_Db_Statement_Exception
      */
-    private function deleteAllFromTable($storeId, $tableResourceName)
+    private function deleteAllRecordsFromTable($storeId, $tableResourceName)
     {
         $tableName = $this->resourceConnection->getTableName($tableResourceName);
         $totalCount = $this->getTotalCount($tableName, $storeId);
@@ -197,10 +197,10 @@ class Main
     /**
      * @param string $tableName
      * @param int $attributeId
-     * @param int $storeId
+     * @param int|null $storeId
      * @return int
      */
-    public function getCountOfEntities($tableName, $attributeId, $storeId)
+    public function getCountOfEntities($tableName, $attributeId, $storeId = null)
     {
         $connection  = $this->resourceConnection->getConnection();
         $tableName = $this->resourceConnection->getTableName($tableName);
@@ -229,35 +229,44 @@ class Main
         $attributeId = $this->syncDataMain->getAttributeId($attributeCode);
         $totalCount = $this->getCountOfEntities($tableName, $attributeId, $storeId);
         $tableName = $this->resourceConnection->getTableName($tableName);
+        $limit = self::UPDATE_LIMIT;
         while ($totalCount > 0) {
-            if ($totalCount > self::UPDATE_LIMIT) {
-                $limit = self::UPDATE_LIMIT;
-                $totalCount -= self::UPDATE_LIMIT;
-            } else {
-                $limit = $totalCount;
-                $totalCount = 0;
-            }
-            if ($storeId) {
-                $updateQuery = sprintf(
-                    'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `store_id` = %d AND
+            $updateQuery = sprintf(
+                'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `store_id` = %d AND
                                    `value` = 1 LIMIT %d',
-                    $tableName,
-                    0,
-                    $attributeId,
-                    $storeId,
-                    $limit
-                );
-            } else {
-                $updateQuery = sprintf(
-                    'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `value` = 1 LIMIT %d',
-                    $tableName,
-                    0,
-                    $attributeId,
-                    $limit
-                );
-            }
-
+                $tableName,
+                0,
+                $attributeId,
+                $storeId,
+                $limit
+            );
             $connection->query($updateQuery);
+            $totalCount -= self::UPDATE_LIMIT;
+        }
+    }
+
+    /**
+     * @param string $attributeCode
+     * @param string $tableName
+     * @return void
+     */
+    public function updateEntityAttributeTableDataWithoutStoreId($attributeCode, $tableName)
+    {
+        $connection =   $this->resourceConnection->getConnection();
+        $attributeId = $this->syncDataMain->getAttributeId($attributeCode);
+        $totalCount = $this->getCountOfEntities($tableName, $attributeId);
+        $tableName = $this->resourceConnection->getTableName($tableName);
+        $limit = self::UPDATE_LIMIT;
+        while ($totalCount > 0) {
+            $updateQuery = sprintf(
+                'UPDATE `%s` SET `value` = %d WHERE `attribute_id` = %d AND `value` = 1 LIMIT %d',
+                $tableName,
+                0,
+                $attributeId,
+                $limit
+            );
+            $connection->query($updateQuery);
+            $totalCount -= self::UPDATE_LIMIT;
         }
     }
 }
