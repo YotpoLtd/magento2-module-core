@@ -86,13 +86,17 @@ class SaveBefore implements ObserverInterface
             $this->catalogCategoryProductService->getProductIdsFromCategoryProductsTableByCategoryId(
                 $categoryId
             );
+
         $productIdToPositionInCategoryMapBeforeSave =
             json_decode(
                 $this->request->getParam('vm_category_products'),
                 true
             );
-        $productIdsInCategoryBeforeSave = array_keys($productIdToPositionInCategoryMapBeforeSave);
+        if ($productIdToPositionInCategoryMapBeforeSave === null) {
+            return;
+        }
 
+        $productIdsInCategoryBeforeSave = array_keys($productIdToPositionInCategoryMapBeforeSave);
         $productsAddedToCategory = array_diff($productIdsInCategoryBeforeSave, $currentProductIdsInCategory);
         $productsDeletedFromCategory = array_diff($currentProductIdsInCategory, $productIdsInCategoryBeforeSave);
         $storeIdsSuccessfullySyncedWithCategory =
