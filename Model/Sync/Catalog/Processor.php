@@ -143,6 +143,17 @@ class Processor extends Main
                 $this->emulateFrontendArea($storeId);
                 try {
                     $disabled = false;
+                    if ($this->coreConfig->isSyncResetInProgress($storeId, 'catalog')) {
+                        $disabled = true;
+                        $this->yotpoCatalogLogger->info(
+                            __(
+                                'Product sync is skipped because catalog sync reset is in progress
+                        - Magento Store ID: %1, Name: %2',
+                                $storeId,
+                                $this->coreConfig->getStoreName($storeId)
+                            )
+                        );
+                    }
                     if (!$this->coreConfig->isEnabled()) {
                         $disabled = true;
                         $this->yotpoCatalogLogger->info(
@@ -267,15 +278,20 @@ class Processor extends Main
 
         $itemsToBeSyncedToYotpo = $items['sync_data'];
         foreach ($itemsToBeSyncedToYotpo as $itemEntityId => $yotpoFormatItemData) {
-            if ($this->coreConfig->syncResetInProgress($storeId, 'catalog')) {
-                $this->yotpoCatalogLogger->info(
-                    __(
-                        'Product sync is skipped because catalog sync reset is in progress
-                        - Magento Store ID: %1, Name: %2',
-                        $storeId,
-                        $this->coreConfig->getStoreName($storeId)
-                    )
-                );
+            $itemRowId = $yotpoFormatItemData['row_id'];
+            unset($yotpoFormatItemData['row_id']);
+
+            $attributeDataToUpdate = $this->prepareAttributeDataToUpdate(
+                $storeId,
+                $itemRowId
+            );
+
+            if ($yotpoSyncTableItemsData
+                && array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
+                && $this->isSyncingAsMainEntity()
+                && !$this->shouldItemBeResynced($yotpoSyncTableItemsData[$itemEntityId])
+            ) {
+                $this->updateProductSyncAttribute($attributeDataToUpdate);
                 continue;
             }
             $itemRowId = $yotpoFormatItemData['row_id'];
@@ -559,10 +575,10 @@ class Processor extends Main
                     }
                     $params = $this->getDeleteApiParams($itemData, 'yotpo_id');
                     $itemDataRequest = ['is_discontinued' => true];
-    $responseObject = $this->handleRequest($itemId, $itemDataRequest, $params);
-                $response = $responseObject['response'];
-                $params['method'] = $responseObject['method'];
-                $params['yotpo_id'] = $responseObject['yotpo_id'];
+                    $responseObject = $this->handleRequest($itemId, $itemDataRequest, $params);
+                    $response = $responseObject['response'];
+                    $params['method'] = $responseObject['method'];
+                    $params['yotpo_id'] = $responseObject['yotpo_id'];
                     $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
                     if ($this->isImmediateRetryResponse($response->getData('status'))) {
                         $response = $this->processDeleteRetry($params, $apiParam, $itemData, $itemId);
@@ -609,10 +625,10 @@ class Processor extends Main
                     }
                     $params = $this->getDeleteApiParams($itemData, 'yotpo_id_unassign');
                     $itemDataRequest = ['is_discontinued' => true];
-    $responseObject = $this->handleRequest($itemId, $itemDataRequest, $params);
-                $response = $responseObject['response'];
-                $params['method'] = $responseObject['method'];
-                $params['yotpo_id'] = $responseObject['yotpo_id'];
+                    $responseObject = $this->handleRequest($itemId, $itemDataRequest, $params);
+                    $response = $responseObject['response'];
+                    $params['method'] = $responseObject['method'];
+                    $params['yotpo_id'] = $responseObject['yotpo_id'];
                     $returnResponse = $this->processResponse($params, $response, $tempDeleteQry, $itemData);
                     if ($this->isImmediateRetryResponse($response->getData('status'))) {
                         $response = $this->processDeleteRetry($params, $apiParam, $itemData, $itemId);

@@ -10,6 +10,8 @@ class Orders extends Main
     const ORDERS_TABLE = 'sales_order';
     const ORDERS_DATA_LIMIT = 300;
     const YOTPO_ENTITY_NAME = 'order';
+    const SYNCED_TO_YOTPO_ORDER_COLUMN = 'synced_to_yotpo_order';
+
     /**
      * @return array <string>
      */
@@ -36,13 +38,13 @@ class Orders extends Main
 
     /**
      * @param int $storeId
-     * @param boolean $skipSyncTables
+     * @param boolean $clearSyncTables
      * @return void
      * @throws \Zend_Db_Statement_Exception
      */
-    public function resetSync($storeId, $skipSyncTables = false)
+    public function resetSync($storeId, $clearSyncTables = true)
     {
-        parent::resetSync($storeId, true);
+        parent::resetSync($storeId, false);
         $this->clearSyncTracks($storeId);
         $this->setResetInProgressConfig($storeId, '0');
     }
@@ -81,7 +83,7 @@ class Orders extends Main
         $connection =   $this->resourceConnection->getConnection();
         $connection->update(
             $this->resourceConnection->getTableName('sales_order'),
-            ['synced_to_yotpo_order' => '0'],
+            [self::SYNCED_TO_YOTPO_ORDER_COLUMN => '0'],
             [
                 'store_id' => $storeId,
                 'entity_id IN (?) ' => $orderIds

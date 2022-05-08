@@ -698,6 +698,18 @@ class Config
     }
 
     /**
+     * @param int|null $scopeId
+     * @param string $entity
+     * @return boolean
+     * @throws LocalizedException
+     * @throws NoSuchEntityException
+     */
+    public function isSyncResetInProgress($scopeId, $entity)
+    {
+        return (bool)$this->getConfig('reset_sync_in_progress_' . $entity, $scopeId);
+    }
+
+    /**
      * @return int
      */
     public function getYotpoRetryAttemptsAmount(): int
@@ -711,17 +723,5 @@ class Config
     public function getSuccessfulResponseCodes()
     {
         return $this->successfulResponseCodes;
-    }
-
-    /**
-     * @param int|null $scopeId
-     * @param string $entity
-     * @return boolean
-     * @throws LocalizedException
-     * @throws NoSuchEntityException
-     */
-    public function syncResetInProgress($scopeId, $entity)
-    {
-        return (bool) $this->getConfig('reset_sync_in_progress_'.$entity, $scopeId);
     }
 }

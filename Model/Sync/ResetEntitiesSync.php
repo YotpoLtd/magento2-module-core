@@ -6,7 +6,7 @@ use Yotpo\Core\Model\Sync\Reset\Catalog;
 use Yotpo\Core\Model\Sync\Reset\Customers;
 use Yotpo\Core\Model\Sync\Reset\Orders;
 
-class Reset
+class ResetEntitiesSync
 {
     /**
      * @var Catalog

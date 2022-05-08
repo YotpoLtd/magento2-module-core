@@ -12,7 +12,7 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\ScopeInterface;
 use Yotpo\Core\Model\Api\Token as YotpoApi;
-use Yotpo\Core\Model\Sync\Reset as SyncReset;
+use Yotpo\Core\Model\Sync\ResetEntitiesSync as SyncReset;
 use Yotpo\Reviews\Model\Config as YotpoConfig;
 
 /**
