@@ -164,6 +164,9 @@ class Processor extends Main
     {
         $storeId = $order->getStoreId();
         $this->emulateFrontendArea((int)$storeId);
+        if ($this->config->isSyncResetInProgress($storeId, 'order')) {
+            return;
+        }
         $this->currentStoreId = $this->config->getStoreId();
         $this->yotpoOrdersLogger->info(
             __(
@@ -202,6 +205,18 @@ class Processor extends Main
 
         $ordersWithMissedProducts = [];
         foreach ($orderItems as $order) {
+            $storeId = $order->getStoreId();
+            if ($this->config->isSyncResetInProgress($storeId, 'order')) {
+                $this->yotpoOrdersLogger->info(
+                    __(
+                        'Order sync is skipped because order sync reset is in progress
+                         - Magento Store ID: %1, Name: %2',
+                        $storeId,
+                        $this->config->getStoreName($storeId)
+                    )
+                );
+                continue;
+            }
             $productsMissing = $this->checkMissingProducts($order);
             if ($productsMissing) {
                 $this->yotpoOrdersLogger->info('Products not exist for order  : ' . $order->getId(), []);

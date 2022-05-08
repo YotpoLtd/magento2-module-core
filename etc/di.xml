@@ -95,6 +95,7 @@
         <arguments>
             <argument name="commands" xsi:type="array">
                 <item name="yotpoResync" xsi:type="object">Yotpo\Core\Console\Command\RetryYotpoSync</item>
+                <item name="yotpoResetSync" xsi:type="object">Yotpo\Core\Console\Command\ResetYotpoSync</item>
             </argument>
         </arguments>
     </type>
