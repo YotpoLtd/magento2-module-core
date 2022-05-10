@@ -362,7 +362,8 @@ class AbstractData extends Main
                 }
             }
         } catch (\Exception $e) {
-            $this->yotpoOrdersLogger->info(' Exception raised within prepareShipmentStatuses() :  ' . $e->getMessage(), []);
+            $this->yotpoOrdersLogger->info(' Exception raised within prepareShipmentStatuses()
+            :  ' . $e->getMessage(), []);
         }
     }
 
@@ -533,7 +534,8 @@ class AbstractData extends Main
                         $customerId = method_exists($customer, 'getId') ? $customer->getId() : null;
                         $this->yotpoOrdersLogger->info(
                             __(
-                                'Exception raised within prepareShipmentStatuses - customerId: %1, Exception Message: %2',
+                                'Exception raised within prepareShipmentStatuses -
+                                customerId: %1, Exception Message: %2',
                                 $customerId,
                                 $e->getMessage()
                             )
@@ -588,6 +590,7 @@ class AbstractData extends Main
                 $orders = $this->orderRepository->getList($searchCriteria);
                 $ordersData = $orders->getItems();
                 foreach ($ordersData as $order) {
+                    /** @var Order $order */
                     try {
                         $attributeCode = $this->config->getConfig(
                             'sms_marketing_custom_attribute',
@@ -595,12 +598,12 @@ class AbstractData extends Main
                         );
                         $this->guestUsersAttributeCollection[$order->getEntityId()] =
                             $order->getData($attributeCode) ?: false;
-                        /** @phpstan-ignore-line */
                     } catch (\Exception $e) {
                         $orderId = method_exists($order, 'getEntityId') ? $order->getEntityId() : null;
                         $this->yotpoOrdersLogger->info(
                             __(
-                                'Exception raised within prepareGuestUsersCustomAttributes - orderId: %1, Exception Message: %2',
+                                'Exception raised within prepareGuestUsersCustomAttributes
+                                - orderId: %1, Exception Message: %2',
                                 $orderId,
                                 $e->getMessage()
                             )

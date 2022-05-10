@@ -364,7 +364,9 @@ class ProcessByCategory extends Main
                         $categoryId
                     )
                 );
-                $categoryProductsIds = $this->collectionsProductsService->getCategoryProductsIdsFromSyncTable($categoryId);
+                $categoryProductsIds = $this->collectionsProductsService->getCategoryProductsIdsFromSyncTable(
+                    $categoryId
+                );
                 if ($categoryProductsIds) {
                     $this->collectionsProductsService->assignCategoryProductsForCollectionsProductsSync(
                         $categoryProductsIds,
