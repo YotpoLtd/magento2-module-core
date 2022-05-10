@@ -304,14 +304,13 @@ class Data extends AbstractData
                     $orderItemProductId = $orderItemProduct->getId();
                     /** @var OrderItem $orderItem */
                     if ($orderItem->getProductType() == 'simple' && !$orderItem->getParentItemId()
-                        && !$orderItem->getProduct()->isVisibleInSiteVisibility()) {
-                        /** @phpstan-ignore-line */
+                        && !$orderItem->getProduct()->isVisibleInSiteVisibility()) { /** @phpstan-ignore-line */
                         $orderItemProductIds[] = $orderItemProductId;
                     } else {
                         $this->parentProductIds[$orderItemProductId] = $orderItemProductId;
                     }
                 } catch (\Exception $e) {
-                    $orderId = method_exists($order, 'getEntityId') ? $order->getEntityId() : null;
+                    $orderId = is_object($order) && method_exists($order, 'getEntityId') ? $order->getEntityId() : null;
                     $this->yotpoOrdersLogger->info(
                         __(
                             'Exception raised within prepareParentData - orderId: %1, Exception Message: %2',

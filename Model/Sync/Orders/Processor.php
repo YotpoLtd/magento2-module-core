@@ -272,7 +272,12 @@ class Processor extends Main
                     /** @var Order $magentoOrder */
                     $response = $this->syncOrder($magentoOrder, $isYotpoSyncedOrder, $yotpoSyncedOrders);
                     $yotpoTableData = $response ?
-                        $this->prepareYotpoTableData($response, $isYotpoSyncedOrder, $yotpoSyncedOrders, $magentoOrderId)
+                        $this->prepareYotpoTableData(
+                            $response,
+                            $isYotpoSyncedOrder,
+                            $yotpoSyncedOrders,
+                            $magentoOrderId
+                        )
                         : false;
                     if ($yotpoTableData) {
                         if (!$yotpoTableData['yotpo_id'] && array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {

@@ -713,7 +713,8 @@ class Main extends AbstractJobs
     {
         return array_key_exists($itemEntityId, $yotpoSyncTableItemsData)
             && array_key_exists($parentItemId, $yotpoSyncTableItemsData)
-            && $yotpoSyncTableItemsData[$itemEntityId]['yotpo_id_parent'] != $yotpoSyncTableItemsData[$parentItemId]['yotpo_id'];
+            && $yotpoSyncTableItemsData[$itemEntityId]['yotpo_id_parent'] !=
+            $yotpoSyncTableItemsData[$parentItemId]['yotpo_id'];
     }
 
     /**

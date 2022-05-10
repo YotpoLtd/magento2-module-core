@@ -220,7 +220,10 @@ class Data extends Main
         $productIdsToParentIdsMap = [];
         $failedVariantsIds = [];
         if (!$isVariantsDataIncluded) {
-            $productIdsToConfigurableIdsMapToCheck = $this->yotpoResource->getConfigProductIds($productsId, $failedVariantsIds);
+            $productIdsToConfigurableIdsMapToCheck = $this->yotpoResource->getConfigProductIds(
+                $productsId,
+                $failedVariantsIds
+            );
             foreach ($failedVariantsIds as $failedVariantId) {
                 unset($productsId[array_search($failedVariantId, $productsId)]);
                 unset($productsObject[$failedVariantId]);

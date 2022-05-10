@@ -53,8 +53,8 @@ class ProductsSyncService extends AbstractJobs
 
     /**
      * @param integer $storeId
-     * @param integer $parentYotpoId
-     * @return array
+     * @param integer|string $parentYotpoId
+     * @return array<mixed>
      */
     public function getProductIdsFromSyncTableByStoreIdAndParentYotpoId($storeId, $parentYotpoId)
     {
@@ -79,7 +79,7 @@ class ProductsSyncService extends AbstractJobs
 
     /**
      * @param array<integer> $productIds
-     * @return array
+     * @return array<mixed>
      */
     public function findProductsThatShouldBeSyncedByAttribute($productIds)
     {
@@ -104,12 +104,15 @@ class ProductsSyncService extends AbstractJobs
 
     /**
      * @param integer $storeId
-     * @param array $variantIds
-     * @param integer $yotpoIdParentToBeUpdated
+     * @param array<mixed> $variantIds
+     * @param integer|string $yotpoIdParentToBeUpdated
      * @return void
      */
-    public function updateYotpoIdParentInSyncTableByStoreIdAndVariantIds($storeId, $variantIds, $yotpoIdParentToBeUpdated)
-    {
+    public function updateYotpoIdParentInSyncTableByStoreIdAndVariantIds(
+        $storeId,
+        $variantIds,
+        $yotpoIdParentToBeUpdated
+    ) {
         $connection = $this->resourceConnection->getConnection();
         $condition = [
             'store_id = ?' => $storeId,

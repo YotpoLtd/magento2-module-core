@@ -68,7 +68,10 @@ class CatalogRequestHandler
         if ($responseStatusCode == CoreConfig::BAD_REQUEST_RESPONSE_CODE && !$yotpoProductId) {
             $minimalProductRequest = $this->catalogData->getMinimalProductRequestData($yotpoItemData);
             $responseObject = $this->upsertProduct($yotpoProductId, $minimalProductRequest);
-        } elseif (in_array($responseStatusCode, [CoreConfig::NOT_FOUND_RESPONSE_CODE, CoreConfig::CONFLICT_RESPONSE_CODE])) {
+        } elseif (in_array(
+            $responseStatusCode,
+            [CoreConfig::NOT_FOUND_RESPONSE_CODE, CoreConfig::CONFLICT_RESPONSE_CODE]
+        )) {
             try {
                 $yotpoProductId = $this->getYotpoItemIdFromItemEntityId($itemEntityId, 'products');
             } catch (UnexpectedValueException $e) {
