@@ -382,50 +382,51 @@ class Data extends Main
 
         foreach ($this->attributesMapping as $attributeKey => $attributeDetails) {
             try {
+                $attributeDataValue = '';
+                $attributeDetailsAttributeCode = '';
+
                 switch ($attributeKey) {
                     case 'gtins':
-                        $value = $this->prepareGtinsData($attributeDetails, $item);
+                        $attributeDataValue = $this->prepareGtinsData($attributeDetails, $item);
                         break;
                     case 'custom_properties':
-                        $value = $this->prepareCustomProperties($attributeDetails, $item);
+                        $attributeDataValue = $this->prepareCustomProperties($attributeDetails, $item);
                         break;
                     case 'is_discontinued':
-                        $value = false;
+                        $attributeDataValue = false;
                         break;
                     case 'url':
-                        $value = $item->getProductUrl();
+                        $attributeDataValue = $item->getProductUrl();
                         break;
                     case 'image_url':
-                        $value = $this->getProductImageUrl($item);
+                        $attributeDataValue = $this->getProductImageUrl($item);
+                        break;
+                    case 'group_name':
+                        $itemValue = $this->getAttributeDetailsMethodValue($attributeDetails, $attributeDetailsAttributeCode, $item);
+
+                        if ($itemValue) {
+                            $attributeDataValue = substr((string)$itemValue, 0, 100);
+                            $attributeDataValue = strtolower($attributeDataValue);
+                            $attributeDataValue = str_replace(' ', '_', $attributeDataValue);
+                            $attributeDataValue = preg_replace('/[^A-Za-z0-9_-]/', '-', $attributeDataValue);
+                        }
                         break;
                     default:
+                        $itemValue = $this->getAttributeDetailsMethodValue($attributeDetails, $attributeDetailsAttributeCode, $item);
                         if (!$attributeDetails['default'] && isset($attributeDetails['method']) && $attributeDetails['method']) {
-
-                            $configKey = isset($attributeDetails['attr_code']) && $attributeDetails['attr_code'] ?
-                                $attributeDetails['attr_code'] : '';
-
-                            $method = $attributeDetails['method'];
-                            $itemValue = $this->$method($item, $configKey);
+                            $attributeDetailsMethod = $attributeDetails['method'];
                             if ($itemValue) {
-                                $value = $itemValue;
-                            } elseif ($method == 'getProductPrice') {
-                                $value = 0.00;
+                                $attributeDataValue = $itemValue;
+                            } elseif ($attributeDetailsMethod === 'getProductPrice') {
+                                $attributeDataValue = 0.00;
                             } else {
-                                $value = $itemValue;
+                                $attributeDataValue = $itemValue;
                             }
-                        } else {
-                            $value = '';
-                        }
-                        if ($attributeKey == 'group_name' && $value) {
-                            $value = substr((string)$value, 0, 100);
-                            $value = strtolower($value);
-                            $value = str_replace(' ', '_', $value);
-                            $value = preg_replace('/[^A-Za-z0-9_-]/', '-', $value);
                         }
                 }
 
-                $itemAttributesData[$attributeKey] = $value;
-                if (($attributeKey == 'custom_properties' || $attributeKey == 'gtins') && !$value) {
+                $itemAttributesData[$attributeKey] = $attributeDataValue;
+                if (($attributeKey === 'custom_properties' || $attributeKey === 'gtins') && !$attributeDataValue) {
                     unset($itemAttributesData[$attributeKey]);
                 }
             } catch (\Exception $e) {
@@ -642,5 +643,20 @@ class Data extends Main
     private function getProductImageUrl($product, $imageId = 'product_page_image_large')
     {
         return $this->catalogImageHelper->init($product, $imageId)->getUrl();
+    }
+
+    /**
+     * @param mixed $attributeDetails
+     * @param mixed $attributeDetailsAttributeCode
+     * @param Product $item
+     * @return array
+     */
+    private function getAttributeDetailsMethodValue($attributeDetails, $attributeDetailsAttributeCode, Product $item)
+    {
+        $attributeDetailsMethod = $attributeDetails['method'];
+        if (isset($attributeDetails['attr_code']) && $attributeDetails['attr_code']) {
+            $attributeDetailsAttributeCode = $attributeDetails['attr_code'];
+        }
+        return $this->$attributeDetailsMethod($item, $attributeDetailsAttributeCode);
     }
 }
