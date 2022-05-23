@@ -293,11 +293,27 @@ class Processor extends Main
                     $parentItemId = $parentItemsIds[$itemEntityId];
 
                     if (!$this->isProductParentYotpoIdFound($yotpoSyncTableItemsData, $parentItemId)) {
+                        $parentProductData = $this->getCollectionForSync([$parentItemId])->getItems();
+                        if (!$parentProductData) {
+                            $this->yotpoCatalogLogger->info(
+                                __(
+                                    'Skipping variant sync, parent product not found - Store ID: %1, Store Name: %2, Item Entity ID: %3, Parent Entity ID: %4',
+                                    $storeId,
+                                    $this->coreConfig->getStoreName($storeId),
+                                    $itemRowId,
+                                    $parentItemId
+                                )
+                            );
+
+                            $this->updateProductSyncAttribute($storeId, $itemRowId);
+                            continue;
+                        }
+
                         $updatedParentYotpoId = $this->forceParentProductSyncToYotpo(
                             $storeId,
                             $itemEntityId,
-
                             $parentItemId,
+                            $parentProductData,
                             $yotpoSyncTableItemsData,
                             $parentItemsIds,
                             $yotpoFormatItemData
@@ -883,7 +899,7 @@ class Processor extends Main
      * @param array <mixed> $yotpoFormatItemData
      * @return integer
      */
-    private function forceParentProductSyncToYotpo($storeId, $itemEntityId, $parentItemId, $yotpoSyncTableItemsData, $parentItemsIds, $yotpoFormatItemData)
+    private function forceParentProductSyncToYotpo($storeId, $itemEntityId, $parentItemId, $parentProductData, $yotpoSyncTableItemsData, $parentItemsIds, $yotpoFormatItemData)
     {
         $this->yotpoCatalogLogger->info(
             __(
@@ -901,6 +917,7 @@ class Processor extends Main
 
         $parentProductYotpoId = $this->ensureEntityExistenceAsProductInYotpo(
             $parentItemId,
+            $parentProductData,
             $yotpoSyncTableItemsData,
             $parentItemsIds,
             $yotpoFormatItemData
@@ -945,14 +962,11 @@ class Processor extends Main
      */
     private function ensureEntityExistenceAsProductInYotpo(
         $parentId,
+        $parentProductData,
         $yotpoSyncTableItemsData,
         $parentItemsIds,
         $yotpoFormatItemData
     ) {
-        $parentProductsData = $this->getCollectionForSync([$parentId])->getItems();
-        if (!count($parentProductsData)) {
-            return null;
-        }
         $apiRequestParams = $this->getApiParams(
             $parentId,
             $yotpoSyncTableItemsData,
@@ -960,7 +974,7 @@ class Processor extends Main
             false
         );
         /** @phpstan-ignore-next-line */
-        $productData = $this->catalogData->attributeMapping(reset($parentProductsData));
+        $productData = $this->catalogData->attributeMapping(reset($parentProductData));
         if (isset($productData['row_id'])) {
             unset($productData['row_id']);
         }
