@@ -390,7 +390,7 @@ class Data extends Main
 
                         if (isset($attr['type']) && $attr['type'] === 'image') {
                             $baseUrl = $this->yotpoCoreConfig->getBaseUrl(UrlInterface::URL_TYPE_MEDIA);
-                            $data = $data ? $baseUrl . 'catalog/product' . $data : "";
+                            $data = $data ? $baseUrl . 'catalog/product' . $data : null;
                         }
                         $value = $data;
                     } elseif (isset($attr['method']) && $attr['method']) {
