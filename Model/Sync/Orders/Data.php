@@ -240,7 +240,7 @@ class Data extends AbstractData
                     $this->shipOrderItems[$orderItem->getId()] = $orderItem;
 
                     if (!($product && $product->getId())) {
-                        $this->yotpoOrdersLogger->info('Orders sync::prepareLineItems()
+                        $this->yotpoOrdersLogger->infoLog('Orders sync::prepareLineItems()
                         - Product not found for order: ' . $order->getEntityId(), []);
                         continue;
                     }
@@ -273,12 +273,12 @@ class Data extends AbstractData
                         }
                     }
                 } catch (\Exception $e) {
-                    $this->yotpoOrdersLogger->info('Orders sync::prepareLineItems() - exception for orderId: '.
+                    $this->yotpoOrdersLogger->infoLog('Orders sync::prepareLineItems() - exception for orderId: '.
                         $order->getId() . ' ' . $e->getMessage(), []);
                 }
             }
         } catch (\Exception $e) {
-            $this->yotpoOrdersLogger->info('Orders sync::prepareLineItems() - exception: for orderId: ' .
+            $this->yotpoOrdersLogger->infoLog('Orders sync::prepareLineItems() - exception: for orderId: ' .
                 $order->getId(). ' ' .$e->getMessage(), []);
         }
         return $lineItems;
@@ -312,7 +312,7 @@ class Data extends AbstractData
                     }
                 } catch (\Exception $e) {
                     $orderId = method_exists($order, 'getEntityId') ? $order->getEntityId() : null;
-                    $this->yotpoOrdersLogger->info(
+                    $this->yotpoOrdersLogger->infoLog(
                         __(
                             'Exception raised within prepareParentData - orderId: %1, Exception Message: %2',
                             $orderId,
@@ -340,7 +340,7 @@ class Data extends AbstractData
                     }
                 }
             } catch (\Exception $e) {
-                $this->yotpoOrdersLogger->info(' prepareParentData() :  ' . $e->getMessage(), []);
+                $this->yotpoOrdersLogger->infoLog(' prepareParentData() :  ' . $e->getMessage(), []);
             }
         }
     }
@@ -473,10 +473,10 @@ class Data extends AbstractData
                 }
             }
         } catch (NoSuchEntityException $e) {
-            $this->yotpoOrdersLogger->info('Orders sync::prepareFulfillments() - NoSuchEntityException: ' .
+            $this->yotpoOrdersLogger->infoLog('Orders sync::prepareFulfillments() - NoSuchEntityException: ' .
                 $e->getMessage(), []);
         } catch (LocalizedException $e) {
-            $this->yotpoOrdersLogger->info('Orders sync::prepareFulfillments() - LocalizedException: ' .
+            $this->yotpoOrdersLogger->infoLog('Orders sync::prepareFulfillments() - LocalizedException: ' .
                 $e->getMessage(), []);
         }
         return $fulfillments;

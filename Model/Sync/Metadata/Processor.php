@@ -75,7 +75,7 @@ class Processor extends AbstractJobs
             try {
                 $this->emulateFrontendArea($storeId);
                 if (!$this->yotpoConfig->isEnabled()) {
-                    $this->logger->info(
+                    $this->logger->infoLog(
                         __(
                             'Updating Metadata is disabled. Skipping for Magento Store ID: %1, Name: %2',
                             $storeId,
@@ -84,7 +84,7 @@ class Processor extends AbstractJobs
                     );
                     continue;
                 }
-                $this->logger->info(
+                $this->logger->infoLog(
                     __(
                         'Starting updating Metadata for Magento Store ID: %1, Name: %2',
                         $storeId,
@@ -101,7 +101,7 @@ class Processor extends AbstractJobs
                     $metadataDataToSync
                 );
                 if ($response[$this::SYNC_RESPONSE_IS_SUCCESS_KEY]) {
-                    $this->logger->info(
+                    $this->logger->infoLog(
                         __(
                             'Finished updating Metadata successfully for Magento Store ID: %1, Name: %2',
                             $storeId,
@@ -110,7 +110,7 @@ class Processor extends AbstractJobs
                     );
                 }
             } catch (\Exception $exception) {
-                $this->logger->info(
+                $this->logger->infoLog(
                     __(
                         'Error occurred when updating Metadata,
                         got Exception on Magento Store ID: %1,

@@ -277,7 +277,7 @@ class Data extends Main
                 try {
                     $this->getChildOptions($item);
                 } catch (\Exception $e) {
-                    $this->logger->info('error in mergeProductOptions() :  ' . $e->getMessage(), []);
+                    $this->logger->infoLog('error in mergeProductOptions() :  ' . $e->getMessage(), []);
                 }
             }
         }
@@ -346,7 +346,7 @@ class Data extends Main
                     $syncItems[$key]['options'] = $configOptions;
                 }
             } catch (\Exception $e) {
-                $this->logger->info(
+                $this->logger->infoLog(
                     __(
                         'Exception raised within prepareOptions - $key: %1, $id: %2 Exception Message: %3',
                         $key,
@@ -416,7 +416,7 @@ class Data extends Main
                     unset($itemArray[$key]);
                 }
             } catch (\Exception $e) {
-                $this->logger->info(
+                $this->logger->infoLog(
                     __(
                         'Exception raised within attributeMapping - $key: %1, $attr: %2 Exception Message: %3',
                         $key,
@@ -604,7 +604,7 @@ class Data extends Main
             if ($product->getTypeId() != $configurableProductTypeCode) {
                 $keysToDeleteFromMap = array_keys($filteredProductIds, $product->getId());
                 foreach ($keysToDeleteFromMap as $keyToDeleteFromMap) {
-                    $this->logger->info(
+                    $this->logger->infoLog(
                         __(
                             'A non-configurable product is being filtered - Key: %1, Product ID: %2',
                             $keyToDeleteFromMap,

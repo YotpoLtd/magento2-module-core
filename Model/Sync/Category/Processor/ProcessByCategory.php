@@ -106,7 +106,7 @@ class ProcessByCategory extends Main
                 }
                 $this->emulateFrontendArea($storeId);
                 if ($this->config->isSyncResetInProgress($storeId, 'catalog')) {
-                    $this->yotpoCoreCatalogLogger->info(
+                    $this->yotpoCoreCatalogLogger->infoLog(
                         __(
                             'Category sync is skipped because catalog sync
                              reset is in progress - Magento Store ID: %1, Name: %2',
@@ -118,7 +118,7 @@ class ProcessByCategory extends Main
                     continue;
                 }
                 if (!$this->config->isCatalogSyncActive()) {
-                    $this->yotpoCoreCatalogLogger->info(
+                    $this->yotpoCoreCatalogLogger->infoLog(
                         __(
                             'Catalog Sync is Disabled - Magento Store ID: %1, Name: %2',
                             $storeId,
@@ -128,7 +128,7 @@ class ProcessByCategory extends Main
                     $this->stopEnvironmentEmulation();
                     continue;
                 }
-                $this->yotpoCoreCatalogLogger->info(
+                $this->yotpoCoreCatalogLogger->infoLog(
                     sprintf(
                         'Category Sync - Start - Magento Store ID: %s, Name: %s',
                         $storeId,
@@ -138,7 +138,7 @@ class ProcessByCategory extends Main
                 $retryCategoryIds = $retryCategories[$storeId] ?? $retryCategories;
                 $this->processEntities($retryCategoryIds);
                 $this->stopEnvironmentEmulation();
-                $this->yotpoCoreCatalogLogger->info(
+                $this->yotpoCoreCatalogLogger->infoLog(
                     sprintf(
                         'Category Sync - Finish - Magento Store ID: %s, Name: %s',
                         $storeId,
@@ -192,7 +192,7 @@ class ProcessByCategory extends Main
         $magentoCategories = [];
         foreach ($collection->getItems() as $category) {
             if ($this->config->isSyncResetInProgress($storeId, 'catalog')) {
-                $this->yotpoCoreCatalogLogger->info(
+                $this->yotpoCoreCatalogLogger->infoLog(
                     __(
                         'Category sync is skipped because catalog sync
                              reset is in progress - Magento Store ID: %1, Name: %2',
@@ -208,7 +208,7 @@ class ProcessByCategory extends Main
         $categoriesByPath = $this->getCategoriesFromPathNames(array_values($magentoCategories));
         $yotpoSyncedCategories = $this->getYotpoSyncedCategories(array_keys($magentoCategories));
         if (!$magentoCategories) {
-            $this->yotpoCoreCatalogLogger->info(
+            $this->yotpoCoreCatalogLogger->infoLog(
                 'Category Sync - There are no items left to sync'
             );
         }
@@ -279,7 +279,7 @@ class ProcessByCategory extends Main
                         $categoryIdToUpdate = $magentoCategory->getRowId() ?: $categoryId;
                         $this->updateCategoryAttribute($categoryIdToUpdate);
                     }
-                    $this->yotpoCoreCatalogLogger->info(
+                    $this->yotpoCoreCatalogLogger->infoLog(
                         sprintf('Category Sync - sync success - Category ID: %s', $categoryId)
                     );
                     if ($this->isCommandLineSync) {
@@ -290,7 +290,7 @@ class ProcessByCategory extends Main
             } catch (\Exception $e) {
                 $magentoCategoryId =  $magentoCategory->getId();
                 $this->updateCategoryAttribute($magentoCategoryId);
-                $this->yotpoCoreCatalogLogger->info(
+                $this->yotpoCoreCatalogLogger->infoLog(
                     __(
                         'Exception raised within processEntities - $magentoCategoryId: %1, Exception Message: %2',
                         $magentoCategoryId,
@@ -316,7 +316,7 @@ class ProcessByCategory extends Main
                     $this->updateCategoryAttribute($categoryIdToUpdate);
                 }
             } catch (\Exception $e) {
-                $this->yotpoCoreCatalogLogger->info(
+                $this->yotpoCoreCatalogLogger->infoLog(
                     __(
                         'Exception raised within processEntities - $mageCatId: %1, $yotpoId: %2, Exception Message: %3',
                         $mageCatId,
@@ -328,7 +328,7 @@ class ProcessByCategory extends Main
         }
 
         $this->deleteCollections();
-        $this->yotpoCoreCatalogLogger->info(
+        $this->yotpoCoreCatalogLogger->infoLog(
             sprintf(
                 'Category Sync - sync completed - Magento Store ID: %s, Name: %s',
                 $storeId,
@@ -345,7 +345,7 @@ class ProcessByCategory extends Main
     public function deleteCollections()
     {
         $storeId = $this->config->getStoreId();
-        $this->yotpoCoreCatalogLogger->info(
+        $this->yotpoCoreCatalogLogger->infoLog(
             __(
                 'Category Sync - Starting assigning deleted categories for store - Magento Store ID: %1, Name: %2',
                 $storeId,
@@ -356,7 +356,7 @@ class ProcessByCategory extends Main
         foreach ($categoriesToDelete as $category) {
             $categoryId = $category['category_id'];
             try {
-                $this->yotpoCoreCatalogLogger->info(
+                $this->yotpoCoreCatalogLogger->infoLog(
                     __(
                         'Category Sync - Deleting category - Magento Store ID: %1, Name: %2, Category ID - %3',
                         $storeId,
@@ -375,7 +375,7 @@ class ProcessByCategory extends Main
                 }
                 $this->updateYotpoTblForDeletedCategories($categoryId);
             } catch (\Exception $e) {
-                $this->yotpoCoreCatalogLogger->info(
+                $this->yotpoCoreCatalogLogger->infoLog(
                     __(
                         'Exception raised within deleteCollections - $categoryId: %1, Exception Message: %2',
                         $categoryId,
@@ -385,7 +385,7 @@ class ProcessByCategory extends Main
             }
         }
 
-        $this->yotpoCoreCatalogLogger->info(
+        $this->yotpoCoreCatalogLogger->infoLog(
             __(
                 'Category Sync - Finished assigning deleted categories for store - Magento Store ID: %1, Name: %2',
                 $storeId,

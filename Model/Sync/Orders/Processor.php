@@ -145,7 +145,7 @@ class Processor extends Main
                 $this->stopEnvironmentEmulation();
                 continue;
             }
-            $this->yotpoOrdersLogger->info('Process orders for store : ' . $storeId, []);
+            $this->yotpoOrdersLogger->infoLog('Process orders for store : ' . $storeId, []);
             $orders = $orderByStore[$storeId] ?? [];
             $this->processOrders($orders);
             $this->stopEnvironmentEmulation();
@@ -168,7 +168,7 @@ class Processor extends Main
             return;
         }
         $this->currentStoreId = $this->config->getStoreId();
-        $this->yotpoOrdersLogger->info(
+        $this->yotpoOrdersLogger->infoLog(
             __(
                 'Process order for Magento Store ID: %1, Name: %2',
                 $storeId,
@@ -207,7 +207,7 @@ class Processor extends Main
         foreach ($orderItems as $order) {
             $storeId = $order->getStoreId();
             if ($this->config->isSyncResetInProgress($storeId, 'order')) {
-                $this->yotpoOrdersLogger->info(
+                $this->yotpoOrdersLogger->infoLog(
                     __(
                         'Order sync is skipped because order sync reset is in progress
                          - Magento Store ID: %1, Name: %2',
@@ -219,7 +219,7 @@ class Processor extends Main
             }
             $productsMissing = $this->checkMissingProducts($order);
             if ($productsMissing) {
-                $this->yotpoOrdersLogger->info('Products not exist for order  : ' . $order->getId(), []);
+                $this->yotpoOrdersLogger->infoLog('Products not exist for order  : ' . $order->getId(), []);
                 $ordersWithMissedProducts[] = $order->getId();
                 $this->updateOrderAttribute([$order->getId()], self::SYNCED_TO_YOTPO_ORDER, 1);
                 continue;
@@ -262,7 +262,7 @@ class Processor extends Main
                             $this->isCommandLineSync
                         )) {
                             $this->updateOrderAttribute([$magentoOrderId], self::SYNCED_TO_YOTPO_ORDER, 1);
-                            $this->yotpoOrdersLogger->info('Order sync cannot be done for orderId: '
+                            $this->yotpoOrdersLogger->infoLog('Order sync cannot be done for orderId: '
                                 . $magentoOrderId . ', due to response code: ' . $responseCode, []);
                             continue;
                         } else {
@@ -287,7 +287,7 @@ class Processor extends Main
                     }
                 } catch (\Exception $e) {
                     $magentoOrderId = method_exists($magentoOrder, 'getEntityId') ? $magentoOrder->getEntityId() : null;
-                    $this->yotpoOrdersLogger->info(
+                    $this->yotpoOrdersLogger->infoLog(
                         __(
                             'Exception raised within processOrders - magentoOrderId: %1, Exception Message: %2',
                             $magentoOrderId,
@@ -322,7 +322,7 @@ class Processor extends Main
         $ordersToUpdate[] = $magentoOrderId;
         $currentTime = date('Y-m-d H:i:s');
         if ($productsMissing) {
-            $this->yotpoOrdersLogger->info('Products not exist for order  : ' . $magentoOrderId, []);
+            $this->yotpoOrdersLogger->infoLog('Products not exist for order  : ' . $magentoOrderId, []);
             $yotpoTableFinalData[] = $this->prepareYotpoTableDataForMissingProducts($magentoOrderId, $currentTime);
             $this->insertOrUpdateYotpoTableData($yotpoTableFinalData);
             $this->updateOrderAttribute($ordersToUpdate, self::SYNCED_TO_YOTPO_ORDER, 1);
@@ -332,7 +332,7 @@ class Processor extends Main
         }
         $mappedOrderStatuses = $this->data->getMappedOrderStatuses();
         if (!isset($mappedOrderStatuses[$magentoOrder->getStatus()])) {
-            $this->yotpoOrdersLogger->info(
+            $this->yotpoOrdersLogger->infoLog(
                 'Missing order status mapping for Order# ' . $magentoOrderId.' - Status : '. $magentoOrder->getStatus(),
                 []
             );
@@ -349,7 +349,7 @@ class Processor extends Main
         }
 
         try {
-            $this->yotpoOrdersLogger->info('Order attribute updated to 0 for order : ' . $magentoOrderId, []);
+            $this->yotpoOrdersLogger->infoLog('Order attribute updated to 0 for order : ' . $magentoOrderId, []);
             if (!$this->config->isRealTimeOrdersSyncActive()) {
                 return;
             }
@@ -361,7 +361,7 @@ class Processor extends Main
                     $responseCode = $yotpoSyncedOrders[$magentoOrderId]['response_code'];
                     if (!$this->config->canResync($responseCode, $yotpoSyncedOrders[$magentoOrderId]['yotpo_id'])) {
                         $this->updateOrderAttribute($magentoOrderId, self::SYNCED_TO_YOTPO_ORDER, 1);
-                        $this->yotpoOrdersLogger->info('Order sync cannot be done for orderId: '
+                        $this->yotpoOrdersLogger->infoLog('Order sync cannot be done for orderId: '
                             . $magentoOrderId . ', due to response code: ' . $responseCode, []);
                         return;
                     } else {
@@ -382,7 +382,7 @@ class Processor extends Main
                     $yotpoSyncedOrders,
                     $magentoOrder->getId()
                 ) : false;
-            $this->yotpoOrdersLogger->info('Last sync date updated for order : '
+            $this->yotpoOrdersLogger->infoLog('Last sync date updated for order : '
                 . $magentoOrderId, []);
             if ($yotpoTableData) {
                 if (!$yotpoTableData['yotpo_id'] && array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
@@ -394,7 +394,7 @@ class Processor extends Main
                 if ($this->config->canUpdateCustomAttribute($yotpoTableData['response_code'])) {
                     $this->updateOrderAttribute($magentoOrderId, self::SYNCED_TO_YOTPO_ORDER, 1);
                 }
-                $this->yotpoOrdersLogger->info('Order attribute updated to 1 for order : '
+                $this->yotpoOrdersLogger->infoLog('Order attribute updated to 1 for order : '
                     . $magentoOrderId, []);
             }
             $this->updateLastSyncDate($currentTime);
@@ -454,7 +454,7 @@ class Processor extends Main
         $incrementId = $order->getIncrementId();
         $orderId = $order->getEntityId();
         $dataType = $isYotpoSyncedOrder ? 'update' : 'create';
-        $this->yotpoOrdersLogger->info(
+        $this->yotpoOrdersLogger->infoLog(
             __(
                 'Orders sync, starting sync - Order ID: %1, Increment ID: %2',
                 $orderId,
@@ -463,17 +463,17 @@ class Processor extends Main
         );
         $orderData = $this->data->prepareData($order, $dataType, $yotpoSyncedOrders);
         if (!$orderData) {
-            $this->yotpoOrdersLogger->info('Orders sync - no new data to sync', []);
+            $this->yotpoOrdersLogger->infoLog('Orders sync - no new data to sync', []);
             return [];
         }
-        $this->yotpoOrdersLogger->info('Orders sync - data prepared - Order ID - ' . $orderId, []);
+        $this->yotpoOrdersLogger->infoLog('Orders sync - data prepared - Order ID - ' . $orderId, []);
         $productIds = $this->data->getLineItemsIds();
         $storeId = $order->getStoreId();
         if ($productIds) {
             $visibleItems = $order->getAllVisibleItems();
             $isProductSyncSuccess = $this->catalogProcessor->syncProducts($productIds, $visibleItems, $storeId);
             if (!$isProductSyncSuccess) {
-                $this->yotpoOrdersLogger->info('Products sync failed - Order ID - ' . $order->getId(), []);
+                $this->yotpoOrdersLogger->infoLog('Products sync failed - Order ID - ' . $order->getId(), []);
                 return [];
             }
         }
@@ -506,7 +506,7 @@ class Processor extends Main
                 $response->setData('yotpo_id', $yotpoOrderId);
             }
 
-            $this->yotpoOrdersLogger->info('Orders sync - success - ' . $orderId, []);
+            $this->yotpoOrdersLogger->infoLog('Orders sync - success - ' . $orderId, []);
         } elseif ($response->getData('status') == 409) {//order already exists in Yotpo and not in custom table
             $response = $this->yotpoCoreSync->sync(
                 'GET',
