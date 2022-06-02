@@ -693,7 +693,7 @@ class Main extends AbstractJobs
             $storeId
         );
 
-        $productsSyncData = $connection->fetchAssoc($productsYotpoIdsQuery, 'product_id');
+        $productsSyncData = $connection->fetchAssoc($productsYotpoIdsQuery);
 
         $productIdsToYotpoIdsMap = [];
         foreach ($productsSyncData as $productId => $productSyncRecord) {

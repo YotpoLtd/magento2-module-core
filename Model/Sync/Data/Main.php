@@ -80,7 +80,7 @@ class Main
             ->from($table, ['product_id', 'yotpo_id', 'yotpo_id_parent', 'visible_variant_yotpo_id'])
             ->where('product_id IN(?) ', $productIds)
             ->where('store_id=(?)', $storeId);
-        $products = $connection->fetchAssoc($products, []);
+        $products = $connection->fetchAssoc($products);
 
         $existingProductIds = [];
         foreach ($products as $product) {
@@ -122,7 +122,7 @@ class Main
             ->where('product_id IN(?) ', $productIds)
             ->where('yotpo_id_parent != ?', 0)
             ->where('store_id=(?)', $storeId);
-        $products = $connection->fetchAssoc($products, []);
+        $products = $connection->fetchAssoc($products);
         $yotpoIds = [];
         foreach ($products as $product) {
             if ($product['yotpo_id_parent']) {

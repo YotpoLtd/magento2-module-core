@@ -98,7 +98,7 @@ class CollectionsProductsService extends AbstractJobs
             $categoryId
         );
 
-        $categoryProductsIdsMap = $connection->fetchAssoc($categoryProductsQuery, 'magento_product_id');
+        $categoryProductsIdsMap = $connection->fetchAssoc($categoryProductsQuery);
         return array_keys($categoryProductsIdsMap);
     }
 
@@ -118,7 +118,7 @@ class CollectionsProductsService extends AbstractJobs
             $productId
         );
 
-        $categoryProductsIdsMap = $connection->fetchAssoc($categoryProductsQuery, 'magento_category_id');
+        $categoryProductsIdsMap = $connection->fetchAssoc($categoryProductsQuery);
         return array_keys($categoryProductsIdsMap);
     }
 

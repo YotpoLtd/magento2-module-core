@@ -219,10 +219,11 @@ class Processor extends Main
                     $unSyncedStoreIds[] = $storeId;
                     $this->yotpoCatalogLogger->infoLog(
                         __(
-                            'Product Sync has stopped with exception: %1, Magento Store ID: %2, Name: %3',
+                            'Product Sync has stopped with exception: %1, Magento Store ID: %2, Name: %3, Trace: %4',
                             $e->getMessage(),
                             $storeId,
-                            $this->coreConfig->getStoreName($storeId)
+                            $this->coreConfig->getStoreName($storeId),
+                            $e->getTraceAsString()
                         )
                     );
                 }

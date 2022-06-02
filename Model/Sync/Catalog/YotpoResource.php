@@ -68,7 +68,7 @@ class YotpoResource
             $connection->quoteInto('yotpo.store_id = ?', $this->coreConfig->getStoreId())
         );
 
-        $items = $connection->fetchAssoc($select, []);
+        $items = $connection->fetchAssoc($select);
 
         $yotpoData = [];
         if ($items) {
@@ -103,7 +103,7 @@ class YotpoResource
             $limit
         );
 
-        return $connection->fetchAssoc($select, 'product_id');
+        return $connection->fetchAssoc($select);
     }
 
     /**
@@ -125,7 +125,7 @@ class YotpoResource
         )->limit(
             $limit
         );
-        return $connection->fetchAssoc($select, 'product_id');
+        return $connection->fetchAssoc($select);
     }
 
     /**
@@ -174,7 +174,7 @@ class YotpoResource
             $connection->quoteInto('link_type_id = ?', GroupedLink::LINK_TYPE_GROUPED)
         );
 
-        $items = $connection->fetchAssoc($select, 'product_id');
+        $items = $connection->fetchAssoc($select);
         $groupIds = [];
         foreach ($items as $item) {
             $groupIds[$item['product_id']] = $item['parent_id'];
