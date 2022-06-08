@@ -72,7 +72,7 @@ class CatalogRequestHandler
             try {
                 $yotpoProductId = $this->getYotpoItemIdFromItemEntityId($itemEntityId, 'products');
             } catch (UnexpectedValueException $e) {
-                $this->yotpoCatalogLogger->info(
+                $this->yotpoCatalogLogger->infoLog(
                     __(
                         'Failed getting Yotpo product ID from entity ID,
                         returning initial upsert response - Product Entity ID: %1',
@@ -110,7 +110,7 @@ class CatalogRequestHandler
                     $itemEntityId
                 );
             } catch (UnexpectedValueException $e) {
-                $this->yotpoCatalogLogger->info(
+                $this->yotpoCatalogLogger->infoLog(
                     __(
                         'Failed getting Yotpo variant ID from entity ID,
                         returning initial upsert response - Variant Entity ID: %1',

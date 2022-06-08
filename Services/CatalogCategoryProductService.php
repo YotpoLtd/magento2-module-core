@@ -53,7 +53,7 @@ class CatalogCategoryProductService extends AbstractJobs
             $productId
         );
 
-        $productCategoriesIdsMap = $connection->fetchAssoc($categoryProductsQuery, 'category_id');
+        $productCategoriesIdsMap = $connection->fetchAssoc($categoryProductsQuery);
         return array_keys($productCategoriesIdsMap);
     }
 
@@ -72,7 +72,7 @@ class CatalogCategoryProductService extends AbstractJobs
             $categoryId
         );
 
-        $currentProductsInCategory = $connection->fetchAssoc($select, 'product_id');
+        $currentProductsInCategory = $connection->fetchAssoc($select);
         return array_keys($currentProductsInCategory);
     }
 }

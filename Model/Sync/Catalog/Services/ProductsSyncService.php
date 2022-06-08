@@ -73,7 +73,7 @@ class ProductsSyncService extends AbstractJobs
             'is_deleted = ?',
             0
         );
-        $items = $connection->fetchAssoc($select, 'product_id');
+        $items = $connection->fetchAssoc($select);
         return array_keys($items);
     }
 

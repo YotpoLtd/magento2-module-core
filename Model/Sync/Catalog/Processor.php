@@ -145,7 +145,7 @@ class Processor extends Main
                     $disabled = false;
                     if ($this->coreConfig->isSyncResetInProgress($storeId, 'catalog')) {
                         $disabled = true;
-                        $this->yotpoCatalogLogger->info(
+                        $this->yotpoCatalogLogger->infoLog(
                             __(
                                 'Product sync is skipped because catalog sync reset is in progress
                          - Magento Store ID: %1, Name: %2',
@@ -156,7 +156,7 @@ class Processor extends Main
                     }
                     if (!$this->coreConfig->isEnabled()) {
                         $disabled = true;
-                        $this->yotpoCatalogLogger->info(
+                        $this->yotpoCatalogLogger->infoLog(
                             __(
                                 'Product Sync - Yotpo is Disabled - Magento Store ID: %1, Name: %2',
                                 $storeId,
@@ -171,7 +171,7 @@ class Processor extends Main
                     }
                     if ($this->isSyncingAsMainEntity() && !$this->coreConfig->isCatalogSyncActive()) {
                         $disabled = true;
-                        $this->yotpoCatalogLogger->info(
+                        $this->yotpoCatalogLogger->infoLog(
                             __(
                                 'Product Sync - Disabled - Magento Store ID: %1, Name: %2',
                                 $storeId,
@@ -189,7 +189,7 @@ class Processor extends Main
                         continue;
                     }
                     $this->productSyncLimit = $this->coreConfig->getConfig('product_sync_limit');
-                    $this->yotpoCatalogLogger->info(
+                    $this->yotpoCatalogLogger->infoLog(
                         __(
                             'Product Sync - Start - Magento Magento Store ID: %1, Name: %2',
                             $storeId,
@@ -211,18 +211,19 @@ class Processor extends Main
                             $unSyncedStoreIds[] = $storeId;
                         }
                     } else {
-                        $this->yotpoCatalogLogger->info(
+                        $this->yotpoCatalogLogger->infoLog(
                             __('Product Sync - Stopped - Magento Store ID: %1', $storeId)
                         );
                     }
                 } catch (\Exception $e) {
                     $unSyncedStoreIds[] = $storeId;
-                    $this->yotpoCatalogLogger->info(
+                    $this->yotpoCatalogLogger->infoLog(
                         __(
-                            'Product Sync has stopped with exception: %1, Magento Store ID: %2, Name: %3',
+                            'Product Sync has stopped with exception: %1, Magento Store ID: %2, Name: %3, Trace: %4',
                             $e->getMessage(),
                             $storeId,
-                            $this->coreConfig->getStoreName($storeId)
+                            $this->coreConfig->getStoreName($storeId),
+                            $e->getTraceAsString()
                         )
                     );
                 }
@@ -235,7 +236,7 @@ class Processor extends Main
                 return true;
             }
         } catch (\Exception $e) {
-            $this->yotpoCatalogLogger->info(
+            $this->yotpoCatalogLogger->infoLog(
                 __('Catalog sync::process() - Exception: ', [$e->getTraceAsString()])
             );
             return false;
@@ -252,7 +253,7 @@ class Processor extends Main
     public function syncItems($collectionItems, $storeId, $isVisibleVariantsSync = false)
     {
         if (!count($collectionItems)) {
-            $this->yotpoCatalogLogger->info(
+            $this->yotpoCatalogLogger->infoLog(
                 __(
                     'Product Sync complete : No Data, Magento Store ID: %1, Name: %2',
                     $storeId,
@@ -295,7 +296,7 @@ class Processor extends Main
                     if (!$this->isProductParentYotpoIdFound($yotpoSyncTableItemsData, $parentItemId)) {
                         $parentProductData = $this->getCollectionForSync([$parentItemId])->getItems();
                         if (!$parentProductData) {
-                            $this->yotpoCatalogLogger->info(
+                            $this->yotpoCatalogLogger->infoLog(
                                 __(
                                     'Skipping variant sync, parent product not found - Store ID: %1, Store Name: %2, Item Entity ID: %3, Parent Entity ID: %4',
                                     $storeId,
@@ -326,7 +327,7 @@ class Processor extends Main
                         $parentProductYotpoId = $yotpoSyncTableItemsData[$parentItemId]['yotpo_id'];
                         $yotpoSyncTableItemsData[$itemEntityId]['yotpo_id_parent'] = $parentProductYotpoId;
 
-                        $this->yotpoCatalogLogger->info(
+                        $this->yotpoCatalogLogger->infoLog(
                             __(
                                 'Yotpo ID of parent product changed - Store ID: %1, Store Name: %2, Parent Entity ID: %3, New Yotpo ID: %4',
                                 $storeId,
@@ -352,7 +353,7 @@ class Processor extends Main
                     }
                 }
 
-                $this->yotpoCatalogLogger->info(
+                $this->yotpoCatalogLogger->infoLog(
                     __(
                         'Data ready to sync - Method: %1 - Magento Store ID: %2, Name: %3',
                         $apiRequestParams['method'],
@@ -482,7 +483,7 @@ class Processor extends Main
             } catch (\Exception $e) {
                 $hasFailedCreatingAnyProduct = true;
                 $this->updateProductSyncAttribute($storeId, $itemRowId);
-                $this->yotpoCatalogLogger->info(
+                $this->yotpoCatalogLogger->infoLog(
                     __(
                         'error while syncing product, store_id: %1, product_id: %2. Exception: %3',
                         $storeId,
@@ -532,7 +533,7 @@ class Processor extends Main
         }
 
         if ($hasFailedCreatingAnyProduct) {
-            $this->yotpoCatalogLogger->info(
+            $this->yotpoCatalogLogger->infoLog(
                 __(
                     'API errors occurred while trying to create products -
                     Store ID: %1, Store Name: %2, Is Visible Variants Sync: %3',
@@ -587,7 +588,7 @@ class Processor extends Main
                     $this->productsSyncService->updateSyncTable($returnResponse['temp_sql']);
                 } catch (\Exception $e) {
                     $this->updateProductSyncAttribute($storeId, $itemId);
-                    $this->yotpoCatalogLogger->info(
+                    $this->yotpoCatalogLogger->infoLog(
                         __(
                             'Exception raised within processDeleteData - $itemId: %1, $itemData: %2 Exception Message: %3',
                             $itemId,
@@ -637,7 +638,7 @@ class Processor extends Main
                     $this->productsSyncService->updateSyncTable($returnResponse['temp_sql']);
                 } catch (\Exception $e) {
                     $this->updateProductSyncAttribute($storeId, $itemId);
-                    $this->yotpoCatalogLogger->info(
+                    $this->yotpoCatalogLogger->infoLog(
                         __(
                             'Exception raised within processUnAssignData - $itemId: %1, $itemData: %2 Exception Message: %3',
                             $itemId,
@@ -901,7 +902,7 @@ class Processor extends Main
      */
     private function forceParentProductSyncToYotpo($storeId, $itemEntityId, $parentItemId, $parentProductData, $yotpoSyncTableItemsData, $parentItemsIds, $yotpoFormatItemData)
     {
-        $this->yotpoCatalogLogger->info(
+        $this->yotpoCatalogLogger->infoLog(
             __(
                 'Start syncing parent product that does not exist in Yotpo - Store ID: %1, Store Name: %2, Item Entity ID: %3, Parent Entity ID: %4',
                 $storeId,
@@ -924,7 +925,7 @@ class Processor extends Main
         );
 
         if ($parentProductYotpoId) {
-            $this->yotpoCatalogLogger->info(
+            $this->yotpoCatalogLogger->infoLog(
                 __(
                     'Finished syncing parent product that does not exist in Yotpo - Store ID: %1, Store Name: %2, Parent Entity ID: %3, Yotpo ID: %4',
                     $storeId,
@@ -939,7 +940,7 @@ class Processor extends Main
                 'yotpo_id' => $parentProductYotpoId
             ];
         } else {
-            $this->yotpoCatalogLogger->info(
+            $this->yotpoCatalogLogger->infoLog(
                 __(
                     'Failed creating parent product for a variant - Store ID: %1, Store Name: %2, Parent Entity ID: %3, Yotpo ID: %4',
                     $storeId,
@@ -985,7 +986,7 @@ class Processor extends Main
         $apiRequestParams['yotpo_id'] = $responseObject['yotpo_id'];
 
         if ($response && !$response->getData(CoreConfig::YOTPO_SYNC_RESPONSE_IS_SUCCESS_KEY)) {
-            $this->yotpoCatalogLogger->info(
+            $this->yotpoCatalogLogger->infoLog(
                 __(
                     'Failed syncing missing variant parent product to Yotpo - Parent Entity ID: %1, Status Code: %2, Reason: %3',
                     $parentId,
@@ -1100,7 +1101,7 @@ class Processor extends Main
         $updatedParentYotpoId,
         $syncedToYotpoProductAttributeId
     ) {
-        $this->yotpoCatalogLogger->info(
+        $this->yotpoCatalogLogger->infoLog(
             __(
                 'Yotpo Parent Product ID changed, forcing variants re-sync. Store ID: %1, Entity ID: %2, Current Yotpo ID: %3, Updated Yotpo ID: %4',
                 $storeId,

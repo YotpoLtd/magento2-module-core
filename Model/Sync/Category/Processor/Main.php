@@ -125,7 +125,7 @@ class Main extends AbstractJobs
             ->where('store_id=(?)', $storeId)
             ->where('yotpo_id > 0');
 
-        $categories = $connection->fetchAssoc($categories, []);
+        $categories = $connection->fetchAssoc($categories);
         foreach ($categories as $cat) {
             $return[$cat['category_id']] = $cat;
         }
@@ -424,7 +424,7 @@ class Main extends AbstractJobs
             $storeId
         );
 
-        $categoriesSyncData = $connection->fetchAssoc($categoryYotpoIdsQuery, 'category_id');
+        $categoriesSyncData = $connection->fetchAssoc($categoryYotpoIdsQuery);
 
         $categoryIdsToYotpoIdsMap = [];
         foreach ($categoriesSyncData as $categoryId => $categorySyncRecord) {
@@ -477,7 +477,7 @@ class Main extends AbstractJobs
             'category_id = ?',
             $categoryId
         );
-        $storesSyncedWithCategory = $connection->fetchAssoc($select, 'store_id');
+        $storesSyncedWithCategory = $connection->fetchAssoc($select);
 
         $storesSuccessfullySyncedWithCategory = [];
         foreach ($storesSyncedWithCategory as $storeId => $storeSyncedWithCategory) {

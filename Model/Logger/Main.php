@@ -44,9 +44,9 @@ class Main extends \Monolog\Logger
      *
      * @param  string $message The log message
      * @param  array  <mixed> $context The log context
-     * @return bool   Whether the record has been processed
+     * @return void|bool
      */
-    public function info($message, array $context = []): bool
+    public function infoLog($message, array $context = [])
     {
         $message = self::LOG_PREFIX . $message;
         if ($this->isDebugEnabled()) {
@@ -61,9 +61,9 @@ class Main extends \Monolog\Logger
      *
      * @param string $message
      * @param array<mixed> $context
-     * @return bool
+     * @return void|bool
      */
-    public function error($message, array $context = []): bool
+    public function errorLog($message, array $context = [])
     {
         $this->logSystemInfo();
         $message = self::LOG_PREFIX . $message;

@@ -151,7 +151,7 @@ class Main extends AbstractJobs
             default:
                 $response = $this->coreSync->getEmptyResponse();
                 $storeId = $this->coreConfig->getStoreId();
-                $this->yotpoCatalogLogger->info(
+                $this->yotpoCatalogLogger->infoLog(
                     __(
                         'API request process failed due to a matching method was not found -
                         Magento Store ID: %1, Name: %2',
@@ -261,7 +261,7 @@ class Main extends AbstractJobs
             default:
                 $tempSqlArray = [];
                 $storeId = $this->coreConfig->getStoreId();
-                $this->yotpoCatalogLogger->info(
+                $this->yotpoCatalogLogger->infoLog(
                     __(
                         'API Response Process failed due to a matching method was not found
                         - Magento Store ID: %1, Name: %2',
@@ -306,7 +306,7 @@ class Main extends AbstractJobs
      */
     protected function writeSuccessLog($method, $storeId)
     {
-        $this->yotpoCatalogLogger->info(
+        $this->yotpoCatalogLogger->infoLog(
             __(
                 '%1 API ran successfully - Magento Store ID: %2, Name: %3',
                 $method,
@@ -326,7 +326,7 @@ class Main extends AbstractJobs
      */
     protected function writeFailedLog($method, $storeId)
     {
-        $this->yotpoCatalogLogger->info(
+        $this->yotpoCatalogLogger->infoLog(
             __(
                 '%1 API failed - Magento Store ID: %2, Name: %3',
                 $method,
@@ -693,7 +693,7 @@ class Main extends AbstractJobs
             $storeId
         );
 
-        $productsSyncData = $connection->fetchAssoc($productsYotpoIdsQuery, 'product_id');
+        $productsSyncData = $connection->fetchAssoc($productsYotpoIdsQuery);
 
         $productIdsToYotpoIdsMap = [];
         foreach ($productsSyncData as $productId => $productSyncRecord) {

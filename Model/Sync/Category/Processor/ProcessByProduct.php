@@ -20,11 +20,11 @@ class ProcessByProduct extends Main
      */
     public function process(array $productItems)
     {
-        $this->yotpoCoreCatalogLogger->info('Category Sync - Process categories by product - START ');
+        $this->yotpoCoreCatalogLogger->infoLog('Category Sync - Process categories by product - START ');
 
         foreach ($productItems as $productItem) {
             $productId = $productItem->getId();
-            $this->yotpoCoreCatalogLogger->info(
+            $this->yotpoCoreCatalogLogger->infoLog(
                 __(
                     'Product Sync - Setting product collections sync for product ID %1',
                     $productId

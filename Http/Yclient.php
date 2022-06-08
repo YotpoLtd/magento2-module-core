@@ -102,7 +102,7 @@ class Yclient
             $logData[] = 'API URL = ' . $baseUrl . $uriEndpoint;
             $logData[] = 'API METHOD = ' . $requestMethod;
             $logData[] = $options;
-            $this->yotpoApiLogger->info($logMessage, $logData);
+            $this->yotpoApiLogger->infoLog($logMessage, $logData);
             $logData = [];
             $response = $client->request(
                 $requestMethod,
@@ -114,7 +114,7 @@ class Yclient
             $responseContent = $responseBody->getContents();
             $responseBody->rewind();
             $logData[] = 'response = ' . $responseContent;
-            $this->yotpoApiLogger->info($logMessage, $logData);
+            $this->yotpoApiLogger->infoLog($logMessage, $logData);
         } catch (GuzzleException $exception) {
             $exceptionData = [];
             $exceptionMessage = 'API Error';
@@ -135,7 +135,7 @@ class Yclient
             }
             $exceptionData[] = 'response code = ' . $exceptionCode;
             $exceptionData[] = 'response = ' . $exception->getMessage();
-            $this->yotpoApiLogger->info($exceptionMessage, $exceptionData);
+            $this->yotpoApiLogger->infoLog($exceptionMessage, $exceptionData);
         }
         return $response;
     }
@@ -217,7 +217,7 @@ class Yclient
             $responseBody = $response->getBody();
             $responseReason = $response->getReasonPhrase();
             $responseContent = $responseBody->getContents();
-            $this->yotpoApiLogger->info($responseContent, []);
+            $this->yotpoApiLogger->infoLog($responseContent, []);
             $responseBody->rewind();
             $responseObject = new DataObject();
             $responseObject->setData('status', $status);

@@ -351,7 +351,7 @@ class AbstractData extends Main
                         $this->shipmentsCollection[$shipment->getOrderId()][] = $shipment;
                     } catch (\Exception $e) {
                         $orderId = method_exists($shipment, 'getOrderId') ? $shipment->getOrderId() : null;
-                        $this->yotpoOrdersLogger->info(
+                        $this->yotpoOrdersLogger->infoLog(
                             __(
                                 'Exception raised within prepareShipmentStatuses - orderId: %1, Exception Message: %2',
                                 $orderId,
@@ -362,7 +362,7 @@ class AbstractData extends Main
                 }
             }
         } catch (\Exception $e) {
-            $this->yotpoOrdersLogger->info(' Exception raised within prepareShipmentStatuses() :  ' . $e->getMessage(), []);
+            $this->yotpoOrdersLogger->infoLog(' Exception raised within prepareShipmentStatuses() :  ' . $e->getMessage(), []);
         }
     }
 
@@ -408,10 +408,10 @@ class AbstractData extends Main
                     }
                 }
             } catch (NoSuchEntityException $e) {
-                $this->yotpoOrdersLogger->info('Orders sync::getYotpoShipmentStatus() - NoSuchEntityException: ' .
+                $this->yotpoOrdersLogger->infoLog('Orders sync::getYotpoShipmentStatus() - NoSuchEntityException: ' .
                     $e->getMessage(), []);
             } catch (LocalizedException $e) {
-                $this->yotpoOrdersLogger->info('Orders sync::getYotpoShipmentStatus() - LocalizedException: ' .
+                $this->yotpoOrdersLogger->infoLog('Orders sync::getYotpoShipmentStatus() - LocalizedException: ' .
                     $e->getMessage(), []);
             }
         }
@@ -459,7 +459,7 @@ class AbstractData extends Main
                 }
             }
         } catch (\Exception $e) {
-            $this->yotpoOrdersLogger->info('Exception raised within prepareCouponCodes' . $e->getMessage(), []);
+            $this->yotpoOrdersLogger->infoLog('Exception raised within prepareCouponCodes' . $e->getMessage(), []);
         }
     }
 
@@ -531,7 +531,7 @@ class AbstractData extends Main
                         $this->customersAttributeCollection[$customer->getId()] = $customAttributeValue;
                     } catch (\Exception $e) {
                         $customerId = method_exists($customer, 'getId') ? $customer->getId() : null;
-                        $this->yotpoOrdersLogger->info(
+                        $this->yotpoOrdersLogger->infoLog(
                             __(
                                 'Exception raised within prepareShipmentStatuses - customerId: %1, Exception Message: %2',
                                 $customerId,
@@ -541,7 +541,7 @@ class AbstractData extends Main
                     }
                 }
             } catch (\Exception $e) {
-                $this->yotpoOrdersLogger->info(' prepareCustomAttributes() :  ' . $e->getMessage(), []);
+                $this->yotpoOrdersLogger->infoLog(' prepareCustomAttributes() :  ' . $e->getMessage(), []);
             }
         }
     }
@@ -598,7 +598,7 @@ class AbstractData extends Main
                         /** @phpstan-ignore-line */
                     } catch (\Exception $e) {
                         $orderId = method_exists($order, 'getEntityId') ? $order->getEntityId() : null;
-                        $this->yotpoOrdersLogger->info(
+                        $this->yotpoOrdersLogger->infoLog(
                             __(
                                 'Exception raised within prepareGuestUsersCustomAttributes - orderId: %1, Exception Message: %2',
                                 $orderId,
@@ -609,7 +609,7 @@ class AbstractData extends Main
                 }
             }
         } catch (\Exception $e) {
-            $this->yotpoOrdersLogger->info(' prepareGuestUsersCustomAttributes() :  ' . $e->getMessage(), []);
+            $this->yotpoOrdersLogger->infoLog(' prepareGuestUsersCustomAttributes() :  ' . $e->getMessage(), []);
         }
     }
 

@@ -126,7 +126,7 @@ class Processor extends AbstractJobs
             try {
                 $this->emulateFrontendArea($storeId);
                 if (!$this->shouldSyncCollectionsProducts()) {
-                    $this->catalogLogger->info(
+                    $this->catalogLogger->infoLog(
                         __(
                             'Collections Products Sync -
                             Sync for store is disabled -
@@ -139,7 +139,7 @@ class Processor extends AbstractJobs
                     continue;
                 }
 
-                $this->catalogLogger->info(
+                $this->catalogLogger->infoLog(
                     __(
                         'Collections Products Sync -
                         Starting sync for store -
@@ -165,7 +165,7 @@ class Processor extends AbstractJobs
                 $this->syncCollectionsProductsEntitiesToYotpo($enrichedCollectionsProductsEntitiesToSync, $storeId);
                 $this->logFinishedCollectionsProductsSync($storeId);
             } catch (Exception $exception) {
-                $this->catalogLogger->info(
+                $this->catalogLogger->infoLog(
                     __(
                         'Collections Products Sync -
                         Stopped sync for store -
@@ -284,7 +284,7 @@ class Processor extends AbstractJobs
             $collectionProductEntityToSync
         );
 
-        $this->catalogLogger->info(
+        $this->catalogLogger->infoLog(
             __(
                 'Collections Products Sync - Synced Collection Product to Yotpo successfully -
                      Magento Store ID: %1
@@ -305,7 +305,7 @@ class Processor extends AbstractJobs
      */
     private function logFinishedCollectionsProductsSync($storeId)
     {
-        $this->catalogLogger->info(
+        $this->catalogLogger->infoLog(
             __(
                 'Collections Products Sync - Finished sync for store - Magento Store ID: %1, Magento Store Name: %2',
                 $storeId,
@@ -418,7 +418,7 @@ class Processor extends AbstractJobs
                     $this->setAsSuccessfulCollectionProductSync($storeId, $enrichedCollectionProductEntityToSync);
                 }
             } catch (Exception $exception) {
-                $this->catalogLogger->info(
+                $this->catalogLogger->infoLog(
                     __(
                         'Collections Products Sync - Failed syncing Collection Product entity to Yotpo -
                             Magento Store ID: %1,

@@ -76,7 +76,7 @@ class UpdateConfigData implements DataPatchInterface
         )->where(
             $connection->quoteInto('coreConfigData.path = ?', self::XML_PATH_CUSTOM_ORDER_STATUS)
         );
-        $items = $connection->fetchAssoc($select, []);
+        $items = $connection->fetchAssoc($select);
         if ($items) {
             foreach ($items as $item) {
                 $newData[] = $this->prepareNewData($item['scope'], $item['scope_id'], $item['value']);
