@@ -485,6 +485,9 @@ class AbstractData extends Main
             $phoneNumber = $billingAddress->getTelephone();
             $countryId = $billingAddress->getCountryId();
         }
+        $shippingAddress = $order->getShippingAddress();
+        $customerNameInfo = $this->getCustomerNameInfo($order, $shippingAddress, $billingAddress);
+        
         return [
             'external_id' => $order->getCustomerId() ?: $order->getCustomerEmail(),
             'email' => $order->getCustomerEmail(),
@@ -493,8 +496,8 @@ class AbstractData extends Main
                     $phoneNumber,
                     $countryId
                 ) : null,
-            'first_name' => $order->getCustomerFirstname(),
-            'last_name' => $order->getCustomerLastname(),
+            'first_name' => $customerNameInfo['first_name'],
+            'last_name' => $customerNameInfo['last_name'],
             'accepts_sms_marketing' => $customAttributeValue == 1
         ];
     }
@@ -636,5 +639,26 @@ class AbstractData extends Main
             $product = $orderItem->getProduct();
         }
         return $product;
+    }
+
+    public function getCustomerNameInfo($order, $shippingAddress, $billingAddress) {
+        $firstName = null;
+        $lastName = null;
+
+        if ($order->getCustomerFirstName()) {
+            $firstName = $order->getCustomerFirstName();
+            $lastName = $order->getCustomerLastName();
+        } elseif ($shippingAddress && $shippingAddress->getFirstName()) {
+            $firstName = $shippingAddress->getFirstName();
+            $lastName = $shippingAddress->getLastName();
+        } elseif ($billingAddress && $billingAddress->getFirstName()) {
+            $firstName = $billingAddress->getFirstName();
+            $lastName = $billingAddress->getLastName();
+        }
+
+        return [
+            'first_name' => $firstName,
+            'last_name' => $lastName
+        ];
     }
 }
