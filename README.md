@@ -9,6 +9,9 @@ This library will also include different version packages as magento 2 extension
 
 ---
 
+## Docs
+- [Linter](./docs/Maintenance.md)
+
 ## Requirements
 Magento 2.0+ (Up to module verion 2.4.5)
 
