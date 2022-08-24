@@ -374,10 +374,13 @@ class Processor extends Main
                 }
 
                 if ($this->isVariantUpsertSyncMethod($apiRequestParams['method']) && $responseCode == CoreConfig::NOT_FOUND_RESPONSE_CODE) {
+                    $parentItemId = $parentItemsIds[$itemEntityId];
+                    $parentProductData = $this->getCollectionForSync([$parentItemId])->getItems();
                     $updatedParentYotpoId = $this->forceParentProductSyncToYotpo(
                         $storeId,
                         $itemEntityId,
-                        $parentItemsIds[$itemEntityId],
+                        $parentItemId,
+                        $parentProductData,
                         $yotpoSyncTableItemsData,
                         $parentItemsIds,
                         $yotpoFormatItemData

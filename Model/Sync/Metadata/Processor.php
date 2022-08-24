@@ -6,7 +6,7 @@ use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Magento\Store\Model\App\Emulation as AppEmulation;
 use Yotpo\Core\Model\Api\Sync as YotpoSyncMain;
-use Yotpo\Reviews\Model\Config as YotpoConfig;
+use Yotpo\Core\Model\Config as YotpoConfig;
 use Yotpo\Core\Model\AbstractJobs;
 use Yotpo\Core\Model\Logger\General as Logger;
 use Magento\Framework\App\ProductMetadataInterface;
