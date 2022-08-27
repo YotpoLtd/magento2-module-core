@@ -29,6 +29,11 @@ class Processor extends Main
     const SYNCED_TO_YOTPO_ORDER = 'synced_to_yotpo_order';
 
     /**
+     * Custom attribute name
+     */
+    const ORDER_CREATED_AT_FIELD_NAME = 'created_at';
+
+    /**
      * @var YotpoCoreSync
      */
     protected $yotpoCoreSync;
@@ -426,7 +431,8 @@ class Processor extends Main
             ->addFieldToFilter('created_at', ['from' => $formattedDate]);
         if (!$retryOrderIds) {
             $orderCollection
-                ->addFieldToFilter(self::SYNCED_TO_YOTPO_ORDER, ['eq' => 0]);
+                ->addFieldToFilter(self::SYNCED_TO_YOTPO_ORDER, ['eq' => 0])
+                ->addAttributeToSort(self::ORDER_CREATED_AT_FIELD_NAME, 'DESC');
         } else {
             $orderCollection->addFieldToFilter('entity_id', ['in' => $retryOrderIds]);
         }
