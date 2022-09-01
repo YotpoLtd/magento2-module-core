@@ -12,6 +12,7 @@ use Yotpo\Core\Model\Sync\Customers\Processor as CustomersProcessor;
 use Yotpo\Core\Model\Sync\Orders\Processor as OrdersProcessor;
 use Yotpo\Core\Model\Sync\Category\Processor\ProcessByCategory as CategoryProcessor;
 use Yotpo\Core\Model\Sync\Catalog\Processor as CatalogProcessor;
+use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\App\State as AppState;
 
 /**
@@ -19,18 +20,28 @@ use Magento\Framework\App\State as AppState;
  */
 class RetryYotpoSync extends Command
 {
-    const YOTPO_ENTITY              = 'entity';
-    const YOTPO_ENTITY_ALL          = 'all';
-    const YOTPO_ENTITY_CUSTOMERS    = 'customer';
-    const YOTPO_ENTITY_ORDERS       = 'order';
-    const YOTPO_ENTITY_CATEGORY     = 'category';
-    const YOTPO_ENTITY_PRODUCT      = 'product';
-    const YOTPO_ENTITY_CATALOG      = 'catalog';
+    public const YOTPO_ENTITY              = 'entity';
+    public const YOTPO_ENTITY_ALL          = 'all';
+    public const YOTPO_ENTITY_CUSTOMERS    = 'customer';
+    public const YOTPO_ENTITY_ORDERS       = 'order';
+    public const YOTPO_ENTITY_CATEGORY     = 'category';
+    public const YOTPO_ENTITY_PRODUCT      = 'product';
+    public const YOTPO_ENTITY_CATALOG      = 'catalog';
 
     /**
      * @var string[]
      */
     protected $yotpoCoreEntities = ['order', 'category', 'product', 'catalog', 'all'];
+
+    /**
+     * @var ObjectManagerInterface
+     */
+    protected $objectManager;
+
+    /**
+     * @var AppState
+     */
+    protected $appState;
 
     /**
      * @var CustomersProcessor
@@ -53,33 +64,31 @@ class RetryYotpoSync extends Command
     protected $catalogProcessor;
 
     /**
-     * @var AppState
-     */
-    protected $appState;
-
-    /**
      * RetryYotpoSync constructor.
-     * @param CustomersProcessor $customersProcessor
-     * @param OrdersProcessor $ordersProcessor
-     * @param CategoryProcessor $categoryProcessor
-     * @param CatalogProcessor $catalogProcessor
+     * @param ObjectManagerInterface $objectManager
      * @param AppState $appState
      * @param string|null $name
      */
     public function __construct(
-        CustomersProcessor $customersProcessor,
-        OrdersProcessor $ordersProcessor,
-        CategoryProcessor $categoryProcessor,
-        CatalogProcessor $catalogProcessor,
+        ObjectManagerInterface $objectManager,
         AppState $appState,
         string $name = null
     ) {
-        $this->customersProcessor = $customersProcessor;
-        $this->ordersProcessor = $ordersProcessor;
-        $this->categoryProcessor = $categoryProcessor;
-        $this->catalogProcessor = $catalogProcessor;
+        $this->objectManager = $objectManager;
         $this->appState = $appState;
         parent::__construct($name);
+    }
+
+    /**
+     * @return void
+     */
+    protected function init()
+    {
+        $this->customersProcessor = $this->objectManager->get(\Yotpo\Core\Model\Sync\Customers\Processor::class);
+        $this->ordersProcessor = $this->objectManager->get(\Yotpo\Core\Model\Sync\Orders\Processor::class);
+        $this->categoryProcessor = $this->objectManager->get(\Yotpo\Core\Model\Sync\Category\Processor\ProcessByCategory::class);
+        $this->catalogProcessor = $this->objectManager->get(\Yotpo\Core\Model\Sync\Catalog\Processor::class);
+        $this->setAreaCode();
     }
 
     /**
@@ -120,7 +129,7 @@ class RetryYotpoSync extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->setAreaCode();
+        $this->init();
 
         $isAllOption = $input->getOption(self::YOTPO_ENTITY_ALL);
         if ($isAllOption) {

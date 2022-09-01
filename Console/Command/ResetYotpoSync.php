@@ -8,6 +8,7 @@ use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Input\InputOption;
+use Magento\Framework\ObjectManagerInterface;
 use Magento\Framework\App\State as AppState;
 use Yotpo\Core\Model\Config;
 use Yotpo\Core\Model\Sync\ResetEntitiesSync;
@@ -17,17 +18,22 @@ use Yotpo\Core\Model\Sync\ResetEntitiesSync;
  */
 class ResetYotpoSync extends Command
 {
-    const YOTPO_ENTITY              = 'entity';
-    const STORE_ID                  = 'store_id';
-    const YOTPO_ENTITY_ALL          = 'all';
-    const YOTPO_ENTITY_CUSTOMERS    = 'customer';
-    const YOTPO_ENTITY_ORDERS       = 'order';
-    const YOTPO_ENTITY_CATALOG      = 'catalog';
+    public const YOTPO_ENTITY              = 'entity';
+    public const STORE_ID                  = 'store_id';
+    public const YOTPO_ENTITY_ALL          = 'all';
+    public const YOTPO_ENTITY_CUSTOMERS    = 'customer';
+    public const YOTPO_ENTITY_ORDERS       = 'order';
+    public const YOTPO_ENTITY_CATALOG      = 'catalog';
 
     /**
      * @var string[]
      */
     protected $yotpoEntities = ['order', 'customer', 'catalog', 'all'];
+
+    /**
+     * @var ObjectManagerInterface
+     */
+    protected $objectManager;
 
     /**
      * @var AppState
@@ -46,20 +52,28 @@ class ResetYotpoSync extends Command
 
     /**
      * ResetYotpoSync constructor.
+     * @param ObjectManagerInterface $objectManager
      * @param AppState $appState
-     * @param ResetEntitiesSync $syncReset
      * @param string|null $name
      */
     public function __construct(
-        ResetEntitiesSync $syncReset,
+        ObjectManagerInterface $objectManager,
         AppState $appState,
-        Config $config,
         string $name = null
     ) {
-        $this->syncReset = $syncReset;
+        $this->objectManager = $objectManager;
         $this->appState = $appState;
-        $this->config = $config;
         parent::__construct($name);
+    }
+
+    /**
+     * @return void
+     */
+    protected function init()
+    {
+        $this->syncReset = $this->objectManager->get(\Yotpo\Core\Model\Sync\ResetEntitiesSync::class);
+        $this->config = $this->objectManager->get(\Yotpo\Core\Model\Config::class);
+        $this->setAreaCodeIfNotConfigured();
     }
 
     /**
@@ -100,7 +114,8 @@ class ResetYotpoSync extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->setAreaCodeIfNotConfigured();
+        $this->init();
+
         $storeId = $input->getOption(self::STORE_ID);
         if ($storeId) {
             $storeIds = [$storeId];
