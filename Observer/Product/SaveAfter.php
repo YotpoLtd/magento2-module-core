@@ -317,6 +317,10 @@ class SaveAfter implements ObserverInterface
      */
     protected function checkIfMultiDimensional($arrays)
     {
+        if ($arrays === null) {
+            return [];
+        }
+
         $isMulti = false;
         $returnArray = [];
         foreach ($arrays as $array) {
