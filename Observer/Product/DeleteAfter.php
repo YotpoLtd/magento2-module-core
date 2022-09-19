@@ -121,6 +121,9 @@ class DeleteAfter implements ObserverInterface
     private function unassignProductCategoriesForSync($productId)
     {
         $productCategoriesIdsForDeletion = $this->catalogSession->getProductCategoriesIds();
+        if ($productCategoriesIdsForDeletion === null) {
+            return;
+        }
 
         foreach ($productCategoriesIdsForDeletion as $categoryId) {
             $storeIdsSuccessfullySyncedWithCategory =
