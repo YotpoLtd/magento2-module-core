@@ -43,7 +43,8 @@
     },
     "sales_order": {
         "column": {
-            "synced_to_yotpo_order": true
+            "synced_to_yotpo_order": true,
+            "yotpo_accepts_sms_marketing": true
         }
     },
     "yotpo_category_sync": {
