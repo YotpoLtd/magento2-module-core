@@ -978,7 +978,7 @@ class Processor extends Main
             false
         );
         /** @phpstan-ignore-next-line */
-        $productData = $this->catalogData->attributeMapping(reset($parentProductData));
+        $productData = $this->catalogData->adaptMagentoProductToYotpoProduct(reset($parentProductData));
         if (isset($productData['row_id'])) {
             unset($productData['row_id']);
         }
