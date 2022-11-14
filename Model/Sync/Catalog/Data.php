@@ -6,7 +6,6 @@ use Magento\CatalogInventory\Model\StockRegistry;
 use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Exception\NoSuchEntityException;
 use Yotpo\Core\Model\Config as YotpoCoreConfig;
-use Magento\Framework\UrlInterface;
 use Magento\Catalog\Model\Product;
 use Magento\ConfigurableProduct\Model\ResourceModel\Product\Type\Configurable;
 use Magento\Catalog\Model\ProductRepository;
@@ -51,109 +50,9 @@ class Data extends Main
     protected $collectionFactory;
 
     /**
-     * @var array<string, array>
+     * @var MagentoProductToYotpoProductAdapter
      */
-    protected $mappingAttributes = [
-        'row_id' => [
-            'default' => 1,
-            'attr_code' => 'row_id'
-        ],
-        'external_id' => [
-            'default' => 1,
-            'attr_code' => 'entity_id'
-        ],
-        'name' => [
-            'default' => 1,
-            'attr_code' => 'name'
-        ],
-        'description' => [
-            'default' => 0,
-            'attr_code' => '',
-            'method' => 'getProductDescription'
-        ],
-        'url' => [
-            'default' => 1,
-            'attr_code' => 'request_path',
-            'type' => 'url'
-        ],
-        'image_url' => [
-            'default' => 1,
-            'attr_code' => 'image',
-            'type' => 'image'
-        ],
-        'price' => [
-            'default' => 0,
-            'attr_code' => '',
-            'method' => 'getProductPrice'
-        ],
-        'currency' => [
-            'default' => 0,
-            'attr_code' => '',
-            'method' => 'getCurrentCurrency'
-        ],
-        'inventory_quantity' => [
-            'default' => 0,
-            'attr_code' => '',
-            'method' => 'getProductQty'
-        ],
-        'is_discontinued' => [
-            'default' => 0,
-            'attr_code' => '',
-            'method' => ''
-        ],
-        'group_name' => [
-            'default' => 0,
-            'attr_code' => 'attr_product_group',
-            'method' => 'getDataFromConfig'
-        ],
-        'brand' => [
-            'default' => 0,
-            'attr_code' => 'attr_brand',
-            'method' => 'getDataFromConfig'
-        ],
-        'sku' => [
-            'default' => 1,
-            'attr_code' => 'sku'
-        ],
-        'mpn' => [
-            'default' => 0,
-            'attr_code' => 'attr_mpn',
-            'method' => 'getDataFromConfig'
-        ],
-        'handle' => [
-            'default' => 1,
-            'attr_code' => 'sku'
-        ],
-        'gtins' => [
-            'EAN' => [
-                'default' => 0,
-                'attr_code' => 'attr_ean',
-                'method' => 'getDataFromConfig'
-            ],
-            'UPC' => [
-                'default' => 0,
-                'attr_code' => 'attr_upc',
-                'method' => 'getDataFromConfig'
-            ],
-            'ISBN' => [
-                'default' => 0,
-                'attr_code' => 'attr_isbn',
-                'method' => 'getDataFromConfig'
-            ]
-        ],
-        'custom_properties' => [
-            'is_blocklisted' => [
-                'default' => 0,
-                'attr_code' => 'attr_blocklist',
-                'method' => 'getDataFromConfig'
-            ],
-            'review_form_tag' => [
-                'default' => 0,
-                'attr_code' => 'attr_crf',
-                'method' => 'getDataFromConfig'
-            ]
-        ]
-    ];
+    protected $magentoProductToYotpoProductAdapter;
 
     /**
      * @var StockRegistry
@@ -175,6 +74,7 @@ class Data extends Main
      * @param CollectionFactory $collectionFactory
      * @param StockRegistry $stockRegistry
      * @param YotpoCoreCatalogLogger $yotpoCatalogLogger
+     * @param MagentoProductToYotpoProductAdapter $magentoProductToYotpoProductAdapter
      */
     public function __construct(
         YotpoCoreConfig $yotpoCoreConfig,
@@ -184,7 +84,8 @@ class Data extends Main
         ResourceConnection $resourceConnection,
         CollectionFactory $collectionFactory,
         StockRegistry $stockRegistry,
-        YotpoCoreCatalogLogger $yotpoCatalogLogger
+        YotpoCoreCatalogLogger $yotpoCatalogLogger,
+        MagentoProductToYotpoProductAdapter $magentoProductToYotpoProductAdapter
     ) {
         $this->yotpoCoreConfig = $yotpoCoreConfig;
         $this->yotpoResource = $yotpoResource;
@@ -192,8 +93,8 @@ class Data extends Main
         $this->productRepository = $productRepository;
         $this->collectionFactory = $collectionFactory;
         $this->stockRegistry = $stockRegistry;
-        $this->mappingAttributes['row_id']['attr_code'] = $this->yotpoCoreConfig->getEavRowIdFieldName();
         $this->logger = $yotpoCatalogLogger;
+        $this->magentoProductToYotpoProductAdapter = $magentoProductToYotpoProductAdapter;
         parent::__construct($resourceConnection);
     }
 
@@ -214,7 +115,7 @@ class Data extends Main
             $entityId = $item->getData('entity_id');
             $productsId[] = $entityId;
             $productsObject[$entityId] = $item;
-            $syncItems[$entityId] = $this->attributeMapping($item);
+            $syncItems[$entityId] = $this->adaptMagentoProductToYotpoProduct($item);
         }
         $visibleVariantsData = [];
         $productIdsToParentIdsMap = [];
@@ -360,188 +261,8 @@ class Data extends Main
         return $syncItems;
     }
 
-    /**
-     * Mapping the yotpo data with magento data - product sync
-     *
-     * @param Product $item
-     * @return array<string, string|array>
-     * @throws NoSuchEntityException
-     */
-    public function attributeMapping(Product $item)
-    {
-        $itemArray = [];
-        $mapAttributes = $this->mappingAttributes;
-
-        foreach ($mapAttributes as $key => $attr) {
-            try {
-                if ($key === 'gtins') {
-                    $value = $this->prepareGtinsData($attr, $item);
-                } elseif ($key === 'custom_properties') {
-                    $value = $this->prepareCustomProperties($attr, $item);
-                } elseif ($key === 'is_discontinued') {
-                    $value = false;
-                } else {
-                    if ($attr['default']) {
-                        $data = $item->getData($attr['attr_code']);
-
-                        if (isset($attr['type']) && $attr['type'] === 'url') {
-                            $data = $item->getProductUrl();
-                        }
-
-                        if (isset($attr['type']) && $attr['type'] === 'image') {
-                            $baseUrl = $this->yotpoCoreConfig->getBaseUrl(UrlInterface::URL_TYPE_MEDIA);
-                            $data = $data ? $baseUrl . 'catalog/product' . $data : null;
-                        }
-                        $value = $data;
-                    } elseif (isset($attr['method']) && $attr['method']) {
-
-                        $configKey = isset($attr['attr_code']) && $attr['attr_code'] ?
-                            $attr['attr_code'] : '';
-
-                        $method = $attr['method'];
-                        $itemValue = $this->$method($item, $configKey);
-                        $value = $itemValue ?: ($method == 'getProductPrice' ? 0.00 : $itemValue);
-                    } else {
-                        $value = '';
-                    }
-                    if ($key == 'group_name' && $value) {
-                        $value = strtolower($value);
-                        $value = str_replace(' ', '_', $value);
-                        $value = preg_replace('/[^A-Za-z0-9_-]/', '-', $value);
-                        $value = substr((string)$value, 0, 100);
-                    }
-                }
-                $itemArray[$key] = $value;
-                if (($key == 'custom_properties' || $key == 'gtins') && !$value) {
-                    unset($itemArray[$key]);
-                }
-            } catch (\Exception $e) {
-                $this->logger->infoLog(
-                    __(
-                        'Exception raised within attributeMapping - $key: %1, $attr: %2 Exception Message: %3',
-                        $key,
-                        $attr,
-                        $e->getMessage()
-                    )
-                );
-            }
-        }
-
-        return $itemArray;
-    }
-
-    /**
-     * Get Current Currency
-     *
-     * @return string
-     * @throws NoSuchEntityException
-     */
-    public function getCurrentCurrency()
-    {
-        return $this->yotpoCoreConfig->getCurrentCurrency();
-    }
-
-    /**
-     * Get product quantity
-     * @param Product $item
-     * @return float
-     * @throws NoSuchEntityException
-     */
-    public function getProductQty($item)
-    {
-        return $this->stockRegistry->getStockItem($item->getId(), $this->yotpoCoreConfig->getWebsiteId())->getQty();
-    }
-
-    /**
-     * Get value from config table - dynamically
-     * @param Product $item
-     * @param string $configKey
-     * @return mixed|string|null
-     * @throws LocalizedException
-     * @throws NoSuchEntityException
-     */
-    public function getDataFromConfig($item, $configKey = '')
-    {
-        $configValue = $this->yotpoCoreConfig->getConfig($configKey) ?: '';
-        if ($configValue) {
-            $value = $item->getAttributeText($configValue) ?: '';
-            if (!$value) {
-                $value = $item->getData($configValue) ?: '';
-            }
-        } else {
-            return null;
-        }
-        return $value ?: '';
-    }
-
-    /**
-     * Get GTINs data from config table
-     *
-     * @param array<int, array> $array
-     * @param Product $item
-     * @return array<int, array>
-     */
-    protected function prepareGtinsData($array, $item)
-    {
-        $resultArray = [];
-        foreach ($array as $key => $value) {
-            $configKey = isset($value['attr_code']) && $value['attr_code'] ?
-                $value['attr_code'] : '';
-            $method = $value['method'];
-            $value = $this->$method($item, $configKey);
-
-            if ($value && $value !== 'NULL') {
-                $resultArray[] = [
-                    'declared_type' => $key,
-                    'value' => $value
-                ];
-            }
-        }
-        return $resultArray;
-    }
-
-    /**
-     * Prepare custom attributes for product sync
-     *
-     * @param array<string, array> $array
-     * @param Product $item
-     * @return array<string, array>
-     */
-    protected function prepareCustomProperties($array, $item)
-    {
-        $resultArray = [];
-        foreach ($array as $key => $value) {
-            $configKey = isset($value['attr_code']) && $value['attr_code'] ?
-                $value['attr_code'] : '';
-
-            $method = $value['method'];
-            $itemValue = $this->$method($item, $configKey);
-            if ($key === 'is_blocklisted' || $key === 'review_form_tag') {
-                $configValue = $this->yotpoCoreConfig->getConfig($configKey) ?: '';
-                if ($configValue) {
-                    if ($key === 'is_blocklisted') {
-                        $resultArray[$key] = $itemValue === 1 || $itemValue == 'Yes' || $itemValue === true;
-                    } elseif ($key === 'review_form_tag') {
-                        $itemValue = str_replace(',', '_', $itemValue);
-                        $itemValue = substr($itemValue, 0, 255);
-                        $resultArray[$key] = $itemValue ?: '';
-                    }
-                }
-            } else {
-                $resultArray[$key] = $itemValue;
-            }
-        }
-        return $resultArray;
-    }
-
-    /**
-     * Get product price
-     * @param Product $item
-     * @return float
-     */
-    public function getProductPrice($item)
-    {
-        return $item->getPrice() ?: 0.00;
+    public function adaptMagentoProductToYotpoProduct(Product $item) {
+        return $this->magentoProductToYotpoProductAdapter->adapt($item);
     }
 
     /**
@@ -559,17 +280,6 @@ class Data extends Main
         }
 
         return $result;
-    }
-
-    /**
-     * Get product description
-     * @param Product $item
-     * @return string
-     */
-    public function getProductDescription(Product $item)
-    {
-        return trim($item->getData('description')) ?:
-            trim($item->getData('short_description'));
     }
 
     /**
