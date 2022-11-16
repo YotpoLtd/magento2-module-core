@@ -4,6 +4,7 @@ namespace Yotpo\Core\Model\Sync\Catalog;
 
 use Magento\Framework\UrlInterface;
 use Magento\Catalog\Model\Product;
+use Magento\Catalog\Model\ProductRepository;
 use Yotpo\Core\Model\Config as YotpoCoreConfig;
 
 /**
@@ -23,17 +24,26 @@ class MagentoProductToYotpoProductAdapter
         'review_form_tag' => 'getReviewFormTag'
     ];
 
+    const CONFIGURABLE_PRODUCT_CODE = \Magento\ConfigurableProduct\Model\Product\Type\Configurable::TYPE_CODE;
+
     /**
      * @var YotpoCoreConfig
      */
     protected $yotpoCoreConfig;
 
     /**
+     * @var ProductRepository
+     */
+    protected $productRepository;
+
+    /**
      * @param YotpoCoreConfig $yotpoCoreConfig
      */
     public function __construct(
+        ProductRepository $productRepository,
         YotpoCoreConfig $yotpoCoreConfig
     ) {
+        $this->productRepository = $productRepository;
         $this->yotpoCoreConfig = $yotpoCoreConfig;
     }
 
@@ -129,8 +139,16 @@ class MagentoProductToYotpoProductAdapter
      * @return float
      */
     private function getPrice(Product $item) {
-        $productPrice = $item->getPrice() ?: 0.00;
-        return $productPrice ?: 0.00;
+        if ($item->getTypeId() != self::CONFIGURABLE_PRODUCT_CODE) {
+            $itemVariantIds = $item->getTypeInstance()->getChildrenIds($item->getId());
+            if (count($itemVariantIds) > 0) {
+                $firstVariantId = $itemVariantIds[0];
+                $variant = $this->productRepository->getById($firstVariantId);
+                return $variant->getPrice() ?: 0.00;
+            }
+        }
+
+        return $item->getPrice() ?: 0.00;
     }
 
     /**
