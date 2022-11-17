@@ -5,6 +5,7 @@ namespace Yotpo\Core\Model\Sync\Catalog;
 use Magento\Framework\UrlInterface;
 use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ProductRepository;
+use Magento\CatalogInventory\Model\StockRegistry;
 use Yotpo\Core\Model\Config as YotpoCoreConfig;
 
 /**
@@ -37,13 +38,20 @@ class MagentoProductToYotpoProductAdapter
     protected $productRepository;
 
     /**
+     * @var StockRegistry
+     */
+    protected $stockRegistry;
+
+    /**
      * @param YotpoCoreConfig $yotpoCoreConfig
      */
     public function __construct(
         ProductRepository $productRepository,
+        StockRegistry $stockRegistry,
         YotpoCoreConfig $yotpoCoreConfig
     ) {
         $this->productRepository = $productRepository;
+        $this->stockRegistry = $stockRegistry;
         $this->yotpoCoreConfig = $yotpoCoreConfig;
     }
 
