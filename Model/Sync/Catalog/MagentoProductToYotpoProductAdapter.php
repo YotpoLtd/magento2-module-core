@@ -299,6 +299,10 @@ class MagentoProductToYotpoProductAdapter
      */
     private function getReviewFormTag(Product $item) {
         $reviewFormTag = $this->getAttributeValueForItemByConfigKey($item, 'attr_crf');
+        if ($reviewFormTag === null) {
+            return '';
+        }
+
         $reviewFormTag = str_replace(',', '_', $reviewFormTag);
         $reviewFormTag = substr($reviewFormTag, 0, 255);
         return $reviewFormTag ?: '';
