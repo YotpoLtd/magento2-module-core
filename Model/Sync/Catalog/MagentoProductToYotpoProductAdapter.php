@@ -7,6 +7,7 @@ use Magento\Catalog\Model\Product;
 use Magento\Catalog\Model\ProductRepository;
 use Magento\CatalogInventory\Model\StockRegistry;
 use Yotpo\Core\Model\Config as YotpoCoreConfig;
+use Yotpo\Core\Model\Sync\Catalog\Logger as YotpoCoreCatalogLogger;
 
 /**
  * Class Logger - For customized logging
@@ -43,16 +44,23 @@ class MagentoProductToYotpoProductAdapter
     protected $stockRegistry;
 
     /**
+     * @var YotpoCoreCatalogLogger
+     */
+    protected $logger;
+
+    /**
      * @param YotpoCoreConfig $yotpoCoreConfig
      */
     public function __construct(
         ProductRepository $productRepository,
         StockRegistry $stockRegistry,
-        YotpoCoreConfig $yotpoCoreConfig
+        YotpoCoreConfig $yotpoCoreConfig,
+        YotpoCoreCatalogLogger $logger
     ) {
         $this->productRepository = $productRepository;
         $this->stockRegistry = $stockRegistry;
         $this->yotpoCoreConfig = $yotpoCoreConfig;
+        $this->logger = $logger;
     }
 
     /**
@@ -148,8 +156,10 @@ class MagentoProductToYotpoProductAdapter
      */
     private function getPrice(Product $item) {
         if ($item->getTypeId() == self::CONFIGURABLE_PRODUCT_CODE) {
-            $itemVariantIds = $item->getTypeInstance()->getChildrenIds($item->getId());
-            if (count($itemVariantIds) > 0) {
+            $itemVariantIdsObject = $item->getTypeInstance()->getChildrenIds($item->getId());
+            $this->logger->infoLog('$itemVariantIdsObject :  ' . json_encode($itemVariantIdsObject), []);
+            if (isset($itemVariantIdsObject[0]) && count($itemVariantIdsObject[0]) > 0) {
+                $itemVariantIds = $itemVariantIdsObject[0];
                 $firstVariantId = $itemVariantIds[0];
                 $variant = $this->productRepository->getById($firstVariantId);
                 return $variant->getPrice() ?: 0.00;
