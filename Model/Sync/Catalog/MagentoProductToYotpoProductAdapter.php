@@ -147,7 +147,7 @@ class MagentoProductToYotpoProductAdapter
      * @return float
      */
     private function getPrice(Product $item) {
-        if ($item->getTypeId() != self::CONFIGURABLE_PRODUCT_CODE) {
+        if ($item->getTypeId() == self::CONFIGURABLE_PRODUCT_CODE) {
             $itemVariantIds = $item->getTypeInstance()->getChildrenIds($item->getId());
             if (count($itemVariantIds) > 0) {
                 $firstVariantId = $itemVariantIds[0];
