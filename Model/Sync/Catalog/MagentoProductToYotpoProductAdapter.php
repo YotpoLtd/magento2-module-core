@@ -255,9 +255,11 @@ class MagentoProductToYotpoProductAdapter
 
         foreach (self::CUSTOM_ATTRIBUTE_TO_GETTER_METHOD_NAME_MAP as $customPropertyType => $getterMethodName) {
             $customPropertyValue = $this->$getterMethodName($item);
-            if ($customPropertyValue && $customPropertyValue !== 'NULL') {
-                $customProperties[$customPropertyType] = $customPropertyValue;
+            if ($customPropertyValue === null || $customPropertyValue === 'NULL') {
+                continue;
             }
+
+            $customProperties[$customPropertyType] = $customPropertyValue;
         }
 
         return $customProperties;
@@ -278,9 +280,9 @@ class MagentoProductToYotpoProductAdapter
      */
     private function getReviewFormTag(Product $item) {
         $reviewFormTag = $this->getAttributeValueForItemByConfigKey($item, self::CRF_CONFIG_KEY);
-        if ($reviewFormTag === null) {
-            return '';
-        }
+        if ($reviewFormTag === null || $reviewFormTag === '') {
+            return $reviewFormTag;
+        };
 
         $reviewFormTag = str_replace(',', '_', $reviewFormTag);
         $reviewFormTag = substr($reviewFormTag, 0, 255);
