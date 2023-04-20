@@ -65,7 +65,6 @@ class SalesOrderPaymentSaveAfter extends OrderMain implements ObserverInterface
                 'yotpo_accepts_sms_marketing',
                 $acceptsSmsMarketing ?: 0
             );
-            $this->checkoutSession->setYotpoSmsMarketing(0);
         }
         if ($order->getEntityId()) {
             $this->processOrderSync($order);
