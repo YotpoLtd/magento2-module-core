@@ -141,6 +141,10 @@ class Config
             [
                 'path' => 'yotpo_core/widget_settings/marketing_settings/attr_customer'
             ],
+        'sms_marketing_capture_klaviyo_forms' =>
+            [
+              'path' => 'yotpo_core/widget_settings/sms_subscription/capture_klaviyo_forms',
+            ],
         'reset_sync_in_progress_catalog' =>
             [
                 'path' => 'yotpo_core/sync_settings/reset_sync/reset_sync_in_progress_catalog'
