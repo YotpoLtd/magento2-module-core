@@ -184,7 +184,7 @@ class Main extends AbstractJobs
         $collectionData = $this->data->prepareData($category);
         $collectionData['entityLog'] = 'catalog';
         $url = $this->config->getEndpoint('collections_update', ['{yotpo_collection_id}'], [$yotpoId]);
-        $response = $this->yotpoCoreApiSync->sync(\Zend_Http_Client::PATCH, $url, $collectionData, true);
+        $response = $this->yotpoCoreApiSync->sync(Config::METHOD_PATCH, $url, $collectionData, true);
         $categoryId = $category->getId();
         $storeId = $category->getStoreId();
         if ($this->isImmediateRetry($response, $this->entity, $categoryId, $storeId)) {
