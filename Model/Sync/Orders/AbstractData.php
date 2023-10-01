@@ -380,6 +380,9 @@ class AbstractData extends Main
         foreach ($shipment->getTracks() as $track) {
             $shipments['tracking_company'] = $track->getCarrierCode();
             $shipments['tracking_number'] =  $track->getTrackNumber();
+            if ($this->trackingDataExists($shipments)) {
+                $shipments['tracking_url'] = $this->generateTrackingUrl($shipments['tracking_company'], $shipments['tracking_number']);
+            }
         }
         return $shipments;
     }
@@ -660,5 +663,25 @@ class AbstractData extends Main
             'first_name' => $firstName,
             'last_name' => $lastName
         ];
+    }
+
+    private function trackingDataExists($shipments) {
+        return !is_null($shipments['tracking_company']) && !is_null($shipments['tracking_number']);
+    }
+
+    private function generateTrackingUrl($trackingCompany, $trackingNumber) {
+        $trackingCompany = strtoupper($trackingCompany);
+        switch ($trackingCompany) {
+            case 'UPS':
+                return "https://www.ups.com/WebTracking?loc=en_US&requester=ST&trackNums={$trackingNumber}";
+            case 'USPS':
+                return "https://tools.usps.com/go/TrackConfirmAction_input?strOrigTrackNum={$trackingNumber}";
+            case 'FEDEX':
+                return "https://www.fedex.com/fedextrack/?action=track&trackingnumber={$trackingNumber}";
+            case 'DHL':
+                return "https://www.dhl.com/us-en/home/tracking.html?tracking-id={$trackingNumber}";
+            default:
+                return null;
+        }
     }
 }
