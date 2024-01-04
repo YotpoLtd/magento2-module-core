@@ -59,3 +59,19 @@ https://www.yotpo.com/
 Copyright © 2018 Yotpo. All rights reserved.  
 
 ![Yotpo Logo](https://yap.yotpo.com/assets/images/logo_login.png)
+
+
+## Publish new version
+1. You need to change the reference to the version number in all occurrences in all 4 repositories:
+    * magento2-module-core
+    * magento2-module-reviews
+    * magento2-module-messaging
+    * magento2-module-combined
+
+
+2. After you've merged it, you'll need to create a new tag with the new version number in all 4 repos:
+    * git tag {VERSION}
+    * git push origin {VERSION}
+
+
+3. Check to see that the new version exists in packagist (https://packagist.org/).
