@@ -129,22 +129,27 @@ class RetryYotpoSync extends Command
      */
     protected function execute(InputInterface $input, OutputInterface $output)
     {
-        $this->init();
+        try {
+            $this->init();
 
-        $isAllOption = $input->getOption(self::YOTPO_ENTITY_ALL);
-        if ($isAllOption) {
-            $this->resyncAllEntities($output);
-        } else {
-            $yotpoEntityInput = $input->getOption(self::YOTPO_ENTITY);
-            if (!$yotpoEntityInput) {
-                return $this;
+            $isAllOption = $input->getOption(self::YOTPO_ENTITY_ALL);
+            if ($isAllOption) {
+                $this->resyncAllEntities($output);
+            } else {
+                $yotpoEntityInput = $input->getOption(self::YOTPO_ENTITY);
+                if (!$yotpoEntityInput) {
+                    return 1;
+                }
+                if (!is_array($yotpoEntityInput)) {
+                    $yotpoEntityInput = [$yotpoEntityInput];
+                }
+                $this->retryYotpoSync($yotpoEntityInput, $output);
             }
-            if (!is_array($yotpoEntityInput)) {
-                $yotpoEntityInput = [$yotpoEntityInput];
-            }
-            $this->retryYotpoSync($yotpoEntityInput, $output);
+            return 0;
+        } catch (\Exception $e) {
+            $output->writeln('Resync command failed: ' . $e->getMessage());
+            return 1;
         }
-        return $this;
     }
 
     /**
