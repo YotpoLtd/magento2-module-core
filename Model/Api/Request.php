@@ -154,7 +154,12 @@ class Request
             $data['utoken'] = $this->getAuthToken();
         }
 
-        $options['json']    =   $data;
+        if ($method == WebRequest::HTTP_METHOD_GET) {
+            $options['query']   =   $data;
+        } else {
+            $options['json']    =   $data;
+        }
+
         $options['headers'] = $this->prepareHeaders();
 
         $response = $this->yotpoHttpclient->send($method, $baseUrl, $endPoint, $options);
