@@ -428,7 +428,7 @@ class Processor extends Main
         $orderCollection = $this->orderFactory->create();
         $orderCollection->addFieldToFilter('store_id', ['eq' => $storeId]);
 
-        if ($formattedDate) {
+        if (null !== $formattedDate) {
             $orderCollection->addFieldToFilter('created_at', ['from' => $formattedDate]);
         }
 
