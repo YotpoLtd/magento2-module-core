@@ -426,9 +426,12 @@ class Processor extends Main
         $mappedOrderStatuses = $this->data->getMappedOrderStatuses();
 
         $orderCollection = $this->orderFactory->create();
-        $orderCollection
-            ->addFieldToFilter('store_id', ['eq' => $storeId])
-            ->addFieldToFilter('created_at', ['from' => $formattedDate]);
+        $orderCollection->addFieldToFilter('store_id', ['eq' => $storeId]);
+
+        if (null !== $formattedDate) {
+            $orderCollection->addFieldToFilter('created_at', ['from' => $formattedDate]);
+        }
+
         if (!$retryOrderIds) {
             $orderCollection
                 ->addFieldToFilter(self::SYNCED_TO_YOTPO_ORDER, ['eq' => 0])
@@ -436,6 +439,7 @@ class Processor extends Main
         } else {
             $orderCollection->addFieldToFilter('entity_id', ['in' => $retryOrderIds]);
         }
+
         if ($mappedOrderStatuses) {
             $orderCollection->addFieldToFilter('status', ['in' => array_keys($mappedOrderStatuses)]);
         }
