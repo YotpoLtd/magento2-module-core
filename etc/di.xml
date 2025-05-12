@@ -89,8 +89,6 @@
                 type="Yotpo\Core\Model\CategorySyncRepository" />
     <preference for="Yotpo\Core\Api\ProductSyncRepositoryInterface"
                 type="Yotpo\Core\Model\ProductSyncRepository" />
-    <preference for="Yotpo\Core\Api\CollectionsProductsSyncRepositoryInterface"
-                type="Yotpo\Core\Model\CollectionsProductsSyncRepository" />
     <type name="Magento\Framework\Console\CommandList">
         <arguments>
             <argument name="commands" xsi:type="array">
