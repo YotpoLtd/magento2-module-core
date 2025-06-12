@@ -59,7 +59,7 @@ class ResetYotpoSync extends Command
     public function __construct(
         ObjectManagerInterface $objectManager,
         AppState $appState,
-        string $name = null
+        $name = null
     ) {
         $this->objectManager = $objectManager;
         $this->appState = $appState;
