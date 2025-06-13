@@ -246,7 +246,7 @@ class Config
      * @throws NoSuchEntityException
      * @throws LocalizedException
      */
-    public function getConfig(string $key, int $scopeId = null, string $scope = ScopeInterface::SCOPE_STORE)
+    public function getConfig(string $key, $scopeId = null, string $scope = ScopeInterface::SCOPE_STORE)
     {
         $config='';
         if (isset($this->config[$key]['path'])) {
@@ -734,7 +734,7 @@ class Config
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function getAppKey(int $scopeId = null, string $scope = ScopeInterface::SCOPE_STORE)
+    public function getAppKey($scopeId = null, string $scope = ScopeInterface::SCOPE_STORE)
     {
         return $this->getConfig('app_key', $scopeId, $scope);
     }
@@ -748,7 +748,7 @@ class Config
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function getSecret(int $scopeId = null, string $scope = ScopeInterface::SCOPE_STORE)
+    public function getSecret($scopeId = null, string $scope = ScopeInterface::SCOPE_STORE)
     {
         return (($secret = $this->getConfig('secret', $scopeId, $scope))) ? $this->encryptor->decrypt($secret) : null;
     }
@@ -762,7 +762,7 @@ class Config
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    public function isAppKeyAndSecretSet(int $scopeId = null, string $scope = ScopeInterface::SCOPE_STORE): bool
+    public function isAppKeyAndSecretSet($scopeId = null, string $scope = ScopeInterface::SCOPE_STORE): bool
     {
         return $this->getAppKey($scopeId, $scope) && $this->getSecret($scopeId, $scope);
     }
