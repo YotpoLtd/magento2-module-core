@@ -51,8 +51,8 @@ class Scheduler extends ConfigValue
         ScopeConfigInterface $config,
         TypeListInterface $cacheTypeList,
         ValueFactory $configValueFactory,
-        AbstractResource $resource = null,
-        AbstractDb $resourceCollection = null,
+        ?AbstractResource $resource = null,
+        ?AbstractDb $resourceCollection = null,
         array $data = []
     ) {
         $this->_runModelPath = '';
