@@ -19,37 +19,6 @@ use Magento\Framework\App\State as AppState;
  */
 class SalesOrderShipmentSaveAfter extends OrderMain implements ObserverInterface
 {
-
-    /**
-     * @var CheckoutSession
-     */
-    protected $checkoutSession;
-
-    /**
-     * @var AppState
-     */
-    protected $appState;
-
-    /**
-     * SalesOrderSaveAfter constructor.
-     * @param OrdersProcessor $ordersProcessor
-     * @param Config $yotpoConfig
-     * @param ResourceConnection $resourceConnection
-     * @param CheckoutSession $checkoutSession
-     * @param AppState $appState
-     */
-    public function __construct(
-        OrdersProcessor $ordersProcessor,
-        Config $yotpoConfig,
-        ResourceConnection $resourceConnection,
-        CheckoutSession $checkoutSession,
-        AppState $appState
-    ) {
-        $this->checkoutSession = $checkoutSession;
-        $this->appState = $appState;
-        parent::__construct($ordersProcessor, $yotpoConfig, $resourceConnection);
-    }
-
     /**
      * @param Observer $observer
      * @throws LocalizedException
@@ -57,17 +26,7 @@ class SalesOrderShipmentSaveAfter extends OrderMain implements ObserverInterface
      */
     public function execute(Observer $observer)
     {
-        $areaCode = $this->appState->getAreaCode();
         $order = $observer->getEvent()->getShipment()->getOrder();
-
-        if ($areaCode !== Area::AREA_ADMINHTML && $order->getCustomerIsGuest()) {
-            $acceptsSmsMarketing = $this->checkoutSession->getYotpoSmsMarketing();
-            $this->ordersProcessor->updateOrderAttribute(
-                [$order->getEntityId()],
-                'yotpo_accepts_sms_marketing',
-                $acceptsSmsMarketing ?: 0
-            );
-        }
 
         if ($order->getEntityId()) {
             $this->processOrderSync($order);
