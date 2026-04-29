@@ -15,6 +15,8 @@ class SalesOrderShipmentSaveAfter extends OrderMain implements ObserverInterface
 {
     /**
      * @param Observer $observer
+     *
+     * @return void
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
