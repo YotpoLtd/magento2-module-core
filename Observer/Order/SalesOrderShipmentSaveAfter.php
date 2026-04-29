@@ -20,9 +20,15 @@ class SalesOrderShipmentSaveAfter extends OrderMain implements ObserverInterface
      */
     public function execute(Observer $observer)
     {
-        $order = $observer->getEvent()->getShipment()->getOrder();
+        $shipment = $observer->getEvent()->getShipment();
 
-        if ($order->getEntityId()) {
+        if (!$shipment) {
+            return;
+        }
+
+        $order = $shipment->getOrder();
+
+        if ($order && $order->getEntityId()) {
             $this->processOrderSync($order);
         }
     }
