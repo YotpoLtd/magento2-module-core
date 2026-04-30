@@ -24,7 +24,7 @@
         <observer name="yotpo_core_sales_order_payment_save_after"
                   instance="Yotpo\Core\Observer\Order\SalesOrderPaymentSaveAfter" />
     </event>
-    <event name="sales_order_shipment_save_after">
+    <event name="sales_order_shipment_save_commit_after">
         <observer name="yotpo_core_sales_order_shipment_save_after"
                   instance="Yotpo\Core\Observer\Order\SalesOrderShipmentSaveAfter" />
     </event>
