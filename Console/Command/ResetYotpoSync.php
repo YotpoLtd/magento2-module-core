@@ -108,11 +108,11 @@ class ResetYotpoSync extends Command
     /**
      * @param InputInterface $input
      * @param OutputInterface $output
-     * @return $this|int
+     * @return int
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         $this->init();
 
@@ -123,12 +123,12 @@ class ResetYotpoSync extends Command
             $storeIds = $this->config->getAllStoreIds();
         }
         if (!$storeIds) {
-            return $this;
+            return Command::FAILURE;
         }
         foreach ($storeIds as $storeId) {
             $yotpoEntityInput = $input->getOption(self::YOTPO_ENTITY);
             if (!$yotpoEntityInput) {
-                return $this;
+                return Command::FAILURE;
             }
             if (!is_array($yotpoEntityInput)) {
                 $yotpoEntityInput = [$yotpoEntityInput];
@@ -136,7 +136,7 @@ class ResetYotpoSync extends Command
             $this->resetYotpoSyncByEntity($yotpoEntityInput, $storeId, $output);
         }
 
-        return $this;
+        return Command::SUCCESS;
     }
 
     /**
