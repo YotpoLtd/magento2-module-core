@@ -123,11 +123,11 @@ class RetryYotpoSync extends Command
     /**
      * @param InputInterface $input
      * @param OutputInterface $output
-     * @return $this|int
+     * @return int
      * @throws LocalizedException
      * @throws NoSuchEntityException
      */
-    protected function execute(InputInterface $input, OutputInterface $output)
+    protected function execute(InputInterface $input, OutputInterface $output): int
     {
         try {
             $this->init();
@@ -138,17 +138,17 @@ class RetryYotpoSync extends Command
             } else {
                 $yotpoEntityInput = $input->getOption(self::YOTPO_ENTITY);
                 if (!$yotpoEntityInput) {
-                    return 1;
+                    return Command::FAILURE;
                 }
                 if (!is_array($yotpoEntityInput)) {
                     $yotpoEntityInput = [$yotpoEntityInput];
                 }
                 $this->retryYotpoSync($yotpoEntityInput, $output);
             }
-            return 0;
+            return Command::SUCCESS;
         } catch (\Exception $e) {
             $output->writeln('Resync command failed: ' . $e->getMessage());
-            return 1;
+            return Command::FAILURE;
         }
     }
 
