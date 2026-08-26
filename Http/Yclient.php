@@ -123,13 +123,13 @@ class Yclient
             try {
                 $response = $this->responseFactory->create([
                     'status' => $exception->getCode(),
-                    'reason' => $exception->getMessage()
+                    'reason' => $this->sanitizeReasonPhrase($exception->getMessage())
                 ]);
                 $exceptionCode = $exception->getCode();
-            } catch (\InvalidArgumentException $exception) {
+            } catch (\InvalidArgumentException $responseException) {
                 $response = $this->responseFactory->create([
                     'status' => Config::RESPONSE_CODE_FOR_UNKNOWN_ERRORS,
-                    'reason' => $exception->getMessage()
+                    'reason' => $this->sanitizeReasonPhrase($responseException->getMessage())
                 ]);
                 $exceptionCode = $exception->getCode();
             }
@@ -138,6 +138,21 @@ class Yclient
             $this->yotpoApiLogger->infoLog($exceptionMessage, $exceptionData);
         }
         return $response;
+    }
+
+    /**
+     * Collapse whitespace so the value is safe to use as a PSR-7 reason phrase.
+     *
+     * PSR-7 (guzzlehttp/psr7 >= 2.12) rejects CR/LF in the reason phrase and throws
+     * \InvalidArgumentException. Guzzle exception messages are multi-line, so they must
+     * be flattened before being passed to responseFactory->create().
+     *
+     * @param string $reason
+     * @return string
+     */
+    private function sanitizeReasonPhrase(string $reason): string
+    {
+        return trim(preg_replace('/\s+/', ' ', $reason));
     }
 
     /**
