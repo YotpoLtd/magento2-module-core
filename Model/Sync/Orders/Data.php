@@ -441,8 +441,11 @@ class Data extends AbstractData
             $fulfillments = [];
             $mappedOrderStatus = $this->getYotpoOrderStatus($order->getStatus());
 
-            if ($syncType == 'update' && $yotpoOrderObject[$order->getId()]['yotpo_id']) {
-                $isFulfillmentBasedOnShipping = $yotpoOrderObject[$order->getId()]['is_fulfillment_based_on_shipment'];
+            if ($syncType == 'update' && !empty($yotpoOrderObject[$order->getId()]['yotpo_id'])) {
+                $storedFulfillmentFlag = $yotpoOrderObject[$order->getId()]['is_fulfillment_based_on_shipment'] ?? null;
+                $isFulfillmentBasedOnShipping = ($storedFulfillmentFlag === null || $storedFulfillmentFlag === '')
+                    ? $this->config->getConfig('is_fulfillment_based_on_shipment')
+                    : $storedFulfillmentFlag;
             } else {
                 $isFulfillmentBasedOnShipping = $this->config->getConfig('is_fulfillment_based_on_shipment');
             }
