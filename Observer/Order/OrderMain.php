@@ -53,12 +53,35 @@ class OrderMain
      */
     public function processOrderSync($order)
     {
+        $this->reQueueOrder($order);
+        $this->syncOrderNow($order);
+    }
+
+    /**
+     * Re-queue the order for its next sync. Safe to call from inside any transaction - only
+     * touches sync bookkeeping, never reads order or shipment data.
+     *
+     * @param Order $order
+     * @return void
+     */
+    protected function reQueueOrder($order)
+    {
         $this->ordersProcessor->updateOrderAttribute(
             [$order->getId()],
             self::SYNCED_TO_YOTPO_ORDER,
             0
         );
         $this->updateOrderSyncTable($order->getId());
+    }
+
+    /**
+     * @param Order $order
+     * @throws \Magento\Framework\Exception\LocalizedException
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     * @return void
+     */
+    protected function syncOrderNow($order)
+    {
         if ($this->yotpoConfig->isRealTimeOrdersSyncActive($order->getStoreId())) {
             $this->ordersProcessor->processOrder($order);
         }
