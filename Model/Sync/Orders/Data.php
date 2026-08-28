@@ -140,6 +140,7 @@ class Data extends AbstractData
      */
     public function prepareData($order, $syncType, $yotpoOrderObject)
     {
+        $this->lineItemsProductIds = [];
         $billingAddress = $order->getBillingAddress();
         $shippingAddress = $order->getShippingAddress();
         $orderStatus = $order->getStatus();
@@ -413,13 +414,17 @@ class Data extends AbstractData
     }
 
     /**
-     * Get the product ids
+     * Get the product ids of the order most recently passed to prepareData().
+     *
+     * Reset by prepareData() on every call - this class is a DI singleton, so without
+     * that reset the ids accumulate across the whole batch and the product-sync gate in
+     * Orders\Processor::syncOrder() ends up gating each order on every product seen before it.
      *
      * @return array<mixed>
      */
     public function getLineItemsIds()
     {
-        return $this->lineItemsProductIds;
+        return array_values(array_unique($this->lineItemsProductIds));
     }
 
     /**
