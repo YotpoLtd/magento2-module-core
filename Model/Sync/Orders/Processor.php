@@ -390,17 +390,29 @@ class Processor extends Main
             $this->yotpoOrdersLogger->infoLog('Last sync date updated for order : '
                 . $magentoOrderId, []);
             if ($yotpoTableData) {
-                if (!$yotpoTableData['yotpo_id'] && array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
-                    $yotpoTableData['yotpo_id'] = $yotpoSyncedOrders[$magentoOrderId]['yotpo_id'];
+                if (!$this->config->canResync($yotpoTableData['response_code'], $yotpoTableData['yotpo_id'])) {
+                    // Real-time sync is an optimisation, not the authoritative source of truth.
+                    // A non-retryable response from this path is not trustworthy enough to
+                    // record as final - leave the order queued so cron retries it with complete
+                    // data instead.
+                    $this->yotpoOrdersLogger->errorLog(
+                        'Real-time sync got a non-retryable response for orderId: ' . $magentoOrderId .
+                        ', response code: ' . $yotpoTableData['response_code'] .
+                        ' - leaving it queued for cron to retry with complete data.'
+                    );
+                } else {
+                    if (!$yotpoTableData['yotpo_id'] && array_key_exists($magentoOrderId, $yotpoSyncedOrders)) {
+                        $yotpoTableData['yotpo_id'] = $yotpoSyncedOrders[$magentoOrderId]['yotpo_id'];
+                    }
+                    $yotpoTableData['order_id'] = $magentoOrderId;
+                    $yotpoTableData['synced_to_yotpo'] = $currentTime;
+                    $this->insertOrUpdateYotpoTableData($yotpoTableData);
+                    if ($this->config->canUpdateCustomAttribute($yotpoTableData['response_code'])) {
+                        $this->updateOrderAttribute($magentoOrderId, self::SYNCED_TO_YOTPO_ORDER, 1);
+                    }
+                    $this->yotpoOrdersLogger->infoLog('Order attribute updated to 1 for order : '
+                        . $magentoOrderId, []);
                 }
-                $yotpoTableData['order_id'] = $magentoOrderId;
-                $yotpoTableData['synced_to_yotpo'] = $currentTime;
-                $this->insertOrUpdateYotpoTableData($yotpoTableData);
-                if ($this->config->canUpdateCustomAttribute($yotpoTableData['response_code'])) {
-                    $this->updateOrderAttribute($magentoOrderId, self::SYNCED_TO_YOTPO_ORDER, 1);
-                }
-                $this->yotpoOrdersLogger->infoLog('Order attribute updated to 1 for order : '
-                    . $magentoOrderId, []);
             }
             $this->updateLastSyncDate($currentTime);
             $this->updateTotalOrdersSynced();
