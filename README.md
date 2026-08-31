@@ -66,14 +66,12 @@ Copyright © 2018 Yotpo. All rights reserved.
 
 
 ## Publish new version
-1. You need to change the reference to the version number in all occurrences in all 4 repositories:
+1. You need to change the reference to the version number in all occurrences in both repositories:
     * magento2-module-core
     * magento2-module-reviews
-    * magento2-module-messaging
-    * magento2-module-combined
 
 
-2. After you've merged it, you'll need to create a new tag with the new version number in all 4 repos:
+2. After you've merged it, you'll need to create a new tag with the new version number in both repos:
     * git tag {VERSION}
     * git push origin {VERSION}
 
