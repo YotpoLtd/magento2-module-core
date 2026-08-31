@@ -11,6 +11,7 @@ class Orders extends Main
     const ORDERS_DATA_LIMIT = 300;
     const YOTPO_ENTITY_NAME = 'order';
     const SYNCED_TO_YOTPO_ORDER_COLUMN = 'synced_to_yotpo_order';
+    const FULFILLMENT_FLAG_COLUMN = 'is_fulfillment_based_on_shipment';
 
     /**
      * @return array <string>
@@ -103,5 +104,37 @@ class Orders extends Main
             $connection->quoteInto('order_id IN (?)', $orderIds)
         ];
         $connection->delete($tableName, $whereConditions);
+    }
+
+    /**
+     * Clear the per-order fulfillment-flag pin, store-scoped via sales_order (yotpo_orders_sync
+     * itself has no store_id column). A merchant changing shipments_flag is a deliberate signal
+     * to re-derive fulfillment for already-synced orders on their next sync, rather than staying
+     * latched to whatever was recorded under the old setting - see
+     * Model/Sync/Orders/Data.php::prepareFulfillments().
+     *
+     * @param int $storeId
+     * @return void
+     */
+    public function clearFulfillmentFlagPins($storeId)
+    {
+        $connection = $this->resourceConnection->getConnection();
+        $table = $this->resourceConnection->getTableName(self::ORDERS_TABLE);
+        $select = $connection->select()
+            ->from($table, 'entity_id')
+            ->where('store_id', $storeId);
+
+        $offset = 0;
+        do {
+            $entityIds = $connection->fetchCol($select->limit(self::ORDERS_DATA_LIMIT, $offset));
+            if ($entityIds) {
+                $connection->update(
+                    $this->resourceConnection->getTableName(self::ORDERS_SYNC_TABLE),
+                    [self::FULFILLMENT_FLAG_COLUMN => null],
+                    [$connection->quoteInto('order_id IN (?)', $entityIds)]
+                );
+            }
+            $offset += self::ORDERS_DATA_LIMIT;
+        } while ($entityIds);
     }
 }

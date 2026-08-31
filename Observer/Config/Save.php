@@ -95,6 +95,38 @@ class Save extends Main implements ObserverInterface
         $this->doYotpoApiKeyValidation($observer);
         $this->catalogMapping->doYotpoCatalogMappingChanges($observer);
         $this->cronFrequency->doCronFrequencyChanges($observer);
+        $this->doShipmentsFlagChanges($observer);
+    }
+
+    /**
+     * A merchant changing shipments_flag is a deliberate signal to re-derive fulfillment for
+     * already-synced orders. Clear the per-order pin so Data::prepareFulfillments() falls back
+     * to the new config value on the next sync, instead of staying latched to whatever was
+     * recorded under the old setting.
+     *
+     * @param Observer $observer
+     * @return void
+     */
+    public function doShipmentsFlagChanges(Observer $observer)
+    {
+        $changedPaths = (array)$observer->getEvent()->getChangedPaths();
+        if ($changedPaths && $this->isShipmentsFlagChanged($changedPaths)) {
+            $scopeId = $this->getScopes($observer)['scope_id'];
+            if ($scopeId) {
+                $this->syncReset->clearOrdersFulfillmentFlag($scopeId);
+            }
+        }
+    }
+
+    /**
+     * @param array <string> $changedPaths
+     * @return bool
+     */
+    public function isShipmentsFlagChanged($changedPaths = [])
+    {
+        $yotpoKeyPaths = ['is_fulfillment_based_on_shipment'];
+        $commonPaths = $this->getChangedYotpoPaths($changedPaths, $yotpoKeyPaths);
+        return (bool)$commonPaths;
     }
 
     /**

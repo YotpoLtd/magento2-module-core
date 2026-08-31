@@ -75,4 +75,13 @@ class ResetEntitiesSync
     {
         $this->customersReset->resetSync($storeId);
     }
+
+    /**
+     * @param int $storeId
+     * @return void
+     */
+    public function clearOrdersFulfillmentFlag($storeId)
+    {
+        $this->ordersReset->clearFulfillmentFlagPins($storeId);
+    }
 }
