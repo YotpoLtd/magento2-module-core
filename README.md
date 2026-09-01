@@ -72,6 +72,11 @@ Copyright © 2018 Yotpo. All rights reserved.
     * magento2-module-combined (kept only because the standard update script installs
   through it — dropping it would block that script until it's rewritten; not needed
   otherwise)
+    * magento2-module-messaging — only when combined is also being bumped. Messaging itself
+  needs no code changes, but combined pins an exact messaging version, and that pinned
+  messaging pins an exact core version. If messaging isn't bumped to match, combined's
+  dependency graph becomes unsatisfiable (two different core versions required at once) and
+  the release breaks. Skip this repo entirely if core/reviews change without combined.
 
 
 2. After you've merged it, you'll need to create a new tag with the new version number in all repos:
