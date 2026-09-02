@@ -8,13 +8,13 @@
                 comment="Product Row ID"/>
         <column xsi:type="int" name="store_id" unsigned="true" nullable="false" identity="false"
                 comment="Store ID"/>
-        <column xsi:type="double" name="yotpo_id" unsigned="true" nullable="false" default="0"
+        <column xsi:type="double" name="yotpo_id" nullable="false" default="0"
                 comment="Api Response Data - Yotpo ID"/>
-        <column xsi:type="double" name="visible_variant_yotpo_id" unsigned="true" nullable="false" default="0"
+        <column xsi:type="double" name="visible_variant_yotpo_id" nullable="false" default="0"
                 comment="Api Response Data - Yotpo ID of visible child products"/>
         <column xsi:type="int" name="yotpo_id_unassign" unsigned="true" nullable="false" identity="false" default="0"
                 comment="Api Response Data - Yotpo ID - Duplicate"/>
-        <column xsi:type="double" name="yotpo_id_parent" unsigned="true" nullable="false" default="0"
+        <column xsi:type="double" name="yotpo_id_parent" nullable="false" default="0"
                 comment="Api Response Data - Parent Yotpo ID"/>
         <column xsi:type="smallint" name="is_deleted" unsigned="true" nullable="false" identity="false" default="0"
                 comment="Is Deleted"/>
@@ -44,7 +44,7 @@
                 comment="Entity ID"/>
         <column xsi:type="int" name="order_id" unsigned="true" nullable="false" identity="false"
                 comment="Order ID"/>
-        <column xsi:type="double" name="yotpo_id" unsigned="true" nullable="true" scale="0" default="0"
+        <column xsi:type="double" name="yotpo_id" nullable="true" scale="0" default="0"
                 comment="Yotpo ID"/>
         <column xsi:type="datetime" name="synced_to_yotpo" nullable="true" comment="Synced to Yotpo"/>
         <column xsi:type="varchar" name="response_code" nullable="true" length="5" comment="Response Code"/>
