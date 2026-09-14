@@ -85,3 +85,12 @@ Copyright © 2018 Yotpo. All rights reserved.
 
 
 3. Check to see that the new version exists in packagist (https://packagist.org/).
+
+
+4. Update the extension version in Adobe Commerce Cloud (https://commercedeveloper.adobe.com/extensions/), packaged/released there. Login with credentials from the password manager (ask Vladi/Marto if you don't have them). Submit a new version to update version, release notes, description, etc.
+    * Technical submission requires zipping the reviews extension and uploading it. Before zipping, change `"name": "yotpo/module-yotpo"` in composer.json (uncommitted — Adobe Commerce Cloud expects that exact package name and errors otherwise):
+      ```
+      zip -r yotpo_module-yotpo-reviews-4.3.4.zip magento2-module-reviews/ -x 'magento2-module-reviews/.git/*' -x 'magento2-module-reviews/.gitignore'
+      ```
+      (excluding `.git` and `.gitignore` is required, or the upload errors)
+    * Adobe then runs an automated test — monitor progress via Test Reports (Ctrl+F on the submission page).
