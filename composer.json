@@ -12,8 +12,10 @@
     },
     "replace": {
         "yotpo/module-review": "*",
-        "yotpo/module-yotpo": "*",
         "yotpo/magento2-module-yotpo-reviews": "*"
+    },
+    "conflict": {
+        "yotpo/module-yotpo": "<4.0"
     },
     "type": "magento2-module",
     "autoload": {
