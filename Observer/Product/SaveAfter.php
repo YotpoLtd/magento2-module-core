@@ -113,7 +113,12 @@ class SaveAfter implements ObserverInterface
 
         $productId = $product->getId();
         if ($product->hasDataChanges()) {
-            $this->updateProductAttribute([$product->getRowId() ?: $productId], $storeIdsToUpdate);
+            // No store filter on an All Store Views save, so the store 0 flag that
+            // store views without their own row fall back to is reset too
+            $this->updateProductAttribute(
+                [$product->getRowId() ?: $productId],
+                $currentStoreId == 0 ? [] : $storeIdsToUpdate
+            );
             $this->updateIsDeleted($product);
             $tableData = ['response_code' => Config::CUSTOM_RESPONSE_DATA];
             $this->updateYotpoSyncTable($tableData, $storeIdsToUpdate, [$productId]);
