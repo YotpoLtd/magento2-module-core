@@ -1,1 +1,21 @@
-* @YotpoLtd/Orbits-admins
+# Only high-risk paths need a code-owner review: the human-required tier in
+# .claude/protected-files.json, plus the agent instruction files. Everything
+# else needs only the normal approval. (No OpenAPI/API spec files exist here.)
+
+/etc/db_schema.xml @YotpoLtd/Orbits-admins
+/etc/db_schema_whitelist.json @YotpoLtd/Orbits-admins
+/Setup/ @YotpoLtd/Orbits-admins
+/composer.json @YotpoLtd/Orbits-admins
+/etc/module.xml @YotpoLtd/Orbits-admins
+/registration.php @YotpoLtd/Orbits-admins
+/etc/acl.xml @YotpoLtd/Orbits-admins
+/Model/Api/Token.php @YotpoLtd/Orbits-admins
+/Model/Api/Request.php @YotpoLtd/Orbits-admins
+/LICENSE.txt @YotpoLtd/Orbits-admins
+/LICENSE_AFL.txt @YotpoLtd/Orbits-admins
+/.github/ @YotpoLtd/Orbits-admins
+/.agents/adlc/ @YotpoLtd/Orbits-admins
+/.claude/ @YotpoLtd/Orbits-admins
+/CLAUDE.md @YotpoLtd/Orbits-admins
+/AGENTS.md @YotpoLtd/Orbits-admins
+/CODEOWNERS @YotpoLtd/Orbits-admins
