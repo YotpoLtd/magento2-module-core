@@ -114,4 +114,70 @@ class ProcessorTest extends TestCase
 
         $processor->processSingleEntity($this->createOrder());
     }
+
+    /**
+     * processOrder() starts a frontend store emulation and must stop it on every exit, or the
+     * caller (e.g. the checkout's commit callback) keeps running in the emulated store/area.
+     *
+     * @param bool $resetInProgress
+     * @return Processor&MockObject
+     */
+    private function createEmulatingProcessor($resetInProgress)
+    {
+        $processor = $this->getMockBuilder(Processor::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['emulateFrontendArea', 'stopEnvironmentEmulation', 'processSingleEntity'])
+            ->getMock();
+        $processor->expects($this->once())->method('emulateFrontendArea')->with(1)->willReturnSelf();
+        $processor->expects($this->once())->method('stopEnvironmentEmulation')->willReturnSelf();
+
+        $config = $this->getMockBuilder(Config::class)
+            ->disableOriginalConstructor()
+            ->onlyMethods(['isSyncResetInProgress', 'getStoreId', 'getStoreName'])
+            ->getMock();
+        $config->method('isSyncResetInProgress')->willReturn($resetInProgress);
+        $config->method('getStoreId')->willReturn(1);
+        $config->method('getStoreName')->willReturn('Default');
+
+        (new \ReflectionProperty(Processor::class, 'config'))->setValue($processor, $config);
+        (new \ReflectionProperty(Processor::class, 'yotpoOrdersLogger'))
+            ->setValue($processor, $this->createMock(YotpoOrdersLogger::class));
+
+        return $processor;
+    }
+
+    public function testProcessOrderStopsEmulationWhenTheSyncThrows(): void
+    {
+        $processor = $this->createEmulatingProcessor(false);
+        $processor->expects($this->once())->method('processSingleEntity')
+            ->willThrowException(new \RuntimeException('SQLSTATE[40001]: 1213 Deadlock found'));
+
+        $order = $this->createOrder();
+        $order->method('getStoreId')->willReturn(1);
+
+        $this->expectException(\RuntimeException::class);
+        $processor->processOrder($order);
+    }
+
+    public function testProcessOrderStopsEmulationWhenSyncResetIsInProgress(): void
+    {
+        $processor = $this->createEmulatingProcessor(true);
+        $processor->expects($this->never())->method('processSingleEntity');
+
+        $order = $this->createOrder();
+        $order->method('getStoreId')->willReturn(1);
+
+        $processor->processOrder($order);
+    }
+
+    public function testProcessOrderStopsEmulationOnSuccess(): void
+    {
+        $processor = $this->createEmulatingProcessor(false);
+        $processor->expects($this->once())->method('processSingleEntity');
+
+        $order = $this->createOrder();
+        $order->method('getStoreId')->willReturn(1);
+
+        $processor->processOrder($order);
+    }
 }
