@@ -169,20 +169,25 @@ class Processor extends Main
     {
         $storeId = $order->getStoreId();
         $this->emulateFrontendArea((int)$storeId);
-        if ($this->config->isSyncResetInProgress($storeId, 'order')) {
-            return;
+        // finally: emulation must be stopped on every exit - the reset-in-progress return and a
+        // throwing sync included - or the caller keeps running in the emulated store/area.
+        try {
+            if ($this->config->isSyncResetInProgress($storeId, 'order')) {
+                return;
+            }
+            $this->currentStoreId = $this->config->getStoreId();
+            $this->yotpoOrdersLogger->infoLog(
+                __(
+                    'Process order for Magento Store ID: %1, Name: %2',
+                    $storeId,
+                    $this->config->getStoreName((int)$storeId)
+                ),
+                []
+            );
+            $this->processSingleEntity($order);
+        } finally {
+            $this->stopEnvironmentEmulation();
         }
-        $this->currentStoreId = $this->config->getStoreId();
-        $this->yotpoOrdersLogger->infoLog(
-            __(
-                'Process order for Magento Store ID: %1, Name: %2',
-                $storeId,
-                $this->config->getStoreName((int)$storeId)
-            ),
-            []
-        );
-        $this->processSingleEntity($order);
-        $this->stopEnvironmentEmulation();
     }
 
     /**
