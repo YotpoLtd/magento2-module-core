@@ -9,7 +9,9 @@ use Magento\Framework\App\State as AppState;
 use Magento\Framework\DB\Adapter\AdapterInterface;
 use Magento\Framework\Event;
 use Magento\Framework\Event\Observer;
+use Magento\Framework\Exception\LocalizedException;
 use Magento\Framework\Model\ResourceModel\AbstractResource;
+use Magento\Framework\Phrase;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Payment;
 use PHPUnit\Framework\TestCase;
@@ -23,7 +25,7 @@ use Yotpo\Core\Observer\Order\SalesOrderPaymentSaveAfter;
  * payment provider may already have captured the payment. A lock conflict on Yotpo bookkeeping
  * there (MySQL 1213) would roll back the order, so execute() must do no DB write and no sync:
  * all of it - guest SMS consent, re-queue, real-time sync - runs in a commit callback that
- * fires only after the outermost commit, is dropped on rollback, and never throws (TS-179).
+ * fires only after the outermost commit, is dropped on rollback, and never throws.
  */
 class SalesOrderPaymentSaveAfterTest extends TestCase
 {
@@ -36,6 +38,16 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
      * @var AdapterInterface&\PHPUnit\Framework\MockObject\MockObject
      */
     private $syncTableConnection;
+
+    /**
+     * @var string|\Throwable what the AppState stub returns, or throws, on each getAreaCode() call
+     */
+    private $areaCode;
+
+    /**
+     * @var mixed what the checkout session stub returns on each getYotpoSmsMarketing() call
+     */
+    private $smsValue;
 
     protected function setUp(): void
     {
@@ -80,7 +92,7 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
      * @param OrdersProcessor $ordersProcessor
      * @param Config $yotpoConfig
      * @param YotpoOrdersLogger|null $logger
-     * @param string $areaCode
+     * @param string|\Throwable $areaCode
      * @param mixed $smsValue
      * @return SalesOrderPaymentSaveAfter
      */
@@ -91,6 +103,8 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
         $areaCode = Area::AREA_FRONTEND,
         $smsValue = 1
     ) {
+        $this->areaCode = $areaCode;
+        $this->smsValue = $smsValue;
         $this->syncTableConnection = $this->createMock(AdapterInterface::class);
         $this->syncTableConnection->method('update')->willReturnCallback(
             function ($table) {
@@ -106,10 +120,19 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
             ->disableOriginalConstructor()
             ->addMethods(['getYotpoSmsMarketing'])
             ->getMock();
-        $checkoutSession->method('getYotpoSmsMarketing')->willReturn($smsValue);
+        // Both stubs read the current property on every call, so a test can change the request
+        // context between execute() and the commit callback.
+        $checkoutSession->method('getYotpoSmsMarketing')->willReturnCallback(function () {
+            return $this->smsValue;
+        });
 
         $appState = $this->createMock(AppState::class);
-        $appState->method('getAreaCode')->willReturn($areaCode);
+        $appState->method('getAreaCode')->willReturnCallback(function () {
+            if ($this->areaCode instanceof \Throwable) {
+                throw $this->areaCode;
+            }
+            return $this->areaCode;
+        });
 
         return new SalesOrderPaymentSaveAfter(
             $ordersProcessor,
@@ -266,9 +289,23 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
         );
     }
 
-    public function testSmsValueIsCapturedAtExecuteTime(): void
+    public function testSmsValueAndAreaAreCapturedAtExecuteTimeNotWhenTheCallbackRuns(): void
     {
-        // A missing session value is stored as 0, same as before the fix.
+        $observer = $this->createObserver($this->createOrdersProcessor(), $this->createConfig(false));
+
+        $callbacks = [];
+        $observer->execute($this->createEvent($this->createOrder(5), $this->createCapturingResource($callbacks)));
+        // The request context changes before the commit callback runs. An observer that read
+        // the session or the area inside the callback would see these values instead.
+        $this->smsValue = null;
+        $this->areaCode = Area::AREA_ADMINHTML;
+        $callbacks[0]();
+
+        $this->assertSame('updateOrderAttribute:yotpo_accepts_sms_marketing=1:5', $this->calls[0]);
+    }
+
+    public function testMissingSessionSmsValueIsStoredAsZero(): void
+    {
         $observer = $this->createObserver(
             $this->createOrdersProcessor(),
             $this->createConfig(false),
@@ -310,13 +347,41 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
         $callbacks[0]();
 
         $observer = $this->createObserver($this->createOrdersProcessor(), $this->createConfig(true));
-        $observer->execute($this->createEvent($this->createOrder(6, false), $this->createCapturingResource($callbacks)));
+        $observer->execute(
+            $this->createEvent($this->createOrder(6, false), $this->createCapturingResource($callbacks))
+        );
         $callbacks[0]();
 
         foreach ($this->calls as $call) {
             $this->assertStringNotContainsString('yotpo_accepts_sms_marketing', $call);
         }
         $this->assertSame(2, count(array_keys($this->calls, 'processOrder')));
+    }
+
+    public function testNoAreaCodeSkipsTheSmsConsentInsteadOfThrowingIntoTheOrderSave(): void
+    {
+        // AppState::getAreaCode() throws when no area is set (a CLI script, for example). An
+        // exception from execute() would roll back the order save.
+        $observer = $this->createObserver(
+            $this->createOrdersProcessor(),
+            $this->createConfig(true),
+            null,
+            new LocalizedException(new Phrase('Area code is not set'))
+        );
+
+        $callbacks = [];
+        $observer->execute($this->createEvent($this->createOrder(5), $this->createCapturingResource($callbacks)));
+        $this->assertCount(1, $callbacks, 'the re-queue and the sync must still be scheduled');
+        $callbacks[0]();
+
+        $this->assertSame(
+            [
+                'updateOrderAttribute:synced_to_yotpo_order=0:5',
+                'update:yotpo_orders_sync',
+                'processOrder',
+            ],
+            $this->calls
+        );
     }
 
     public function testOrderWithoutEntityIdRegistersNothing(): void
