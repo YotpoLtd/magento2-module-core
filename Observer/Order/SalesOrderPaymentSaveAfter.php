@@ -23,8 +23,12 @@ use Magento\Framework\App\State as AppState;
  * sync bookkeeping (e.g. a MySQL 1213 deadlock) would roll back the whole order. All the work -
  * the guest SMS consent, the re-queue and the real-time sync - is deferred to a commit callback
  * that runs only after the outermost transaction commits, and is dropped if it rolls back.
- * A failure in the deferred work is logged and never rethrown; cron re-syncs the order because
- * synced_to_yotpo_order stays 0.
+ *
+ * A failure in the deferred work is logged and never rethrown. What cron recovers depends on the
+ * order's synced_to_yotpo_order flag. A new order still reaches Yotpo, because the flag defaults
+ * to 0. An order that had already synced has the flag at 1, and only reQueueOrder() resets it. If
+ * the work fails before or inside reQueueOrder(), or a rolled-back save left the order's dedupe
+ * entry behind in this process, the flag stays 1 and cron does not pick up the change.
  */
 class SalesOrderPaymentSaveAfter extends OrderMain implements ObserverInterface
 {
@@ -97,7 +101,15 @@ class SalesOrderPaymentSaveAfter extends OrderMain implements ObserverInterface
 
         // Captured now, while the request context (area, checkout session) is the one that
         // triggered the save - it may differ by the time the commit callback runs.
-        $writeSmsConsent = $this->appState->getAreaCode() !== \Magento\Framework\App\Area::AREA_ADMINHTML
+        try {
+            $areaCode = $this->appState->getAreaCode();
+        } catch (LocalizedException $e) {
+            // No area is set (a CLI script, for example), so there is no checkout session to
+            // read the SMS choice from. Letting the exception escape would roll back the order.
+            $areaCode = null;
+        }
+        $writeSmsConsent = $areaCode !== null
+            && $areaCode !== \Magento\Framework\App\Area::AREA_ADMINHTML
             && $order->getCustomerIsGuest();
         $acceptsSmsMarketing = $writeSmsConsent ? $this->checkoutSession->getYotpoSmsMarketing() : null;
 
