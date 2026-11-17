@@ -14,6 +14,7 @@ use Magento\Framework\Model\ResourceModel\AbstractResource;
 use Magento\Framework\Phrase;
 use Magento\Sales\Model\Order;
 use Magento\Sales\Model\Order\Payment;
+use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
 use Yotpo\Core\Model\Config;
 use Yotpo\Core\Model\Sync\Orders\Logger as YotpoOrdersLogger;
@@ -35,7 +36,7 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
     private $calls = [];
 
     /**
-     * @var AdapterInterface&\PHPUnit\Framework\MockObject\MockObject
+     * @var AdapterInterface
      */
     private $syncTableConnection;
 
@@ -60,7 +61,7 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
      */
     private function createOrdersProcessor($processOrderThrows = null)
     {
-        $ordersProcessor = $this->createMock(OrdersProcessor::class);
+        $ordersProcessor = $this->createStub(OrdersProcessor::class);
         $ordersProcessor->method('updateOrderAttribute')->willReturnCallback(
             function ($ids, $attribute, $value) {
                 $this->calls[] = 'updateOrderAttribute:' . $attribute . '=' . $value . ':' . implode(',', $ids);
@@ -83,7 +84,7 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
      */
     private function createConfig($realTimeActive)
     {
-        $yotpoConfig = $this->createMock(Config::class);
+        $yotpoConfig = $this->createStub(Config::class);
         $yotpoConfig->method('isRealTimeOrdersSyncActive')->willReturn($realTimeActive);
         return $yotpoConfig;
     }
@@ -105,28 +106,43 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
     ) {
         $this->areaCode = $areaCode;
         $this->smsValue = $smsValue;
-        $this->syncTableConnection = $this->createMock(AdapterInterface::class);
+        $this->syncTableConnection = $this->createStub(AdapterInterface::class);
         $this->syncTableConnection->method('update')->willReturnCallback(
             function ($table) {
                 $this->calls[] = 'update:' . $table;
                 return 1;
             }
         );
-        $resourceConnection = $this->createMock(ResourceConnection::class);
+        $resourceConnection = $this->createStub(ResourceConnection::class);
         $resourceConnection->method('getConnection')->willReturn($this->syncTableConnection);
         $resourceConnection->method('getTableName')->willReturnArgument(0);
 
-        $checkoutSession = $this->getMockBuilder(CheckoutSession::class)
-            ->disableOriginalConstructor()
-            ->addMethods(['getYotpoSmsMarketing'])
-            ->getMock();
-        // Both stubs read the current property on every call, so a test can change the request
-        // context between execute() and the commit callback.
-        $checkoutSession->method('getYotpoSmsMarketing')->willReturnCallback(function () {
+        $checkoutSession = new class (function () {
             return $this->smsValue;
-        });
+        }) extends CheckoutSession {
+            /**
+             * @var callable
+             */
+            private $smsValue;
 
-        $appState = $this->createMock(AppState::class);
+            /**
+             * @param callable $smsValue
+             */
+            public function __construct(callable $smsValue)
+            {
+                $this->smsValue = $smsValue;
+            }
+
+            /**
+             * @return mixed
+             */
+            public function getYotpoSmsMarketing()
+            {
+                return ($this->smsValue)();
+            }
+        };
+
+        $appState = $this->createStub(AppState::class);
         $appState->method('getAreaCode')->willReturnCallback(function () {
             if ($this->areaCode instanceof \Throwable) {
                 throw $this->areaCode;
@@ -140,7 +156,7 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
             $resourceConnection,
             $checkoutSession,
             $appState,
-            $logger ?: $this->createMock(YotpoOrdersLogger::class)
+            $logger ?: $this->createStub(YotpoOrdersLogger::class)
         );
     }
 
@@ -151,10 +167,7 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
      */
     private function createOrder($entityId, $isGuest = true)
     {
-        $order = $this->getMockBuilder(Order::class)
-            ->disableOriginalConstructor()
-            ->onlyMethods(['getId', 'getEntityId', 'getStoreId', 'getCustomerIsGuest'])
-            ->getMock();
+        $order = $this->createStub(Order::class);
         $order->method('getId')->willReturn($entityId);
         $order->method('getEntityId')->willReturn($entityId);
         $order->method('getStoreId')->willReturn(1);
@@ -169,7 +182,7 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
      */
     private function createEvent($order, $resource)
     {
-        $payment = $this->createMock(Payment::class);
+        $payment = $this->createStub(Payment::class);
         $payment->method('getOrder')->willReturn($order);
         $payment->method('getResource')->willReturn($resource);
         return new Observer(['event' => new Event(['payment' => $payment])]);
@@ -184,7 +197,7 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
     private function createCapturingResource(&$callbacks)
     {
         $callbacks = [];
-        $resource = $this->createMock(AbstractResource::class);
+        $resource = $this->createStub(AbstractResource::class);
         $resource->method('addCommitCallback')->willReturnCallback(
             function ($callback) use (&$callbacks, &$resource) {
                 $callbacks[] = $callback;
@@ -204,7 +217,7 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
     private function createRealResource()
     {
         $level = 0;
-        $adapter = $this->createMock(AdapterInterface::class);
+        $adapter = $this->createStub(AdapterInterface::class);
         $adapter->method('beginTransaction')->willReturnCallback(function () use (&$level, &$adapter) {
             $level++;
             return $adapter;
@@ -256,11 +269,8 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
     public function testExecuteWritesNothingAndDoesNotSync(): void
     {
         $ordersProcessor = $this->createOrdersProcessor();
-        $ordersProcessor->expects($this->never())->method('updateOrderAttribute');
-        $ordersProcessor->expects($this->never())->method('processOrder');
 
         $observer = $this->createObserver($ordersProcessor, $this->createConfig(true));
-        $this->syncTableConnection->expects($this->never())->method('update');
 
         $callbacks = [];
         $resource = $this->createCapturingResource($callbacks);
@@ -433,6 +443,7 @@ class SalesOrderPaymentSaveAfterTest extends TestCase
      * @dataProvider throwableProvider
      * @param \Throwable $throwable
      */
+    #[DataProvider('throwableProvider')]
     public function testFailureInCallbackIsLoggedAndNotRethrown(\Throwable $throwable): void
     {
         $logger = $this->createMock(YotpoOrdersLogger::class);

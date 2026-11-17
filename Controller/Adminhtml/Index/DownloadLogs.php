@@ -54,12 +54,16 @@ class DownloadLogs extends Action
                 $response = $this->downloadFile($filepath);
                 break;
             case self::CUSTOMERS_LOG:
-                $filepath = \Yotpo\SmsBump\Model\Sync\Customers\Logger\Handler::FILE_NAME;
-                $response = $this->downloadFile($filepath);
+                if (class_exists(\Yotpo\SmsBump\Model\Sync\Customers\Logger\Handler::class)) {
+                    $filepath = \Yotpo\SmsBump\Model\Sync\Customers\Logger\Handler::FILE_NAME;
+                    $response = $this->downloadFile($filepath);
+                }
                 break;
             case self::CHECKOUT_LOG:
-                $filepath = \Yotpo\SmsBump\Model\Sync\Checkout\Logger\Handler::FILE_NAME;
-                $response = $this->downloadFile($filepath);
+                if (class_exists(\Yotpo\SmsBump\Model\Sync\Checkout\Logger\Handler::class)) {
+                    $filepath = \Yotpo\SmsBump\Model\Sync\Checkout\Logger\Handler::FILE_NAME;
+                    $response = $this->downloadFile($filepath);
+                }
                 break;
         }
 

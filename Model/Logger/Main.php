@@ -7,7 +7,7 @@ use Yotpo\Core\Model\Config as YotpoConfig;
 /**
  * Class Logger - Core module
  */
-class Main extends \Monolog\Logger
+class Main extends \Magento\Framework\Logger\Monolog
 {
 
     const LOG_PREFIX = 'Yotpo :: ';
@@ -51,7 +51,8 @@ class Main extends \Monolog\Logger
         $message = self::LOG_PREFIX . $message;
         if ($this->isDebugEnabled()) {
             $this->logSystemInfo();
-            return parent::info($message, $context);
+            parent::info($message, $context);
+            return;
         }
         return true;
     }
@@ -67,7 +68,7 @@ class Main extends \Monolog\Logger
     {
         $this->logSystemInfo();
         $message = self::LOG_PREFIX . $message;
-        return parent::error($message, $context);
+        parent::error($message, $context);
     }
 
     /**
