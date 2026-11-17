@@ -365,6 +365,8 @@ class Processor extends AbstractJobs
         $collectionIdRequestParamString = $this::YOTPO_COLLECTION_ID_REQUEST_PARAM_STRING;
 
         foreach ($enrichedCollectionsProductsEntitiesToSync as $enrichedCollectionProductEntityToSync) {
+            $collectionYotpoId = null;
+            $productYotpoId = null;
             try {
                 $collectionYotpoId = $enrichedCollectionProductEntityToSync['category_yotpo_id'];
                 $productYotpoId = $enrichedCollectionProductEntityToSync['product_yotpo_id'];
